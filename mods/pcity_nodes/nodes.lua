@@ -15,3 +15,50 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
+
+local mod_name = minetest.get_current_modname()
+
+-- Pierwszego dnia bóg stworzył beton
+minetest.register_node(
+    mod_name..":concrete",
+    {
+        description = "Concrete",
+        tiles = {{name = mod_name.."_concrete.png",
+                  align_style = "world",
+                  scale = 4}},
+        groups = {cracky = 3, stone = 1 }
+    }
+)
+
+minetest.register_node(
+    mod_name..":asphalt",
+    {
+        description = "Asphalt",
+        tiles = {{name = mod_name.."_asphalt.png",
+                  align_style = "world",
+                  scale = 8}},
+        groups = {cracky = 3, stone = 1 },
+    }
+)
+
+minetest.register_node(
+    mod_name..":bricks_gray",
+    {
+        description = "Gray Bricks",
+        tiles = {{name = mod_name.."_bricks_gray.png",
+                  align_style = "world",
+                  scale = 4}},
+        groups = {cracky = 3, stone = 1},
+    }
+)
+
+minetest.register_node(
+    mod_name..":bricks_red",
+    {
+        description = "Red Bricks",
+        tiles = {{name = mod_name.."_bricks_red.png",
+                  align_style = "world",
+                  scale = 2}},
+        groups = {cracky = 3, stone = 1},
+    }
+)
