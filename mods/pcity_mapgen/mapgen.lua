@@ -15,3 +15,14 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
+
+local mod_name = minetest.get_current_modname()
+
+minetest.register_biome({
+        name = "floor",
+        node_top = "pcity_nodes:asphalt",
+        depth_top = 1,
+        node_filler = "pcity_nodes:asphalt",
+        y_max = 0,
+        y_min = -10,
+})
