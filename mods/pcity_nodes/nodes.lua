@@ -62,3 +62,26 @@ minetest.register_node(
         groups = {cracky = 3, stone = 1},
     }
 )
+
+local roughcast_list = {
+    {name = "red", desc = "Red Roughcast"},
+    {name = "yellow", desc = "Yellow Roughcast"},
+    {name = "yellow_light", desc = "Light Yellow Roughcast"},
+    {name = "green", desc = "Green Roughcast"},
+    {name = "white", desc = "White Roughcast"},
+    {name = "blue", desc = "White Roughcast"},
+}
+
+for _, roughcast in pairs(roughcast_list) do
+    minetest.log("error", dump(roughcast))
+    minetest.register_node(
+        mod_name..":roughcast_"..roughcast.name,
+        {
+            description = roughcast.name,
+            tiles = {{name = mod_name.."_roughcast_"..roughcast.name..".png",
+                      align_style = "world",
+                      scale = 4}},
+            groups = {snappy = 3, stone = 1},
+        }
+    )
+end
