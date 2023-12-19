@@ -85,3 +85,14 @@ for _, roughcast in pairs(roughcast_list) do
         }
     )
 end
+
+minetest.register_node(
+    mod_name..":pavement",
+    {
+        description = "Pavement",
+        tiles = {{name = mod_name.."_pavement.png",
+                  align_style = "world",
+                  scale = 5}},
+        groups = {cracky = 3, stone = 1 }
+    }
+)
