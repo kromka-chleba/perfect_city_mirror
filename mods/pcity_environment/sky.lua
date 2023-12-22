@@ -17,6 +17,20 @@
 --]]
 
 local mod_name = minetest.get_current_modname()
+local math = math
+
+local monster_texture = mod_name.."_crane_monster.png"
+local monster_dimensions = "26x69"
+local monster_coords = {
+    "10,468",
+    "68,468",
+    "303,468",
+    "360,468",
+    "480,468",
+    "969,468",
+}
+
+local random_monster = monster_coords[math.random(1, #monster_coords)]
 
 local current_sky = {
     type = "skybox",
@@ -27,7 +41,7 @@ local current_sky = {
         mod_name.."_up.png",
         mod_name.."_down.png",
         mod_name.."_front.png",
-        mod_name.."_back.png",
+        mod_name.."_back.png".."^[combine:"..monster_dimensions..":"..random_monster.."="..monster_texture,
         mod_name.."_left.png",
         mod_name.."_right.png",
     },
