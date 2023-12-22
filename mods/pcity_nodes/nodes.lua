@@ -73,7 +73,6 @@ local roughcast_list = {
 }
 
 for _, roughcast in pairs(roughcast_list) do
-    minetest.log("error", dump(roughcast))
     minetest.register_node(
         mod_name..":roughcast_"..roughcast.name,
         {
