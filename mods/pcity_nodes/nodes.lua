@@ -96,3 +96,14 @@ minetest.register_node(
         groups = {cracky = 3, stone = 1 }
     }
 )
+
+minetest.register_node(
+    mod_name..":grass",
+    {
+        description = "Grass",
+        tiles = {{name = mod_name.."_grass.png",
+                  align_style = "world",
+                  scale = 8}},
+        groups = {cracky = 3, stone = 1 }
+    }
+)
