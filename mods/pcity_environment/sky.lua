@@ -30,26 +30,73 @@ local monster_coords = {
     "969,468",
 }
 
-local random_monster = monster_coords[math.random(1, #monster_coords)]
+local function get_default_sky_textures()
+    local textures = {
+        up = mod_name.."_up.png",
+        down = mod_name.."_down.png",
+        front = mod_name.."_front.png",
+        back = mod_name.."_back.png",
+        left = mod_name.."_left.png",
+        right = mod_name.."_right.png",
+    }
+    return textures
+end
 
-local current_sky = {
-    type = "skybox",
-    clouds = true,
-    body_orbit_tilt = -60,
-    base_color = "#3e423f",
-    textures = {
-        mod_name.."_up.png",
-        mod_name.."_down.png",
-        mod_name.."_front.png",
-        mod_name.."_back.png".."^[combine:"..monster_dimensions..":"..random_monster.."="..monster_texture,
-        mod_name.."_left.png",
-        mod_name.."_right.png",
-    },
-    fog = {
-        fog_distance = 150,
-    },
-}
+local function prepare_sky_textures(sky_textures)
+    local textures = {}
+    textures[1] = sky_textures.up
+    textures[2] = sky_textures.down
+    textures[3] = sky_textures.front
+    textures[4] = sky_textures.back
+    textures[5] = sky_textures.left
+    textures[6] = sky_textures.right
+    return textures
+end
 
+local function get_default_sky()
+    local raw_textures =  get_default_sky_textures()
+    local textures = prepare_sky_textures(raw_textures)
+    local default_sky = {
+        type = "skybox",
+        clouds = true,
+        body_orbit_tilt = -60,
+        base_color = "#3e423f",
+        textures = textures,
+        fog = {
+            fog_distance = 150,
+        },
+    }
+    return default_sky
+end
+
+local function randomize_monster()
+    local random_monster = monster_coords[math.random(1, #monster_coords)]
+    local monster = "^[combine:"..monster_dimensions..":"..random_monster.."="..monster_texture
+    return monster
+end
+
+local current_sky = get_default_sky()
+local refresh_interval = 100
+
+-- This refreshes stuff on the sky
+-- for now it moves the monster around
+local function refresh_sky()
+    local new_sky = get_default_sky()
+    local raw_textures = get_default_sky_textures()
+    raw_textures.back = raw_textures.back..randomize_monster()
+    new_sky.textures = prepare_sky_textures(raw_textures)
+    current_sky = new_sky
+    local players = minetest.get_connected_players()
+    for _, player in pairs(players) do
+        player:set_sky(new_sky)
+    end
+    minetest.after(refresh_interval, refresh_sky)
+    return
+end
+
+minetest.after(refresh_interval, refresh_sky)
+
+-- Loads current sky for players who just connected
 minetest.register_on_joinplayer(
     function(player, last_login)
         player:set_sky(current_sky)
