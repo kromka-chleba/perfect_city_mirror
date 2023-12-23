@@ -59,7 +59,7 @@ local function get_default_sky()
     local default_sky = {
         type = "skybox",
         clouds = true,
-        body_orbit_tilt = -60,
+        body_orbit_tilt = -30,
         base_color = "#3e423f",
         textures = textures,
         fog = {
