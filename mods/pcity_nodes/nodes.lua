@@ -26,7 +26,8 @@ minetest.register_node(
         tiles = {{name = mod_name.."_concrete.png",
                   align_style = "world",
                   scale = 4}},
-        groups = {cracky = 3, stone = 1 }
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
     }
 )
 
@@ -37,7 +38,8 @@ minetest.register_node(
         tiles = {{name = mod_name.."_asphalt.png",
                   align_style = "world",
                   scale = 8}},
-        groups = {cracky = 3, stone = 1 },
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
     }
 )
 
@@ -49,6 +51,7 @@ minetest.register_node(
                   align_style = "world",
                   scale = 4}},
         groups = {cracky = 3, stone = 1},
+        paramtype = "light",
     }
 )
 
@@ -60,6 +63,8 @@ minetest.register_node(
                   align_style = "world",
                   scale = 2}},
         groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+
     }
 )
 
@@ -81,6 +86,7 @@ for _, roughcast in pairs(roughcast_list) do
                       align_style = "world",
                       scale = 4}},
             groups = {snappy = 3, stone = 1},
+            paramtype = "light",
         }
     )
 end
@@ -92,7 +98,8 @@ minetest.register_node(
         tiles = {{name = mod_name.."_pavement.png",
                   align_style = "world",
                   scale = 5}},
-        groups = {cracky = 3, stone = 1 }
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
     }
 )
 
@@ -103,6 +110,29 @@ minetest.register_node(
         tiles = {{name = mod_name.."_grass.png",
                   align_style = "world",
                   scale = 8}},
-        groups = {cracky = 3, stone = 1 }
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+    }
+)
+
+minetest.register_node(
+    mod_name..":lapm_1",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_lamp_1.obj",
+        description = "Lamp 1",
+        tiles = {{name = mod_name.."_lamp_1.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "wallmounted",
+        light_source = 15,
+        selection_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.35, 0.5},
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.35, 0.5},
+        },
     }
 )
