@@ -54,6 +54,7 @@ minetest.register_node(
                       "^[combine:"..plate_dimensions..":5,0="..plate_bottom}},
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
+        paramtype2 = "4dir",
     }
 )
 
@@ -67,6 +68,7 @@ minetest.register_node(
                       "^[combine:"..plate_dimensions..":5,17="..plate_top}},
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
+        paramtype2 = "4dir",
     }
 )
 
