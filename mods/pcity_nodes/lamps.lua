@@ -123,3 +123,32 @@ minetest.register_node(
         light_source = 15,
     }
 )
+
+minetest.register_node(
+    mod_name..":plate_lamp",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_plate_lamp.obj",
+        description = "Concrete pillar bottom",
+        tiles = {{name = mod_name.."_plate_lamp_1.png"}},
+        overlay_tiles = {{name = mod_name.."_plate_lamp_2.png"}},
+        use_texture_alpha = "blend",
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+    }
+)
+
+minetest.register_node(
+    mod_name..":plate_lamp_lit",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_plate_lamp.obj",
+        description = "Concrete pillar bottom",
+        tiles = {{name = mod_name.."_plate_lamp_1_lit.png"}},
+        overlay_tiles = {{name = mod_name.."_plate_lamp_2_lit.png"}},
+        use_texture_alpha = "blend",
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        light_source = 15,
+    }
+)
