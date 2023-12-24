@@ -114,25 +114,3 @@ minetest.register_node(
         paramtype = "light",
     }
 )
-
-minetest.register_node(
-    mod_name..":lapm_1",
-    {
-        drawtype = "mesh",
-        mesh = mod_name.."_lamp_1.obj",
-        description = "Lamp 1",
-        tiles = {{name = mod_name.."_lamp_1.png"}},
-        groups = {cracky = 3, stone = 1},
-        paramtype = "light",
-        paramtype2 = "wallmounted",
-        light_source = 15,
-        selection_box = {
-            type = "fixed",
-            fixed = {-0.5, -0.5, -0.5, 0.5, -0.35, 0.5},
-        },
-        collision_box = {
-            type = "fixed",
-            fixed = {-0.5, -0.5, -0.5, 0.5, -0.35, 0.5},
-        },
-    }
-)
