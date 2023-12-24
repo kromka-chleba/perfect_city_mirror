@@ -44,6 +44,8 @@ local plate_dimensions = "14x15"
 local plate_top = "pcity_nodes_street_light_plate_top.png"
 local plate_bottom = "pcity_nodes_street_light_plate_bottom.png"
 
+-- Concrete pillars
+
 minetest.register_node(
     mod_name..":concrete_pillar_bottom",
     {
@@ -82,6 +84,32 @@ minetest.register_node(
         tiles = {{name = mod_name.."_concrete_pillar_bottom.png"}},
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
+        paramtype2 = "wallmounted",
+    }
+)
+
+minetest.register_node(
+    mod_name..":concrete_pillar_cross_junction",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_concrete_pillar_cross_junction.obj",
+        description = "Concrete pillar bottom",
+        tiles = {{name = mod_name.."_concrete_pillar_bottom.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+    }
+)
+
+minetest.register_node(
+    mod_name..":concrete_pillar_L_junction",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_concrete_pillar_L_junction.obj",
+        description = "Concrete pillar bottom",
+        tiles = {{name = mod_name.."_concrete_pillar_bottom.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "wallmounted",
     }
 )
 
@@ -96,6 +124,8 @@ minetest.register_node(
         paramtype = "light",
     }
 )
+
+-- The glowing part
 
 minetest.register_node(
     mod_name..":street_light_ball",
