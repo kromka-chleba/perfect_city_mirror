@@ -86,6 +86,15 @@ end
 ---------------------------------------------------
 -- In this section sky operations happen
 
+local clouds = {
+    density = 0.4,
+    color = "#747c7f",
+    ambient = "#372f25",
+    --height = 120,
+    --thickness = 16,
+    --speed = {x=0, z=-2},
+}
+
 local function get_default_sky()
     local default_sky = {
         type = "skybox",
@@ -110,6 +119,7 @@ local function refresh_sky()
     local players = minetest.get_connected_players()
     for _, player in pairs(players) do
         player:set_sky(current_sky)
+        player:set_clouds(clouds)
     end
     minetest.after(refresh_interval, refresh_sky)
     return
@@ -121,4 +131,5 @@ minetest.after(refresh_interval, refresh_sky)
 minetest.register_on_joinplayer(
     function(player, last_login)
         player:set_sky(current_sky)
+        player:set_clouds(clouds)
 end)
