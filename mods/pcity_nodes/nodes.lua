@@ -114,3 +114,67 @@ minetest.register_node(
         paramtype = "light",
     }
 )
+
+minetest.register_node(
+    mod_name..":curb_middle",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb.obj",
+        description = "Curb",
+        tiles = {{name = mod_name.."_curb_middle.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, -0.25},
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, -0.25},
+        },
+    }
+)
+
+minetest.register_node(
+    mod_name..":curb_gap",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb.obj",
+        description = "Curb gap",
+        tiles = {{name = mod_name.."_curb_middle.png^"..
+                      mod_name.."_curb_gap.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, -0.25},
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, -0.25},
+        },
+    }
+)
+
+minetest.register_node(
+    mod_name..":curb_corner",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb_corner.obj",
+        description = "Curb",
+        tiles = {{name = mod_name.."_curb_middle.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+        },
+    }
+)
