@@ -65,7 +65,7 @@ minetest.register_node(
     {
         drawtype = "mesh",
         mesh = mod_name.."_concrete_pillar_bottom_2.obj",
-        description = "Concrete pillar bottom",
+        description = "Concrete pillar bottom 2",
         tiles = {{name = mod_name.."_concrete_pillar_bottom.png"..
                       "^[combine:"..plate_dimensions..":5,17="..plate_top}},
         groups = {cracky = 3, stone = 1},
@@ -79,7 +79,7 @@ minetest.register_node(
     {
         drawtype = "mesh",
         mesh = mod_name.."_concrete_pillar_thin.obj",
-        description = "Concrete pillar bottom",
+        description = "Concrete pillar thin",
         --tiles = {{name = mod_name.."_concrete_pillar_thin.png"}},
         tiles = {{name = mod_name.."_concrete_pillar_bottom.png"}},
         groups = {cracky = 3, stone = 1},
@@ -93,7 +93,7 @@ minetest.register_node(
     {
         drawtype = "mesh",
         mesh = mod_name.."_concrete_pillar_cross_junction.obj",
-        description = "Concrete pillar bottom",
+        description = "Concrete pillar cross junction",
         tiles = {{name = mod_name.."_concrete_pillar_bottom.png"}},
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
@@ -105,7 +105,7 @@ minetest.register_node(
     {
         drawtype = "mesh",
         mesh = mod_name.."_concrete_pillar_L_junction.obj",
-        description = "Concrete pillar bottom",
+        description = "Concrete pillar L junction",
         tiles = {{name = mod_name.."_concrete_pillar_bottom.png"}},
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
@@ -118,7 +118,7 @@ minetest.register_node(
     {
         drawtype = "mesh",
         mesh = mod_name.."_concrete_pillar_neck.obj",
-        description = "Concrete pillar bottom",
+        description = "Concrete pillar neck",
         tiles = {{name = mod_name.."_concrete_pillar_neck.png"}},
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
@@ -132,7 +132,7 @@ minetest.register_node(
     {
         drawtype = "mesh",
         mesh = mod_name.."_street_light_ball.obj",
-        description = "Concrete pillar bottom",
+        description = "Light ball",
         tiles = {{name = mod_name.."_street_light_ball_1.png"}},
         overlay_tiles = {{name = mod_name.."_street_light_ball_2.png"}},
         use_texture_alpha = "blend",
@@ -146,7 +146,7 @@ minetest.register_node(
     {
         drawtype = "mesh",
         mesh = mod_name.."_street_light_ball.obj",
-        description = "Concrete pillar bottom",
+        description = "Light ball lit",
         tiles = {{name = mod_name.."_street_light_ball_1_lit.png"}},
         overlay_tiles = {{name = mod_name.."_street_light_ball_2_lit.png"}},
         use_texture_alpha = "blend",
@@ -161,7 +161,7 @@ minetest.register_node(
     {
         drawtype = "mesh",
         mesh = mod_name.."_plate_lamp.obj",
-        description = "Concrete pillar bottom",
+        description = "Plate lamp",
         tiles = {{name = mod_name.."_plate_lamp_1.png"}},
         overlay_tiles = {{name = mod_name.."_plate_lamp_2.png"}},
         use_texture_alpha = "blend",
@@ -175,7 +175,7 @@ minetest.register_node(
     {
         drawtype = "mesh",
         mesh = mod_name.."_plate_lamp.obj",
-        description = "Concrete pillar bottom",
+        description = "Plate lamp lit",
         tiles = {{name = mod_name.."_plate_lamp_1_lit.png"}},
         overlay_tiles = {{name = mod_name.."_plate_lamp_2_lit.png"}},
         use_texture_alpha = "blend",
