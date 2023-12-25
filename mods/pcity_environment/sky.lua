@@ -22,25 +22,43 @@ local math = math
 ---------------------------------------------------
 -- In this section only texture operations happen
 
-local up_tx = mod_name.."_up.png"
-local down_tx = mod_name.."_down.png"
-local front_tx = mod_name.."_front.png"
-local back_tx = mod_name.."_back.png"
-local left_tx = mod_name.."_left.png"
-local right_tx = mod_name.."_right.png"
+local function tx_name(name)
+    return mod_name.."_"..name..".png"
+end
 
-local smog_tx = mod_name.."_smog.png"
+local down_tx = tx_name("down")
+local noise_tx = tx_name("noise")
+local city_tx = tx_name("city")
+local cranes_front_tx = tx_name("cranes_front")
+local cranes_back_tx = tx_name("cranes_back")
+local cranes_left_tx = tx_name("cranes_left")
+local cranes_right_tx = tx_name("cranes_right")
+local smog_tx = tx_name("smog")
 
-local function sky_textures_without_smog()
+local function sky_noise_textures()
     local textures = {
-        up = up_tx,
+        up = noise_tx,
         down = down_tx,
-        front = front_tx,
-        back = back_tx,
-        left = left_tx,
-        right = right_tx,
+        front = noise_tx,
+        back = noise_tx,
+        left = noise_tx,
+        right = noise_tx,
     }
     return textures
+end
+
+local function overlay_city(textures)
+    textures.front = textures.front.."^"..city_tx
+    textures.back = textures.back.."^"..city_tx
+    textures.left = textures.left.."^"..city_tx
+    textures.right = textures.right.."^"..city_tx
+end
+
+local function overlay_cranes(textures)
+    textures.front = textures.front.."^"..cranes_front_tx
+    textures.back = textures.back.."^"..cranes_back_tx
+    textures.left = textures.left.."^"..cranes_left_tx
+    textures.right = textures.right.."^"..cranes_right_tx
 end
 
 local function overlay_smog(textures)
@@ -50,7 +68,7 @@ local function overlay_smog(textures)
     textures.right = textures.right.."^"..smog_tx
 end
 
-local monster_texture = mod_name.."_crane_monster.png"
+local monster_texture = tx_name("crane_monster")
 local monster_dimensions = "26x69"
 local monster_coords = {
     "10,468",
@@ -69,7 +87,9 @@ end
 
 -- Ready to use sky textures translated into the minetest format
 local function default_textures()
-    local raw_textures = sky_textures_without_smog()
+    local raw_textures = sky_noise_textures()
+    overlay_city(raw_textures)
+    overlay_cranes(raw_textures)
     overlay_monster(raw_textures)
     overlay_smog(raw_textures)
     local textures = {}
