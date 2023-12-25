@@ -19,6 +19,37 @@
 local mod_name = minetest.get_current_modname()
 local math = math
 
+---------------------------------------------------
+-- In this section only texture operations happen
+
+local up_tx = mod_name.."_up.png"
+local down_tx = mod_name.."_down.png"
+local front_tx = mod_name.."_front.png"
+local back_tx = mod_name.."_back.png"
+local left_tx = mod_name.."_left.png"
+local right_tx = mod_name.."_right.png"
+
+local smog_tx = mod_name.."_smog.png"
+
+local function sky_textures_without_smog()
+    local textures = {
+        up = up_tx,
+        down = down_tx,
+        front = front_tx,
+        back = back_tx,
+        left = left_tx,
+        right = right_tx,
+    }
+    return textures
+end
+
+local function overlay_smog(textures)
+    textures.front = textures.front.."^"..smog_tx
+    textures.back = textures.back.."^"..smog_tx
+    textures.left = textures.left.."^"..smog_tx
+    textures.right = textures.right.."^"..smog_tx
+end
+
 local monster_texture = mod_name.."_crane_monster.png"
 local monster_dimensions = "26x69"
 local monster_coords = {
@@ -30,49 +61,43 @@ local monster_coords = {
     "969,468",
 }
 
-local function get_default_sky_textures()
-    local textures = {
-        up = mod_name.."_up.png",
-        down = mod_name.."_down.png",
-        front = mod_name.."_front.png",
-        back = mod_name.."_back.png",
-        left = mod_name.."_left.png",
-        right = mod_name.."_right.png",
-    }
+local function overlay_monster(textures)
+    local random_monster = monster_coords[math.random(1, #monster_coords)]
+    local monster = "^[combine:"..monster_dimensions..":"..random_monster.."="..monster_texture
+    textures.back = textures.back..monster
+end
+
+-- Ready to use sky textures translated into the minetest format
+local function default_textures()
+    local raw_textures = sky_textures_without_smog()
+    overlay_monster(raw_textures)
+    overlay_smog(raw_textures)
+    local textures = {}
+    textures[1] = raw_textures.up
+    textures[2] = raw_textures.down
+    textures[3] = raw_textures.front
+    textures[4] = raw_textures.back
+    textures[5] = raw_textures.left
+    textures[6] = raw_textures.right
+
     return textures
 end
 
-local function prepare_sky_textures(sky_textures)
-    local textures = {}
-    textures[1] = sky_textures.up
-    textures[2] = sky_textures.down
-    textures[3] = sky_textures.front
-    textures[4] = sky_textures.back
-    textures[5] = sky_textures.left
-    textures[6] = sky_textures.right
-    return textures
-end
+---------------------------------------------------
+-- In this section sky operations happen
 
 local function get_default_sky()
-    local raw_textures =  get_default_sky_textures()
-    local textures = prepare_sky_textures(raw_textures)
     local default_sky = {
         type = "skybox",
         clouds = true,
         body_orbit_tilt = -30,
         base_color = "#3e423f",
-        textures = textures,
+        textures = default_textures(),
         fog = {
             fog_distance = 150,
         },
     }
     return default_sky
-end
-
-local function randomize_monster()
-    local random_monster = monster_coords[math.random(1, #monster_coords)]
-    local monster = "^[combine:"..monster_dimensions..":"..random_monster.."="..monster_texture
-    return monster
 end
 
 local current_sky = get_default_sky()
@@ -81,14 +106,10 @@ local refresh_interval = 100
 -- This refreshes stuff on the sky
 -- for now it moves the monster around
 local function refresh_sky()
-    local new_sky = get_default_sky()
-    local raw_textures = get_default_sky_textures()
-    raw_textures.back = raw_textures.back..randomize_monster()
-    new_sky.textures = prepare_sky_textures(raw_textures)
-    current_sky = new_sky
+    current_sky = get_default_sky()
     local players = minetest.get_connected_players()
     for _, player in pairs(players) do
-        player:set_sky(new_sky)
+        player:set_sky(current_sky)
     end
     minetest.after(refresh_interval, refresh_sky)
     return
