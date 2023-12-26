@@ -16,11 +16,16 @@ player_api.register_model("character.b3d", {
 			collisionbox = {-0.3, 0.0, -0.3, 0.3, 1.0, 0.3}}
 	},
 	collisionbox = {-0.3, 0.0, -0.3, 0.3, 3, 0.3},
-	stepheight = 0.6,
+	stepheight = 1,
 	eye_height = 3,
 })
 
 -- Update appearance when the player joins
 minetest.register_on_joinplayer(function(player)
 	player_api.set_model(player, "character.b3d")
+        player:set_eye_offset(
+            vector.zero(), --firstperson
+            vector.new(-10, -15, -5), --thirdperson_back
+            vector.new(-10, 0, -5) --thirdperson_front
+        )
 end)
