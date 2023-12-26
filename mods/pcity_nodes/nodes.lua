@@ -178,3 +178,45 @@ minetest.register_node(
         },
     }
 )
+
+minetest.register_node(
+    mod_name..":curb_road",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb_road.obj",
+        description = "Road Curb",
+        tiles = {{name = mod_name.."_curb_road.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0},
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0},
+        },
+    }
+)
+
+minetest.register_node(
+    mod_name..":curb_road_corner",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb_road_corner.obj",
+        description = "Road Curb Corner",
+        tiles = {{name = mod_name.."_curb_road.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+        },
+    }
+)
