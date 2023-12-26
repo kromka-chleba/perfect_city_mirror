@@ -29,6 +29,7 @@ end
 local down_tx = tx_name("down")
 local noise_tx = tx_name("noise")
 local city_tx = tx_name("city")
+local chimneys_tx = tx_name("chimneys_left")
 local cranes_front_tx = tx_name("cranes_front")
 local cranes_back_tx = tx_name("cranes_back")
 local cranes_left_tx = tx_name("cranes_left")
@@ -61,6 +62,10 @@ local function overlay_cranes(textures)
     textures.right = textures.right.."^"..cranes_right_tx
 end
 
+local function overlay_chimneys(textures)
+    textures.left = textures.left.."^"..chimneys_tx
+end
+
 local function overlay_smog(textures)
     textures.front = textures.front.."^"..smog_tx
     textures.back = textures.back.."^"..smog_tx
@@ -89,6 +94,7 @@ end
 local function default_textures()
     local raw_textures = sky_noise_textures()
     overlay_city(raw_textures)
+    overlay_chimneys(raw_textures)
     overlay_cranes(raw_textures)
     overlay_monster(raw_textures)
     overlay_smog(raw_textures)
