@@ -1,0 +1,4 @@
+## Map generation
+
+# Enables hills for the flat mapgen
+pcity_enable_hills (Enables hills for the flat mapgen) bool false

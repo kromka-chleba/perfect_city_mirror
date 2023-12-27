@@ -20,9 +20,14 @@ local mod_name = minetest.get_current_modname()
 
 minetest.register_biome({
         name = "floor",
-        node_top = "pcity_nodes:asphalt",
+        node_top = "pcity_nodes:grass",
         depth_top = 1,
-        node_filler = "pcity_nodes:asphalt",
-        y_max = 0,
-        y_min = -10,
+        node_filler = "pcity_nodes:concrete",
+        depth_filler = 3,
+        node_stone = "pcity_nodes:asphalt",
+        vertical_blend = 0,
+        y_max = 31000,
+        y_min = 6,
+        heat_point = 50,
+        humidity_point = 50,
 })
