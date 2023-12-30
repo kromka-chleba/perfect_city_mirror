@@ -16,23 +16,20 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-pcity_mapgen = {}
-local pcmg = pcity_mapgen
-
--- Load files
+local mod_name = minetest.get_current_modname()
 local mod_path = minetest.get_modpath("pcity_mapgen")
+local pc_sizes = dofile(mod_path.."/sizes.lua")
 
--- These are necessary so the mapgen works at all lol
-minetest.register_alias("mapgen_stone", "pcity_nodes:asphalt")
-minetest.register_alias("mapgen_water_source", "pcity_nodes:pavement")
-minetest.register_alias("mapgen_river_water_source", "pcity_nodes:pavement")
-
-minetest.set_mapgen_setting("mg_flags", "nocaves, nodungeons, light, decorations, biomes", true)
-
-if minetest.settings:get("pcity_enable_hills") == "true" then
-    minetest.set_mapgen_setting("mgflat_spflags", "nolakes, hills, nocaverns", true)
-end
-
-dofile(mod_path.."/biomes.lua")
-
-minetest.register_mapgen_script(mod_path.."/mapgen.lua")
+minetest.register_biome({
+        name = "city",
+        node_top = "pcity_nodes:grass",
+        depth_top = 1,
+        node_filler = "pcity_nodes:concrete",
+        depth_filler = 3,
+        node_stone = "pcity_nodes:asphalt",
+        vertical_blend = 0,
+        y_max = pc_sizes.city_max,
+        y_min = pc_sizes.ground_level - 5,
+        heat_point = 50,
+        humidity_point = 50,
+})

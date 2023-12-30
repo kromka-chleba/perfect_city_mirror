@@ -1,5 +1,9 @@
 dofile(minetest.get_modpath("player_api") .. "/api.lua")
 
+-- Seba's height is roughly 170 cm
+-- 170 cm = 3.33 nodes
+-- thus 1 node = 0.51 m
+
 -- Default player appearance
 player_api.register_model("character.b3d", {
 	animation_speed = 30,
