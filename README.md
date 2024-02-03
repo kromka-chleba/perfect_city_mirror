@@ -2,7 +2,7 @@
 Created by lord_of_the_dumpster
 for `Minetest 5.8+`
 
-CAUTION: _This game contains horror and gore elements and can even hurt your feelings!_
+TRIGGER WARNING: horror, gore, sensitive subjects (suicide, mental illness), bad language
 
 DISCLAIMER: _The project is in early ALPHA, right now there's almost nothing here!_
 
@@ -25,7 +25,7 @@ The City knows where you are, stalks you and sends its creatures to kill you.
 As you explore the City you can stumble upon Seba's lost memories and discover the truth behind his disappearance.
 
 ## Installation
-Shove the `perfect-city` directory into your `minetest/games` directory.
+Put the `perfect-city` directory into your `minetest/games` directory.
 
 https://wiki.minetest.net/Games#Installing_games
 
@@ -49,23 +49,23 @@ Perfect City is free software as defined here: https://www.gnu.org/philosophy/fr
 
 So "it means that the users have the freedom to run, copy, distribute, study, change and improve the software".
 
-No spyware shit, etc.
+No spyware, etc.
 
 ## Contributing
 Right now the repository is hosted at Codeberg: https://codeberg.org/lord_of_the_dumpster/perfect_city
 
 I have a strict artistic vision of what I want this game to be, see `Perfect_City_Design_Guide.md` for more info.
-Ask me before putting work into coding something to confirm that's something I want in Perfect City, otherwise you'll have to maintain your own fork.
+Ask me before putting work into coding something to confirm that's something I want in Perfect City. If it doesn't fit, you're free to maintain your own fork.
 
-Some general rules:
+Some general guidelines:
 - the City should have post-soviet, Central/Eastern Europe aesthetics because Seba is a Pole
 - the timeline is vaguely around 2000s and 2010s
-- monsters should be elements of the city that became alive, e.g. anthropomorphic road signs, pipes, electric stuff, ovens, etc. I can consider some meaty stuff too
+- monsters should be elements of the city that became alive, e.g. anthropomorphic road signs, pipes, electric stuff, ovens, etc. Other monster types are possible for consideration.
 - elements of surrealism and madness are welcome, e.g. disappearing stuff, melting reality, roads leading to nowhere
 - there are few NPCs planned, mostly Copernicus (the guide), a villain that embodies Seba's traumas, a weird Granny, a mysterious girl. I don't plan more NPCs than these, because the Perfect City is mostly devoid of humans
 - stuff should be dark and moody
 - avoid cliché/cringe stuff
-- this ain't Minecraft
+- the game is not Minecraft, nor its lookalike
 
 ## FAQ
 
