@@ -52,6 +52,8 @@ So "it means that the users have the freedom to run, copy, distribute, study, ch
 No spyware shit, etc.
 
 ## Contributing
+Right now the repository is hosted at Codeberg: https://codeberg.org/lord_of_the_dumpster/perfect_city
+
 I have a strict artistic vision of what I want this game to be, see `Perfect_City_Design_Guide.md` for more info.
 Ask me before putting work into coding something to confirm that's something I want in Perfect City, otherwise you'll have to maintain your own fork.
 
@@ -76,6 +78,12 @@ The only idea I got from the other game is upscaling the player model to make th
 > Can I make this game proprietary?
 
 Yeah, just pay me $500 million. I accept payments in gold and silver too.
+
+> Why not GitHub?
+
+GitHub is proprietary software and proprietary software is often malware.
+
+https://www.gnu.org/proprietary/proprietary.html
 
 ## Thanks!
 
