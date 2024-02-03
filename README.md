@@ -3,6 +3,7 @@ Created by lord_of_the_dumpster
 for `Minetest 5.8+`
 
 CAUTION: _This game contains horror and gore elements and can even hurt your feelings!_
+
 DISCLAIMER: _The project is in early ALPHA, right now there's almost nothing here!_
 
 ## About
@@ -76,6 +77,9 @@ Yeah, just pay me $500 million. I accept payments in gold and silver too.
 ## Thanks!
 
 Thanks to Mantar, Izzyb, Meniptah and other people who taught me minetest modding.
+
 Thanks to Minetest devs for making Minetest.
+
 Thanks to people who published their minetest mods/games under free software licenses.
+
 Thanks to people who thanklessly maintain libre software I use.
