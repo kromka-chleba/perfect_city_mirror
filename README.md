@@ -26,6 +26,7 @@ As you explore the City you can stumble upon Seba's lost memories and discover t
 
 ## Installation
 Shove the `perfect-city` directory into your `minetest/games` directory.
+
 https://wiki.minetest.net/Games#Installing_games
 
 ## Current features
@@ -45,7 +46,9 @@ https://wiki.minetest.net/Games#Installing_games
 
 ## Software Freedom
 Perfect City is free software as defined here: https://www.gnu.org/philosophy/free-sw.html
+
 So "it means that the users have the freedom to run, copy, distribute, study, change and improve the software".
+
 No spyware shit, etc.
 
 ## Contributing
