@@ -112,6 +112,9 @@ minetest.register_node(
                   scale = 8}},
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
+        sounds = {
+          footstep = {name = "pcity_nodes_grass_footstep", gain = 2, pitch = 0.8}
+        }
     }
 )
 
