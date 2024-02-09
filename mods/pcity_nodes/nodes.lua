@@ -18,6 +18,14 @@
 
 local mod_name = minetest.get_current_modname()
 
+local function get_hard_sound(table)
+  table = type(table) == "table" and table or {}
+  if not table.footstep then
+    table.footstep = {name = "pcity_nodes_hard_footstep", pitch = 0.7, gain = 0.8}
+  end
+  return table
+end
+
 -- Pierwszego dnia bóg stworzył beton
 minetest.register_node(
     mod_name..":concrete",
@@ -28,6 +36,7 @@ minetest.register_node(
                   scale = 4}},
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
+        sounds = get_hard_sound()
     }
 )
 
@@ -40,6 +49,7 @@ minetest.register_node(
                   scale = 8}},
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
+        sounds = get_hard_sound()
     }
 )
 
@@ -52,6 +62,7 @@ minetest.register_node(
                   scale = 4}},
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
+        sounds = get_hard_sound()
     }
 )
 
@@ -64,6 +75,7 @@ minetest.register_node(
                   scale = 2}},
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
+        sounds = get_hard_sound()
 
     }
 )
@@ -100,6 +112,7 @@ minetest.register_node(
                   scale = 5}},
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
+        sounds = get_hard_sound()
     }
 )
 
@@ -136,6 +149,7 @@ minetest.register_node(
             type = "fixed",
             fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, -0.25},
         },
+        sounds = get_hard_sound()
     }
 )
 
@@ -158,6 +172,7 @@ minetest.register_node(
             type = "fixed",
             fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, -0.25},
         },
+        sounds = get_hard_sound()
     }
 )
 
@@ -179,6 +194,7 @@ minetest.register_node(
             type = "fixed",
             fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
         },
+        sounds = get_hard_sound()
     }
 )
 
@@ -200,6 +216,7 @@ minetest.register_node(
             type = "fixed",
             fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0},
         },
+        sounds = get_hard_sound()
     }
 )
 
@@ -221,5 +238,6 @@ minetest.register_node(
             type = "fixed",
             fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
         },
+        sounds = get_hard_sound()
     }
 )
