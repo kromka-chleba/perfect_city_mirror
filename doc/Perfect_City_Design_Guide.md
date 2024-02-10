@@ -1,6 +1,6 @@
-CAUTION: This document contains SPOILERS.
+**CAUTION: This document contains SPOILERS!**
 
-# 1. The City
+# The City
 
 The Perfect City is a dream/nightmare world mostly devoid of people
 where Seba is trapped after his girlfriend gets kidnapped.
@@ -11,7 +11,7 @@ I think therefore I am? Or maybe I think because I am? What am I? Where am I?
 I think because there's the City, the nightmare that won't let me wake up.
 If you can't wake up that nightmare might as well be your reality...
 
-## Core elements of the City
+## 1. Core elements of the City
 
 ### 1.1 Maze
 
@@ -70,10 +70,20 @@ Seba loves the smell of warm asphalt during rain, loves the walls of his ghetto.
 Monsters chasing him won't make him give up on his friends. With or without his soul,
 he still loves and cares.
 
-# 2. Monsters
+## 2. Monsters
 
 Monsters of the Perfect City are personifications of Seba's fears and traumas.
 
-## Tap monster
+### 2.1 Tap monster
 
-## Drillman
+### 2.2 Drillman
+
+### 2.3 TV monster
+
+### 2.4 Potato seller
+
+Buys children in exchange for a bag of potatoes.
+
+### 2.5 Road sign monster
+
+### 2.6 Konstal 105N
