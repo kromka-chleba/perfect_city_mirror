@@ -12,3 +12,4 @@ Yeah, I'm terrible at drawing!
 - tap_monster.png
 - drill_man.png
 - claus.jpg
+- roadsign_monster.png
