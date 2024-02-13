@@ -76,9 +76,25 @@ Monsters of the Perfect City are personifications of Seba's fears and traumas.
 
 ### 2.1 Tap monster
 
+While being at grandma's Seba was always afraid of that bathroom tap.
+The tap looks like it's staring at you and your late-night toilet visit is acompanied by the sound of dripping water.
+You're afraid to look away so you keep eye contact with it but as you do so the tap drills you with its sight.
+The water it produces is a green poison of madness, those who drink it have their minds controlled by the tap.
+The tap monster can suddenly appear in strange places, it will try tricking you into drinking its poison,
+but if it fails it'll break free out of the wall and start chasing you.
+If the tap catches you it will vomit the poison straight into your throat.
+
 ### 2.2 Drillman
 
 ### 2.3 TV monster
+
+Kids these days stare too much at TV, Seba was no different.
+Every time his parents had an argument Seba would shut in his room and turn up the volume so he doesn't hear them.
+One day it got really quiet. Seba turned off the TV and left his room to check what's happening.
+His parents were gone, the home was strangely dark and quiet. Seba closed his eyes and had a horrid vision.
+He rushed back into his room and turned on the TV, but it screamed at him with noise instead.
+"I'd like my parents to be like this TV" was the thought Seba had back then. He imagined his parents with
+their heads displaced by a TV screen, he wished he could just press the mute button to make them shut up.
 
 ### 2.4 Potato seller
 
