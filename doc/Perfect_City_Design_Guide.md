@@ -70,6 +70,13 @@ Seba loves the smell of warm asphalt during rain, loves the walls of his ghetto.
 Monsters chasing him won't make him give up on his friends. With or without his soul,
 he still loves and cares.
 
+### 1.11 Nostalgia for the place you've never been
+
+Even though you've never been to this place, you feel nostalgic.
+The Perfect City is filled with Seba's memories and places that ceased to exist or never existed.
+And yet you feel just like at home, meeting your dearest friend.
+
+
 ## 2. Monsters
 
 Monsters of the Perfect City are personifications of Seba's fears and traumas.
@@ -98,7 +105,13 @@ their heads displaced by a TV screen, he wished he could just press the mute but
 
 ### 2.4 Potato seller
 
-Buys children in exchange for a bag of potatoes.
+You can hear a distant echo shouting "POTATOOOOOES!"
+"What's that?", Seba asked his Grandma.
+"That's the potato seller. He sells potatoes and buys children.
+He'll come and take you if you keep being a naughty boy!", replied Grandma.
+Seba never saw the potato seller in person, but imagined a man with no face wearing a black hood,
+pushing him into a linen potato bag. Several years later the potato seller stopped showing up,
+nevertheless Seba kept hearing the faint echo as if the faceless man was still lurking somewhere in the city.
 
 ### 2.5 Road sign monster
 
