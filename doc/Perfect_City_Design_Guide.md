@@ -70,7 +70,7 @@ Seba loves the smell of warm asphalt during rain, loves the walls of his ghetto.
 Monsters chasing him won't make him give up on his friends. With or without his soul,
 he still loves and cares.
 
-### 1.11 Nostalgia for the place you've never been
+### 1.11 Nostalgia for the place you've never been to
 
 Even though you've never been to this place, you feel nostalgic.
 The Perfect City is filled with Seba's memories and places that ceased to exist or never existed.
@@ -116,3 +116,29 @@ nevertheless Seba kept hearing the faint echo as if the faceless man was still l
 ### 2.5 Road sign monster
 
 ### 2.6 Konstal 105N
+
+## 3. Characters
+
+### 3.1 Copernicus (Kopernik)
+
+Theme: "He stopped the Earth and moved the Sun, but he was actually a German, so for Sebastian both the Earth and the Sun stopped and stars started falling".
+
+Seba's guide in the Perfect City, just like Virgil for Dante. He appears to know more than Seba, but mostly gives him only ambiguous clues.
+Seba trusts Kopernik, because he considers him to be a Great Pole, but is mostly unaware of the fact that Kopernik is also
+indeed a German. Kopernik is a mysterious figure touching the divine, always cold, rarely showing emotions, he also has an unmanly voice of a dandy.
+He first appears in the city in the form of a talking portrait but then gains a human form as the game progresses.
+As Seba discovers the truth, his trust in Kopernik wanes.
+
+Quotes:
+
+"Would you like some tea? I know you love bisquits."
+
+"What makes you think this isn't the real world?"
+
+"Did you know I was actually a German?"
+
+"I only know what you know, Seba."
+
+"I was keeping the celestial bodies moving for you, I moved the Sun and stopped the Earth, but I cannot do so any longer"
+
+"If you ever meet my evil twin brother - Claus, don't talk to him. He's a broken and cynical man and will surely try to deceive you. Don't play his wicked games, Seba."
