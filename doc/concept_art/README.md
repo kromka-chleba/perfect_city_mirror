@@ -3,6 +3,7 @@
 ## Public domain
 
 - kopernik.jpg
+- Flammarion.jpg
 
 ## Copyright © 2024 Jan Wielkiewicz
   CC-BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/
