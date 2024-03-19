@@ -1,6 +1,7 @@
 --[[
     This is a part of "Perfect City".
     Copyright (C) 2023 Jan Wielkiewicz <tona_kosmicznego_smiecia@interia.pl>
+    Copyright (C) 2024 TubberPupper (TPH)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
