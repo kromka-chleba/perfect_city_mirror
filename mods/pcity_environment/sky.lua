@@ -80,6 +80,7 @@ local cranes = {
 }
 local power_lines_tx = tx_name("power_lines")
 local silos_tx = tx_name("silos")
+local drill_tx = tx_name("drill")
 local smog_tx = tx_name("smog")
 
 local function sky_base_textures(base_tx)
@@ -118,6 +119,10 @@ local function overlay_chimneys(textures)
     overlay(textures, {left = chimneys_tx})
 end
 
+local function overlay_drill(textures)
+    overlay(textures, {right = drill_tx})
+end
+
 local function overlay_smog(textures)
     overlay_horizontal(textures, smog_tx)
 end
@@ -151,6 +156,7 @@ local function default_textures()
     overlay_power_lines(raw_textures)
     overlay_silos(raw_textures)
     overlay_monster(raw_textures)
+    overlay_drill(raw_textures)
     overlay_city(raw_textures)
     overlay_cranes(raw_textures)
     overlay_noise(raw_textures)
