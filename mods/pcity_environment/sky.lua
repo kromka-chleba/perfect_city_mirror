@@ -107,8 +107,11 @@ local function overlay_cranes(textures)
 end
 
 local function overlay_power_lines(textures)
-    -- textures.right = textures.right.."^"..power_lines_tx
-    -- textures.right = textures.right.."^"..silos_tx
+    overlay(textures, {left = power_lines_tx})
+end
+
+local function overlay_silos(textures)
+    overlay(textures, {front = silos_tx})
 end
 
 local function overlay_chimneys(textures)
@@ -144,11 +147,12 @@ end
 local function default_textures()
     local raw_textures = sky_base_textures(base_gray_tx)
     overlay_horizon(raw_textures)
-    overlay_city(raw_textures)
     overlay_chimneys(raw_textures)
-    overlay_cranes(raw_textures)
     overlay_power_lines(raw_textures)
+    overlay_silos(raw_textures)
     overlay_monster(raw_textures)
+    overlay_city(raw_textures)
+    overlay_cranes(raw_textures)
     overlay_noise(raw_textures)
     overlay_smog(raw_textures)
     return textuers_to_mt_format(raw_textures)
