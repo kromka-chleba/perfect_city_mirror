@@ -152,6 +152,7 @@ end
 local function default_textures()
     local raw_textures = sky_base_textures(base_gray_tx)
     overlay_horizon(raw_textures)
+    overlay_noise(raw_textures)
     overlay_chimneys(raw_textures)
     overlay_power_lines(raw_textures)
     overlay_silos(raw_textures)
@@ -159,7 +160,6 @@ local function default_textures()
     overlay_drill(raw_textures)
     overlay_city(raw_textures)
     overlay_cranes(raw_textures)
-    overlay_noise(raw_textures)
     overlay_smog(raw_textures)
     return textuers_to_mt_format(raw_textures)
 end
@@ -172,9 +172,21 @@ local clouds = {
     density = 0.4,
     color = "#747c7f",
     ambient = "#372f25",
-    --height = 120,
+    height = 200,
     --thickness = 16,
     --speed = {x=0, z=-2},
+}
+
+local moon = {
+    visible = true,
+    texture = tx_name("moon"),
+    scale = 1,
+}
+
+local sun = {
+    visible = true,
+    texture = tx_name("sun"),
+    scale = 0.3,
 }
 
 local function get_default_sky()
@@ -202,6 +214,8 @@ local function refresh_sky()
     for _, player in pairs(players) do
         player:set_sky(current_sky)
         player:set_clouds(clouds)
+        player:set_sun(sun)
+        player:set_moon(moon)
     end
     minetest.after(refresh_interval, refresh_sky)
     return
@@ -214,4 +228,6 @@ minetest.register_on_joinplayer(
     function(player, last_login)
         player:set_sky(current_sky)
         player:set_clouds(clouds)
+        player:set_sun(sun)
+        player:set_moon(moon)
 end)
