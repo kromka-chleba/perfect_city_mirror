@@ -38,88 +38,59 @@ canvas.__index = canvas
 
 local blank_id = 1
 
-local canvas_margin = 2 -- in mapchunks
-local canvas_size = citychunk.in_mapchunks + 2 * canvas_margin
+local canvas_margin = 2 * mapchunk.in_nodes
+local canvas_size = citychunk.in_nodes
 
-local blank_template = {}
-
-for x = 1, mapchunk.in_nodes do
-    blank_template[x] = {}
-end
-
-local function blank_chunk()
-    return table.copy(blank_template)
-end
-
-function canvas.new(citychunk_origin, mapchunk_cache)
-    local canv = {}
-    canv.origin = vector.copy(citychunk_origin)
-    canv.chunks = {}
-    canv.cache = mapchunk_cache
-    local ori_mapchunk = pcmg.mapchunk_coords(citychunk_origin)
-    for x = -canvas_margin, canvas_size - 1 do
-        for z = -canvas_margin, canvas_size - 1 do
-            local mapchunk_coords = ori_mapchunk + vector.new(x, 0, z)
-            local hash = minetest.hash_node_position(mapchunk_coords)
-            local array = canv.cache[hash] or blank_chunk()
-            canv.cache[hash] = array
-            canv.chunks[hash] = array
+local function new_blank()
+    local blank_template = {}
+    for x = 1, canvas_size do
+        blank_template[x] = {}
+        for z = 1, canvas_size do
+            blank_template[x][z] = blank_id
         end
     end
-    canv.cursor = vector.new(chunk_start, 0, chunk_start)
+    return blank_template
+end
+
+function canvas.new(citychunk_origin)
+    local canv = {}
+    canv.origin = vector.copy(citychunk_origin)
+    canv.array = new_blank()
+    canv.cursor_inside = true
+    canv.cursor = vector.new(0, 0, 0)
     return setmetatable(canv, canvas)
 end
 
--- Makes sure x, z are contained in [min; max]
-local function clamp_pos(x, z, min, max)
-    local new_x, new_z = math.floor(x), math.floor(z)
-    if x < min then
-        new_x = min
+local function is_position_in_citychunk(x, z)
+    if x >= -canvas_margin and x < canvas_size + canvas_margin and
+        z >= -canvas_margin and z < canvas_size + canvas_margin then
+        return true
+    else
+        return false
     end
-    if z < min then
-        new_z = min
-    end
-    if x > max then
-        new_x = max
-    end
-    if z > max then
-        new_z = max
-    end
-    return new_x, new_z
-end
-
--- Makes sure position is contained in citychunk, units
--- are expressed in node position relative to citychunk origin
-local function clamp_to_citychunk(x, z)
-    return clamp_pos(x, z, 0, citychunk.in_nodes - 1)
-end
-
--- Makes sure position is contained in canvas, units
--- are expressed in node position relative to citychunk origin
-local function clamp_to_canvas(x, z)
-    return clamp_pos(x, z,
-                     -canvas_margin * mapchunk.in_nodes,
-                     canvas_size * mapchunk.in_nodes - 1)
-end
-
--- translates citychunk-relative pos to array indices
-local function array_indices(citychunk_ori, x, z)
-    local new_x, new_z = clamp_to_canvas(x, z)
-    local abs_pos = citychunk_ori + vector.new(new_x, 0, new_z)
-    local hash = pcmg.mapchunk_hash(abs_pos)
-    local mapchunk_ori = pcmg.mapchunk_origin(abs_pos)
-    local mapchunk_relative = abs_pos - mapchunk_ori + vector.new(1, 1, 1)
-    return hash, mapchunk_relative.x, mapchunk_relative.z
 end
 
 function canvas:set_cursor(x, z)
-    local new_x, new_z = clamp_to_citychunk(x, z)
-    self.cursor = vector.new(new_x, 0, new_z)
+    self.cursor_inside = is_position_in_citychunk(x, z)
+    self.cursor = vector.new(x, 0, z)
+end
+
+function canvas:set_cursor_absolute(pos)
+    local relative = pos - self.origin
+    self:set_cursor(relative.x, relative.z)
+end
+
+function canvas:move_cursor(vec)
+    local v = vector.round(vec) -- only integer moves allowed
+    self:set_cursor(self.cursor.x + v.x, self.cursor.z + v.z)
 end
 
 function canvas:read_cell(x, z)
-    local hash, new_x, new_z = array_indices(self.origin, x, z)
-    return self.chunks[hash][new_x][new_z] or blank_id
+    local new_x, new_z = x + 1, z + 1
+    if self.array[new_x] then
+        return self.array[new_x][new_z] or blank_id
+    end
+    return blank_id
 end
 
 function canvas:cell_priority(x, z)
@@ -129,31 +100,37 @@ function canvas:cell_priority(x, z)
 end
 
 function canvas:write_cell(x, z, material_id)
-    local hash, new_x, new_z = array_indices(self.origin, x, z)
     local priority = materials_by_id[material_id].priority
-    if priority >= self:cell_priority(x, z) then
-        self.chunks[hash][new_x][new_z] = material_id
+    local new_x, new_z = x + 1, z + 1
+    if self.array[new_x] and self.array[new_x][new_z] and
+        priority >= self:cell_priority(x, z) then
+        self.array[new_x][new_z] = material_id
     end
 end
 
 function canvas:read_write_cell(x, z, material_id)
-    local hash, new_x, new_z = array_indices(self.origin, x, z)
-    local old_id = self.chunks[hash][new_x][new_z] or blank_id
+    local new_x, new_z = x + 1, z + 1
+    if not self.array[new_x] then
+        return
+    end
+    local old_id = self.array[new_x][new_z]
+    if not old_id then
+        return
+    end
     local old_priority = materials_by_id[old_id].priority
     local priority = materials_by_id[material_id].priority
     if priority >= old_priority then
-        self.chunks[hash][new_x][new_z] = material_id
+        self.array[new_x][new_z] = material_id
     end
-end
-
-function canvas:move_cursor(vec)
-    local v = vector.round(vec) -- only integer moves allowed
-    self:set_cursor(self.cursor.x + v.x, self.cursor.z + v.z)
 end
 
 function canvas:draw_rectangle(x_side, z_side, material_id, centered)
     assert(x_side >= 1, "Canvas rectangle X side is smaller than 1: "..x_side)
     assert(z_side >= 1, "Canvas rectangle Z side is smaller than 1: "..z_side)
+    if not self.cursor_inside then
+        minetest.log("error", "cursor not inside!")
+        return
+    end
     local square = {}
     for x = 0, x_side - 1 do
         for z = 0, z_side - 1 do
@@ -214,6 +191,9 @@ end
 
 function canvas:draw_circle(radius, material_id)
     assert(radius >= 1, "Canvas circle radius is smaller than 1: "..radius)
+    if not self.cursor_inside then
+        return
+    end
     local circle = make_circle(radius, material_id)
     for i = 1, #circle do
         -- write to canvas
@@ -221,4 +201,11 @@ function canvas:draw_circle(radius, material_id)
         --self:write_cell(point.x, point.z, material_id)
         self:read_write_cell(point.x, point.z, material_id)
     end
+end
+
+-- pos_min - origin pos of a mapchunk
+function canvas:mapchunk_indices(pos_min, pos_max)
+    local array_pos_min = pos_min - self.origin + vector.new(1, 1, 1)
+    local array_pos_max = pos_max - self.origin + vector.new(1, 1, 1)
+    return array_pos_min, array_pos_max
 end

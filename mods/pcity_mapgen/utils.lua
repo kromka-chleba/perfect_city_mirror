@@ -82,6 +82,7 @@ function pcmg.citychunk_hash(pos)
 end
 
 -- Returns node position relative to citychunk origin point.
+-- citychunk pos is in citychunks
 function pcmg.node_citychunk_relative_pos(citychunk_pos)
     local pos = units.citychunk_to_node(citychunk_pos)
     local origin = pcmg.citychunk_origin(pos)
@@ -96,7 +97,7 @@ function pcmg.citychunk_neighbors(pos)
     for x = -1, 1 do
         for z = -1, 1 do
             local neighbor = coords + vector.new(x, 0, z)
-            if x ~= 0 and z ~= 0 then
+            if x ~= 0 or z ~= 0 then
                 table.insert(neighbors, units.citychunk_to_node(neighbor))
             end
         end
