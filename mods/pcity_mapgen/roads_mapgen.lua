@@ -98,34 +98,38 @@ local asphalt_id = minetest.get_content_id(road_definition.floor)
 local pavement_id = minetest.get_content_id(road_definition.pavement)
 
 -- canvas material IDs
+local blank_id = materials_by_name["blank"]
 local road_asphalt_id = materials_by_name["road_asphalt"]
 local road_pavement_id = materials_by_name["road_pavement"]
 
 function pcmg.generate_roads(mapgen_args, canv)
-    --local t1 = minetest.get_us_time()
+    local t1 = minetest.get_us_time()
     local vm, pos_min, pos_max, blockseed = unpack(mapgen_args)
-    local hash = pcmg.mapchunk_hash(pos_min)
+    local citychunk_origin = pcmg.citychunk_origin(pos_min)
     local data = vm:get_data()
     local emin, emax = vm:get_emerged_area()
     local va = VoxelArea(emin, emax)
 
-    local chunk = canv.chunks[hash]
-    for x, row in pairs(chunk) do
-        for z, cell_id in pairs(row) do
-            local new_pos = vector.new(pos_min.x, sizes.ground_level, pos_min.z)
-            new_pos = new_pos + vector.new(x - 1, 0, z - 1)
-            local i = va:indexp(new_pos)
-            if cell_id == road_asphalt_id then
-                data[i] = asphalt_id
-            elseif cell_id == road_pavement_id then
-                data[i] = pavement_id
+    local array_min, array_max = canv:mapchunk_indices(pos_min, pos_max)
+    for x = array_min.x, array_max.x do
+        for z = array_min.z, array_max.z do
+            local cell_id = canv.array[x][z]
+            if cell_id ~= blank_id then
+                local abs_pos = citychunk_origin + vector.new(x - 1, 0, z - 1)
+                abs_pos = vector.new(abs_pos.x, sizes.ground_level, abs_pos.z)
+                local i = va:indexp(abs_pos)
+                if cell_id == road_asphalt_id then
+                    data[i] = asphalt_id
+                elseif cell_id == road_pavement_id then
+                    data[i] = pavement_id
+                end
             end
         end
     end
 
     -- Write data
     vm:set_data(data)
-    --minetest.log("error", string.format("elapsed time: %g ms", (minetest.get_us_time() - t1) / 1000))
+    --minetest.log("error", string.format("chunk writing time: %g ms", (minetest.get_us_time() - t1) / 1000))
 end
 
 local green_id = minetest.get_content_id("pcity_nodes:roughcast_green")
