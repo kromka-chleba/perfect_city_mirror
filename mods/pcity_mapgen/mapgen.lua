@@ -30,6 +30,7 @@ local sizes = dofile(mod_path.."/sizes.lua")
 dofile(mod_path.."/utils.lua")
 dofile(mod_path.."/paths.lua")
 dofile(mod_path.."/canvas.lua")
+dofile(mod_path.."/megacanvas.lua")
 dofile(mod_path.."/roads_layout.lua")
 dofile(mod_path.."/roads_mapgen.lua")
 

@@ -227,7 +227,10 @@ end
 local road_asphalt_id = materials_by_name["road_asphalt"]
 local road_pavement_id = materials_by_name["road_pavement"]
 
-local function draw_road(citychunks, points)
+local road_radius = 5
+local pavement_radius = 8
+
+local function draw_road(megacanv, points)
     local start = units.citychunk_to_node(points[1])
     local finish = units.citychunk_to_node(points[2])
     local vec = vector.round(finish - start)
@@ -237,97 +240,63 @@ local function draw_road(citychunks, points)
     local moves_x = math.abs(vec.x)
     local moves_z = math.abs(vec.z)
 
-    for _, canv in pairs(citychunks) do
-        canv:set_cursor_absolute(start)
-        canv:draw_circle(5, road_asphalt_id)
-        canv:draw_circle(8, road_pavement_id)
-    end
+    megacanv:set_cursor(start)
+    megacanv:draw_circle(road_radius, road_asphalt_id)
+    megacanv:draw_circle(pavement_radius, road_pavement_id)
 
     while (moves_x > 0 or moves_z > 0) do
         if moves_x > 0 then
-            for _, canv in pairs(citychunks) do
-                canv:move_cursor(step_x)
-                canv:draw_circle(5, road_asphalt_id)
-                canv:draw_circle(8, road_pavement_id)
-            end
+            megacanv:move_cursor(step_x)
+            megacanv:draw_circle(road_radius, road_asphalt_id)
+            megacanv:draw_circle(pavement_radius, road_pavement_id)
             moves_x = moves_x - 1
         end
         if moves_z > 0 then
-            for _, canv in pairs(citychunks) do
-                canv:move_cursor(step_z)
-                canv:draw_circle(5, road_asphalt_id)
-                canv:draw_circle(8, road_pavement_id)
-            end
+            megacanv:move_cursor(step_z)
+            megacanv:draw_circle(road_radius, road_asphalt_id)
+            megacanv:draw_circle(pavement_radius, road_pavement_id)
             moves_z = moves_z - 1
         end
     end
 end
 
 -- for testing overgeneration
-local function draw_huge(citychunks, points)
+local function draw_huge(megacanv, points)
     local start = units.citychunk_to_node(points[1])
     local finish = units.citychunk_to_node(points[2])
-    for _, canv in pairs(citychunks) do
-        canv:set_cursor_absolute(start)
-    end
-    for _, canv in pairs(citychunks) do
-        canv:draw_circle(60, road_asphalt_id)
-    end
-    for _, canv in pairs(citychunks) do
-        canv:set_cursor_absolute(finish)
-    end
-    for _, canv in pairs(citychunks) do
-        canv:draw_circle(65, road_pavement_id)
-    end
+    megacanv:set_cursor(start)
+    megacanv:draw_circle(60, road_asphalt_id)
+    megacanv:set_cursor(finish)
+    megacanv:draw_circle(65, road_pavement_id)
 end
 
-local canvas_cache = {}
-local complete_citychunks = {}
+-- cache for canvas data
+-- it has 'citychunks' and 'complete' fields
+local canvas_cache = {
+    complete = {},
+    citychunks = {},
+}
 
-local function neighboring_canvases(citychunk_origin)
-    local neighbors = pcmg.citychunk_neighbors(citychunk_origin)
-    local canvases = {}
-    for _, origin in pairs(neighbors) do
-        local hash = pcmg.citychunk_hash(origin)
-        local canv = canvas_cache[hash] or pcmg.canvas.new(origin)
-        table.insert(canvases, canv)
-    end
-    return canvases
-end
-
-local function overgenerate(canv, citychunks)
+local function overgenerate(megacanv)
     local t1 = minetest.get_us_time()
-    local hash = pcmg.citychunk_hash(canv.origin)
-    local citychunk_coords = pcmg.citychunk_coords(canv.origin)
+    local citychunk_coords = pcmg.citychunk_coords(megacanv.central.origin)
     local road_points = pcmg.citychunk_road_origins(citychunk_coords)
     local connected_points = connect_road_origins(road_points)
     for _, points in ipairs(connected_points) do
-        draw_road(citychunks, points)
-        --draw_huge(citychunks, points)
+        draw_road(megacanv, points)
+        --draw_huge(megacanv, points)
     end
+    megacanv:mark_complete()
     minetest.log("error", string.format("overgen time: %g ms", (minetest.get_us_time() - t1) / 1000))
-end
-
-local function save_canvases(canvases)
-    for _, canv in pairs(canvases) do
-        local hash = pcmg.citychunk_hash(canv.origin)
-        if not canvas_cache[hash] then
-            canvas_cache[hash] = canv
-        end
-    end
 end
 
 function pcmg.citychunk_road_canvas(citychunk_origin)
     local t1 = minetest.get_us_time()
     local hash = pcmg.citychunk_hash(citychunk_origin)
-    local canv = canvas_cache[hash] or pcmg.canvas.new(citychunk_origin)
-    if not complete_citychunks[hash] then
-        local citychunks = neighboring_canvases(citychunk_origin)
-        table.insert(citychunks, canv)
-        save_canvases(citychunks)
-        overgenerate(canv, citychunks)
-        complete_citychunks[hash] = true
+    if not canvas_cache.complete[hash] then
+        local megacanv = pcmg.megacanvas.new(citychunk_origin, canvas_cache)
+        overgenerate(megacanv)
     end
     -- minetest.log("error", string.format("elapsed time: %g ms", (minetest.get_us_time() - t1) / 1000))
-    return canv
+    return canvas_cache.citychunks[hash]
 end
