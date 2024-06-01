@@ -40,7 +40,10 @@ local function make_method(method)
     return function (self, ...)
         method(self.central, ...)
         for _, neighbor in pairs(self.neighbors) do
-            method(neighbor, ...)
+            local hash = pcmg.citychunk_hash(neighbor.origin)
+            if not self.cache.complete[hash] then
+                method(neighbor, ...)
+            end
         end
     end
 end
