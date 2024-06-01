@@ -38,7 +38,7 @@ canvas.__index = canvas
 
 local blank_id = 1
 
-local canvas_margin = 2 * mapchunk.in_nodes
+local canvas_margin = math.ceil(citychunk.in_mapchunks * 2/10) * mapchunk.in_nodes
 local canvas_size = citychunk.in_nodes
 
 local function new_blank()
