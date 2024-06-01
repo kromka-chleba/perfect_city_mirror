@@ -31,8 +31,6 @@ local blocks_per_chunk = tonumber(minetest.get_mapgen_setting("chunksize"))
 local mapchunk_size = blocks_per_chunk * 16
 -- By default -32
 local mapchunk_offset = -16 * math.floor(blocks_per_chunk / 2)
--- Citychunk size in mapchunks
-local citychunk_size = 10
 
 -- Sizes of map division units
 local node = sizes.node
@@ -52,7 +50,7 @@ end
 -- Takes node position as pos.
 function pcmg.citychunk_coords(pos)
     local mapchunk_pos = pcmg.mapchunk_coords(pos)
-    local origin = vector.divide(mapchunk_pos, citychunk_size)
+    local origin = vector.divide(mapchunk_pos, citychunk.in_mapchunks)
     origin = vector.floor(origin)
     return origin
 end
