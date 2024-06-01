@@ -64,6 +64,9 @@ local function initialize_cache(cache)
     if not cache.citychunks then
         cache.citychunks = {}
     end
+    if not cache.partially_complete then
+        cache.partially_complete = {}
+    end
     if not cache.complete then
         cache.complete = {}
     end
@@ -105,4 +108,41 @@ end
 function megacanvas:mark_complete()
     local hash = pcmg.citychunk_hash(self.central.origin)
     self.cache.complete[hash] = true
+    self.cache.partially_complete[hash] = nil
+end
+
+function megacanvas:mark_partially_complete()
+    local hash = pcmg.citychunk_hash(self.central.origin)
+    self.cache.partially_complete[hash] = true
+end
+
+local function neighbor_recurse(megacanv, generator_function, recursion_level)
+    if recursion_level > 0 then
+        recursion_level = recursion_level - 1
+        for _, neighbor in pairs(megacanv.neighbors) do
+            local hash = pcmg.citychunk_hash(neighbor.origin)
+            if not megacanv.cache.complete[hash] then
+                local new_megacanv = pcmg.megacanvas.new(neighbor.origin, megacanv.cache)
+                if not megacanv.cache.partially_complete[hash] then
+                    generator_function(new_megacanv)
+                    new_megacanv:mark_partially_complete()
+                end
+                neighbor_recurse(new_megacanv, generator_function, recursion_level)
+            end
+        end
+        megacanv:mark_complete()
+    end
+end
+
+-- Generates a citychunk using the 'generator_function'
+-- which takes a megacanvas as its argument.
+-- 'recursion_level' is a number of neighbor layers to process,
+-- for example 'recursion_level' = 1 means 'generator_function'
+-- will also be applied to neighbors of the central citychunk,
+-- 'recursion_level' = 2 means also neighbors of the neighbors
+-- will be generated.
+function megacanvas:generate(generator_function, recursion_level)
+    local rlevel = recursion_level or 1
+    generator_function(self)
+    neighbor_recurse(self, generator_function, rlevel)
 end

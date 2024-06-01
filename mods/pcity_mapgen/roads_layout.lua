@@ -274,10 +274,11 @@ end
 -- it has 'citychunks' and 'complete' fields
 local canvas_cache = {
     complete = {},
+    partially_complete = {},
     citychunks = {},
 }
 
-local function overgenerate(megacanv)
+local function road_generator(megacanv)
     local t1 = minetest.get_us_time()
     local citychunk_coords = pcmg.citychunk_coords(megacanv.central.origin)
     local road_points = pcmg.citychunk_road_origins(citychunk_coords)
@@ -286,8 +287,7 @@ local function overgenerate(megacanv)
         draw_road(megacanv, points)
         --draw_huge(megacanv, points)
     end
-    megacanv:mark_complete()
-    minetest.log("error", string.format("overgen time: %g ms", (minetest.get_us_time() - t1) / 1000))
+    --minetest.log("error", string.format("Single citychunk: %g ms", (minetest.get_us_time() - t1) / 1000))
 end
 
 function pcmg.citychunk_road_canvas(citychunk_origin)
@@ -295,8 +295,8 @@ function pcmg.citychunk_road_canvas(citychunk_origin)
     local hash = pcmg.citychunk_hash(citychunk_origin)
     if not canvas_cache.complete[hash] then
         local megacanv = pcmg.megacanvas.new(citychunk_origin, canvas_cache)
-        overgenerate(megacanv)
+        megacanv:generate(road_generator)
+        minetest.log("error", string.format("Overgen time: %g ms", (minetest.get_us_time() - t1) / 1000))
     end
-    -- minetest.log("error", string.format("elapsed time: %g ms", (minetest.get_us_time() - t1) / 1000))
     return canvas_cache.citychunks[hash]
 end

@@ -102,7 +102,7 @@ local blank_id = materials_by_name["blank"]
 local road_asphalt_id = materials_by_name["road_asphalt"]
 local road_pavement_id = materials_by_name["road_pavement"]
 
-function pcmg.generate_roads(mapgen_args, canv)
+function pcmg.write_roads(mapgen_args, canv)
     local t1 = minetest.get_us_time()
     local vm, pos_min, pos_max, blockseed = unpack(mapgen_args)
     local citychunk_origin = pcmg.citychunk_origin(pos_min)

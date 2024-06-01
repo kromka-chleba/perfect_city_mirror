@@ -137,7 +137,7 @@ local function mapgen(vm, pos_min, pos_max, blockseed)
         --pcmg.check_road_points(road_points)
         helper_grid(mapgen_args)
         local city_canvas = pcmg.citychunk_road_canvas(citychunk_origin)
-        pcmg.generate_roads(mapgen_args, city_canvas)
+        pcmg.write_roads(mapgen_args, city_canvas)
         pcmg.draw_road_origins(mapgen_args, road_points)
         --minetest.log("error", string.format("elapsed time: %g ms", (minetest.get_us_time() - t1) / 1000))
     end
