@@ -227,7 +227,51 @@ minetest.register_node(
         drawtype = "mesh",
         mesh = mod_name.."_curb_road_corner.obj",
         description = "Road Curb Corner",
+        tiles = {{name = mod_name.."_curb_road_slab.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+        },
+        sounds = get_hard_sound()
+    }
+)
+
+minetest.register_node(
+    mod_name..":curb_road_small",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb_road_small.obj",
+        description = "Road Curb Small",
         tiles = {{name = mod_name.."_curb_road.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+        },
+        sounds = get_hard_sound()
+    }
+)
+
+minetest.register_node(
+    mod_name..":curb_road_slab",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb_road_slab.obj",
+        description = "Road Curb Slab",
+        tiles = {{name = mod_name.."_curb_road_slab.png"}},
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
         paramtype2 = "4dir",
