@@ -189,11 +189,17 @@ minetest.register_node(
         paramtype2 = "4dir",
         selection_box = {
             type = "fixed",
-            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+            fixed = {
+                {-0.5, -0.5, -0.5, 0.5, -0.3, -0.25},
+                {0.25, -0.5, -0.5, 0.5, -0.3, 0.5},
+            },
         },
         collision_box = {
             type = "fixed",
-            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+            fixed = {
+                {-0.5, -0.5, -0.5, 0.5, -0.3, 0.0},
+                {-0.5, -0.5, 0.0, 0.0, -0.3, 0.5},
+            },
         },
         sounds = get_hard_sound()
     }
@@ -233,11 +239,17 @@ minetest.register_node(
         paramtype2 = "4dir",
         selection_box = {
             type = "fixed",
-            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+            fixed = {
+                {-0.5, -0.5, -0.5, 0.5, -0.3, 0.0},
+                {-0.5, -0.5, 0.0, 0.0, -0.3, 0.5},
+            },
         },
         collision_box = {
             type = "fixed",
-            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+            fixed = {
+                {-0.5, -0.5, -0.5, 0.5, -0.3, 0.0},
+                {-0.5, -0.5, 0.0, 0.0, -0.3, 0.5},
+            },
         },
         sounds = get_hard_sound()
     }
@@ -255,11 +267,11 @@ minetest.register_node(
         paramtype2 = "4dir",
         selection_box = {
             type = "fixed",
-            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+            fixed = {-0.5, -0.5, -0.5, 0.0, -0.3, 0.0},
         },
         collision_box = {
             type = "fixed",
-            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+            fixed = {-0.5, -0.5, -0.5, 0.0, -0.3, 0.0},
         },
         sounds = get_hard_sound()
     }
