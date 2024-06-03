@@ -32,11 +32,15 @@ local mapchunk = sizes.mapchunk
 local citychunk = sizes.citychunk
 
 --[[
-    Roads shouldn't be too close to a mapchunk border hence
-    I set a margin for citychunks. Roads shouldn't get closer
-    than 40 nodes (0.5) mapchunks from the citychunk border.
+    Road origins shouldn't be to close to each other so
+    setting a minimal distance from the start and end points
+    of the edge makes sense.
 --]]
 local road_margin = 40
+if citychunk.in_mapchunks == 1 then
+    road_margin = 15
+end
+    math.floor(1/5 * citychunk.in_nodes)
 
 local mapgen_seed = minetest.get_mapgen_setting("seed")
 
@@ -52,9 +56,9 @@ local mapgen_seed = minetest.get_mapgen_setting("seed")
 --]]
 local function road_origin(edge)
     -- a seed to make roads reproducible
-    local citychunk_seed = math.floor(mapgen_seed*edge.nr*edge.origin)
+    local citychunk_seed = math.floor(edge.nr+edge.origin)
     local old_randomness = pcmg.save_randomness()
-    math.randomseed(citychunk_seed)
+    math.randomseed(citychunk_seed, mapgen_seed)
     local offset = math.random(0 + road_margin, citychunk.in_nodes - 1 - road_margin) * node.in_citychunks
     math.randomseed(old_randomness)
     if edge.type == "x_bottom" then
@@ -278,9 +282,9 @@ local road_center_id = materials_by_name["road_center"]
 local function draw_random_dots(megacanv, nr)
     local nr = nr or 100
     local hash = pcmg.citychunk_hash(megacanv.origin)
-    local citychunk_seed = mapgen_seed*hash
+    local citychunk_seed = hash
     local old_randomness = pcmg.save_randomness()
-    math.randomseed(citychunk_seed)
+    math.randomseed(mapgen_seed, citychunk_seed)
     for x = 1, nr do
         local point = pcmg.random_pos_in_citychunk(megacanv.origin)
         megacanv:set_cursor(point)
@@ -305,9 +309,9 @@ local function road_generator(megacanv)
     local road_points = pcmg.citychunk_road_origins(citychunk_coords)
     local connected_points = connect_road_origins(road_points)
     for _, points in ipairs(connected_points) do
-        --draw_road(megacanv, points)
+        draw_road(megacanv, points)
         --draw_huge(megacanv, points)
-        draw_random_dots(megacanv, 400)
+        --draw_random_dots(megacanv, 400)
     end
     --minetest.log("error", string.format("Single citychunk: %g ms", (minetest.get_us_time() - t1) / 1000))
 end
