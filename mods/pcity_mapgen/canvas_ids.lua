@@ -22,6 +22,9 @@ local materials_by_id = {
     [3] = {id = 3, name = "road_pavement", priority = 2},
     [4] = {id = 4, name = "road_margin", priority = 1},
     [5] = {id = 5, name = "road_center", priority = 4},
+
+    -- Meta
+    [1000] = {id = 1000, name = "road_origin", priority = 1000},
 }
 
 local materials_by_name = {}

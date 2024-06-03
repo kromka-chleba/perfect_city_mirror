@@ -161,7 +161,7 @@ end
 
 local circle_memory = {}
 
-for id, _ in ipairs(materials_by_id) do
+for id, _ in pairs(materials_by_id) do
     -- initialize memory
     circle_memory[id] = {}
 end

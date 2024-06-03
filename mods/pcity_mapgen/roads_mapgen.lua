@@ -54,56 +54,18 @@ local road_definition = {
 
 local mapgen_seed = minetest.get_mapgen_setting("seed")
 
-local function road_segment_range(p1, p2)
-    local min, max = vector.sort(p1, p2)
-    -- minetest.log("error", "min: "..dump(min))
-    -- minetest.log("error", "max: "..dump(max))
-    local v = vector.subtract(p2, p1)
-    if v.z == 0 and v.x == 0 then
-        -- minetest.log("error", "Road has no length: "..dump(v))
-    elseif v.z == 0 then
-        -- Road goes along Z
-        min = min - vector.new(road_definition.width, 0, road_definition.width)
-        max = max + vector.new(road_definition.width, 0, road_definition.width)
-    elseif v.x == 0 then
-        -- Road goes along X
-        min = min - vector.new(road_definition.width, 0, road_definition.width)
-        max = max + vector.new(road_definition.width, 0, road_definition.width)
-    else
-        minetest.log("error", "Road has wrong direction: "..dump(v))
-    end
-    return {min = min, max = max}
-end
-
-local function get_ranges(roads)
-    local ranges = {}
-    for _, road in pairs(roads) do
-        local points = pcmg.path.points(road)
-        for i = 1, #points do
-            points[i] = units.citychunk_to_node(points[i])
-            points[i] = vector.new(points[i].x, sizes.ground_level, points[i].z)
-        end
-        local p1 = points[1]
-        for i = 2, #points do
-            local p2 = points[i]
-            table.insert(ranges, road_segment_range(p1, p2))
-            p1 = p2
-        end
-    end
-    return ranges
-end
-
 -- node IDs
 local asphalt_id = minetest.get_content_id(road_definition.floor)
 local pavement_id = minetest.get_content_id(road_definition.pavement)
+local blue_id = minetest.get_content_id("pcity_nodes:roughcast_blue")
+local green_id = minetest.get_content_id("pcity_nodes:roughcast_green")
 
 -- canvas material IDs
 local blank_id = materials_by_name["blank"]
 local road_asphalt_id = materials_by_name["road_asphalt"]
 local road_pavement_id = materials_by_name["road_pavement"]
 local road_center_id = materials_by_name["road_center"]
-
-local blue_id = minetest.get_content_id("pcity_nodes:roughcast_blue")
+local road_origin_id = materials_by_name["road_origin"]
 
 function pcmg.write_roads(mapgen_args, canv)
     local t1 = minetest.get_us_time()
@@ -127,6 +89,8 @@ function pcmg.write_roads(mapgen_args, canv)
                     data[i] = pavement_id
                 elseif cell_id == road_center_id then
                     data[i] = blue_id
+                elseif cell_id == road_origin_id then
+                    data[i] = green_id
                 end
             end
         end
@@ -135,42 +99,4 @@ function pcmg.write_roads(mapgen_args, canv)
     -- Write data
     vm:set_data(data)
     --minetest.log("error", string.format("chunk writing time: %g ms", (minetest.get_us_time() - t1) / 1000))
-end
-
-local green_id = minetest.get_content_id("pcity_nodes:roughcast_green")
-
-function pcmg.draw_road_origins(mapgen_args, points)
-    local positions = {}
-    for _, point in pairs(points) do
-        local pos = units.citychunk_to_node(point)
-        pos = vector.new(pos.x, sizes.ground_level, pos.z)
-        table.insert(positions, pos)
-    end
-    local ranges = {}
-    for _, point in pairs(positions) do
-        local range = {
-            min = vector.subtract(point, vector.new(3, 0, 3)),
-            max = vector.add(point, vector.new(3, 0, 3)),
-        }
-        table.insert(ranges, range)
-    end
-
-    local vm, pos_min, pos_max, blockseed = unpack(mapgen_args)
-    -- Read data into LVM
-    local data = vm:get_data()
-    local emin, emax = vm:get_emerged_area()
-    local va = VoxelArea(emin, emax)
-
-    for i = 1, #data do
-        local pos = va:position(i)
-        if pos.y == sizes.ground_level then
-            for _, range in pairs(ranges) do
-                if vector.in_area(pos, range.min, range.max) then
-                    data[i] = green_id
-                end
-            end
-        end
-    end
-    -- Write data
-    vm:set_data(data)
 end
