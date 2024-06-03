@@ -235,3 +235,12 @@ function table.better_length(t)
     end
     return count
 end
+
+function vector.random(...)
+    return vector.new(math.random(...), math.random(...), math.random(...))
+end
+
+function pcmg.random_pos_in_citychunk(citychunk_origin)
+    local point = citychunk_origin + vector.random(0, citychunk.in_nodes - 1)
+    return point
+end

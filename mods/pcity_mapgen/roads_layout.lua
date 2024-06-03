@@ -270,6 +270,27 @@ local function draw_huge(megacanv, points)
     megacanv:draw_circle(65, road_pavement_id)
 end
 
+local road_center_id = materials_by_name["road_center"]
+
+-- Draws random circles with asphalt and pavement
+-- 'nr' is the number of random circles to draw in the citychunk.
+-- Useful for testing.
+local function draw_random_dots(megacanv, nr)
+    local nr = nr or 100
+    local hash = pcmg.citychunk_hash(megacanv.origin)
+    local citychunk_seed = mapgen_seed*hash
+    local old_randomness = pcmg.save_randomness()
+    math.randomseed(citychunk_seed)
+    for x = 1, nr do
+        local point = pcmg.random_pos_in_citychunk(megacanv.origin)
+        megacanv:set_cursor(point)
+        megacanv:draw_circle(18, road_pavement_id)
+        megacanv:draw_circle(15, road_asphalt_id)
+        megacanv:draw_circle(1, road_center_id)
+    end
+    math.randomseed(old_randomness)
+end
+
 -- cache for canvas data
 -- it has 'citychunks' and 'complete' fields
 local canvas_cache = {
@@ -284,8 +305,9 @@ local function road_generator(megacanv)
     local road_points = pcmg.citychunk_road_origins(citychunk_coords)
     local connected_points = connect_road_origins(road_points)
     for _, points in ipairs(connected_points) do
-        draw_road(megacanv, points)
+        --draw_road(megacanv, points)
         --draw_huge(megacanv, points)
+        draw_random_dots(megacanv, 400)
     end
     --minetest.log("error", string.format("Single citychunk: %g ms", (minetest.get_us_time() - t1) / 1000))
 end
@@ -295,7 +317,7 @@ function pcmg.citychunk_road_canvas(citychunk_origin)
     local hash = pcmg.citychunk_hash(citychunk_origin)
     if not canvas_cache.complete[hash] then
         local megacanv = pcmg.megacanvas.new(citychunk_origin, canvas_cache)
-        megacanv:generate(road_generator)
+        megacanv:generate(road_generator, 1)
         minetest.log("error", string.format("Overgen time: %g ms", (minetest.get_us_time() - t1) / 1000))
     end
     return canvas_cache.citychunks[hash]
