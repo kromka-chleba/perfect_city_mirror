@@ -64,11 +64,11 @@ local function road_origin(edge)
     if edge.type == "x_bottom" then
         return vector.new(edge.origin + offset, 0, edge.nr)
     elseif edge.type == "x_top" then
-        return vector.new(edge.origin + offset, 0, edge.nr - node.in_citychunks)
+        return vector.new(edge.origin + offset, 0, edge.nr)
     elseif edge.type == "z_left" then
         return vector.new(edge.nr, 0, edge.origin + offset)
     elseif edge.type == "z_right" then
-        return vector.new(edge.nr - node.in_citychunks, 0, edge.origin + offset)
+        return vector.new(edge.nr, 0, edge.origin + offset)
     else
         assert(false, "Mapgen: edge type \""..
                edge.type.."\" is not a proper edge type!")
@@ -228,8 +228,11 @@ function pcmg.check_road_points(road_points)
     end
 end
 
+-- Material IDs
 local road_asphalt_id = materials_by_name["road_asphalt"]
 local road_pavement_id = materials_by_name["road_pavement"]
+local road_center_id = materials_by_name["road_center"]
+local road_origin_id = materials_by_name["road_origin"]
 
 local road_radius = 5
 local pavement_radius = 8
@@ -265,16 +268,14 @@ local function draw_road(megacanv, points)
 end
 
 -- for testing overgeneration
-local function draw_huge(megacanv, points)
+local function draw_origins(megacanv, points)
     local start = units.citychunk_to_node(points[1])
     local finish = units.citychunk_to_node(points[2])
     megacanv:set_cursor(start)
-    megacanv:draw_circle(60, road_asphalt_id)
+    megacanv:draw_circle(1, road_origin_id)
     megacanv:set_cursor(finish)
-    megacanv:draw_circle(65, road_pavement_id)
+    megacanv:draw_circle(1, road_origin_id)
 end
-
-local road_center_id = materials_by_name["road_center"]
 
 -- Draws random circles with asphalt and pavement
 -- 'nr' is the number of random circles to draw in the citychunk.
@@ -310,7 +311,7 @@ local function road_generator(megacanv)
     local connected_points = connect_road_origins(road_points)
     for _, points in ipairs(connected_points) do
         draw_road(megacanv, points)
-        --draw_huge(megacanv, points)
+        draw_origins(megacanv, points)
         --draw_random_dots(megacanv, 400)
     end
     --minetest.log("error", string.format("Single citychunk: %g ms", (minetest.get_us_time() - t1) / 1000))
