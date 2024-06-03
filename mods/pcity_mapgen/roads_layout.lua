@@ -44,48 +44,37 @@ end
 
 local mapgen_seed = minetest.get_mapgen_setting("seed")
 
---[[ Generates a random point on an edge of the citychunk.
-    The point can have any value between [0 + road_margin; 799 - road_margin]
-    assuming standard mapchunk size of 80 nodes and citychunk size of 10 mapchunks.
-    Usage:
-    edge_nr specifies an edge along Z or X axis,
-    start specifies the minimal position belonging to
-    the citychunk along the axis. So a citychunk starts
-    at start and ends at start + 1 along the axis.
-    This function returns position (number) of the point on the axis.
+--[[
+    Road origin points are points where road generation starts.
+    Every citychunk has 4 origin points, 1 per edge.
+    Road origin points are generated randomly somewhere on
+    each edge, but can't get closer to citychunk corners
+    than 'road_margin'.
 --]]
-local function road_origin(edge)
-    -- a seed to make roads reproducible
-    local citychunk_seed = math.floor(edge.nr+edge.origin)
+
+-- Returns road origin points for the bottom (X) and left (Z) edges
+-- of the citychunk.
+local function halfchunk_ori(citychunk_coords)
+    local origin = units.citychunk_to_node(citychunk_coords)
+    local hash = pcmg.citychunk_hash(origin)
     local old_randomness = pcmg.save_randomness()
-    math.randomseed(citychunk_seed, mapgen_seed)
-    local offset = math.random(0 + road_margin, citychunk.in_nodes - 1 - road_margin) * node.in_citychunks
+    math.randomseed(hash, mapgen_seed)
+    local random_x = math.random(0 + road_margin, citychunk.in_nodes - 1 - road_margin)
+    local x_edge_ori = origin + vector.new(random_x, 0, 0)
+    local random_z = math.random(0 + road_margin, citychunk.in_nodes - 1 - road_margin)
+    local z_edge_ori = origin + vector.new(0, 0, random_z)
     math.randomseed(old_randomness)
-    if edge.type == "x_bottom" then
-        return vector.new(edge.origin + offset, 0, edge.nr)
-    elseif edge.type == "x_top" then
-        return vector.new(edge.origin + offset, 0, edge.nr)
-    elseif edge.type == "z_left" then
-        return vector.new(edge.nr, 0, edge.origin + offset)
-    elseif edge.type == "z_right" then
-        return vector.new(edge.nr, 0, edge.origin + offset)
-    else
-        assert(false, "Mapgen: edge type \""..
-               edge.type.."\" is not a proper edge type!")
-    end
+    return x_edge_ori, z_edge_ori
 end
 
--- Rreturns citychunk grid coordinates of road origin points in a given citychunk.
--- A road origin point is a point on an edge of a citychunk where a road
--- starts being generated.
--- Grid coordinates are expressed in citychunks.
+-- Returns all road origin points for the citychunk
 function pcmg.citychunk_road_origins(citychunk_coords)
-    local edges = pcmg.citychunk_edges(citychunk_coords)
-    local points = {}
-    for _, edge in pairs(edges) do
-        table.insert(points, road_origin(edge))
-    end
-    return points
+    local up_coords = citychunk_coords + vector.new(0, 0, 1)
+    local right_coords = citychunk_coords + vector.new(1, 0, 0)
+    local bottom, left = halfchunk_ori(citychunk_coords)
+    local up, _ = halfchunk_ori(up_coords)
+    local _, right = halfchunk_ori(right_coords)
+    return {bottom, left, up, right}
 end
 
 --[[
@@ -140,8 +129,8 @@ local road_radius = 5
 local pavement_radius = 8
 
 local function draw_road(megacanv, points)
-    local start = units.citychunk_to_node(points[1])
-    local finish = units.citychunk_to_node(points[2])
+    local start = points[1]
+    local finish = points[2]
     local vec = vector.round(finish - start)
     local step = vector.sign(vec)
     local step_x = vector.new(step.x, 0, 0)
@@ -171,8 +160,8 @@ end
 
 -- for testing overgeneration
 local function draw_origins(megacanv, points)
-    local start = units.citychunk_to_node(points[1])
-    local finish = units.citychunk_to_node(points[2])
+    local start = points[1]
+    local finish = points[2]
     megacanv:set_cursor(start)
     megacanv:draw_circle(1, road_origin_id)
     megacanv:set_cursor(finish)
