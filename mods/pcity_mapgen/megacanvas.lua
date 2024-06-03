@@ -137,13 +137,17 @@ local function neighbor_recurse(megacanv, generator_function, recursion_level)
     end
 end
 
--- Generates a citychunk using the 'generator_function'
--- which takes a megacanvas as its argument.
--- 'recursion_level' is a number of neighbor layers to process,
--- for example 'recursion_level' = 1 means 'generator_function'
--- will also be applied to neighbors of the central citychunk,
--- 'recursion_level' = 2 means also neighbors of the neighbors
--- will be generated.
+--[[
+    Generates a citychunk using the 'generator_function'
+    which takes a megacanvas as its argument.
+    'recursion_level' is a number of neighbor layers to process,
+    for example 'recursion_level' = 1 means 'generator_function'
+    will also be applied to neighbors of the central citychunk,
+    'recursion_level' = 2 means also neighbors of the neighbors
+    will be generated.
+    'generator_function' MUST use reproducible randomness, otherwise
+    overgeneration won't work.
+--]]
 function megacanvas:generate(generator_function, recursion_level)
     local rlevel = recursion_level or 1
     generator_function(self)
