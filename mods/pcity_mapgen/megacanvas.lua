@@ -102,9 +102,16 @@ end
 
 -- Sets cursors of the central citychunk and neighbors
 -- to 'pos' which is absolute position
-function megacanvas:set_cursor(pos)
+function megacanvas:set_all_cursors(pos)
     self.cursor = vector.copy(pos)
     self:set_cursor_absolute(pos)
+end
+
+-- Moves cursors of the central citychunk and neighbors
+-- by 'vec' which is vector
+function megacanvas:move_all_cursors(vec)
+    local v = vector.round(vec) -- only integer moves allowed
+    self:set_all_cursors(self.cursor + v)
 end
 
 -- Marks the central citychunk as complete in the citychunk cache
