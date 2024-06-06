@@ -38,7 +38,17 @@ canvas.__index = canvas
 
 local blank_id = 1
 
-local canvas_margin = math.ceil(citychunk.in_mapchunks * 2/10) * mapchunk.in_nodes
+--[[
+    Canvas margin is the area around aroud the citychunk
+    where writing/reading to/from the canvas is still active.
+    This allows writing to the citychunk even if the shape
+    is partially outside the canvas.
+    This means overgeneration will only work for nodes in that area.
+--]]
+local canvas_margin = 2 * mapchunk.in_nodes
+if citychunk.in_mapchunks < 3 then
+    canvas_margin = mapchunk.in_nodes
+end
 local canvas_size = citychunk.in_nodes
 
 local function new_blank()
@@ -124,11 +134,27 @@ function canvas:read_write_cell(x, z, material_id)
     end
 end
 
+function canvas:search_for_material(shape, material_id)
+    if not self.cursor_inside then
+        return
+    end
+    for i = 1, #shape do
+        local point = shape[i] + self.cursor
+        local material = self:read_cell(point.x, point.z)
+        if type(material) ~= "number" then
+            minetest.log("error", dump(type(material)))
+        end
+        if material == material_id then
+            return true
+        end
+    end
+    return false
+end
+
 function canvas:draw_rectangle(x_side, z_side, material_id, centered)
     assert(x_side >= 1, "Canvas rectangle X side is smaller than 1: "..x_side)
     assert(z_side >= 1, "Canvas rectangle Z side is smaller than 1: "..z_side)
     if not self.cursor_inside then
-        minetest.log("error", "cursor not inside!")
         return
     end
     local square = {}
@@ -201,6 +227,18 @@ function canvas:draw_circle(radius, material_id)
         --self:write_cell(point.x, point.z, material_id)
         self:read_write_cell(point.x, point.z, material_id)
     end
+end
+
+function canvas:search_in_circle(radius, material_id)
+    assert(radius >= 1, "Canvas circle radius is smaller than 1: "..radius)
+    if not self.cursor_inside then
+        return
+    end
+    local circle = make_circle(radius, material_id)
+    if self:search_for_material(circle, material_id) then
+        return true
+    end
+    return false
 end
 
 -- pos_min - origin pos of a mapchunk
