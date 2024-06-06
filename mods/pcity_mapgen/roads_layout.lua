@@ -56,18 +56,18 @@ local mapgen_seed = minetest.get_mapgen_setting("seed")
 local function halfchunk_ori(citychunk_coords)
     local origin = units.citychunk_to_node(citychunk_coords)
     local hash = pcmg.citychunk_hash(origin)
-    local old_randomness = pcmg.save_randomness()
     math.randomseed(hash, mapgen_seed)
     local random_x = math.random(0 + road_margin, citychunk.in_nodes - 1 - road_margin)
     local x_edge_ori = origin + vector.new(random_x, 0, 0)
     local random_z = math.random(0 + road_margin, citychunk.in_nodes - 1 - road_margin)
     local z_edge_ori = origin + vector.new(0, 0, random_z)
-    math.randomseed(old_randomness)
+    math.randomseed(os.time())
     return x_edge_ori, z_edge_ori
 end
 
 -- Returns all road origin points for the citychunk
-function pcmg.citychunk_road_origins(citychunk_coords)
+function pcmg.citychunk_road_origins(citychunk_origin)
+    local citychunk_coords = pcmg.citychunk_coords(citychunk_origin)
     local up_coords = citychunk_coords + vector.new(0, 0, 1)
     local right_coords = citychunk_coords + vector.new(1, 0, 0)
     local bottom, left = halfchunk_ori(citychunk_coords)
@@ -76,10 +76,6 @@ function pcmg.citychunk_road_origins(citychunk_coords)
     return {bottom, left, up, right}
 end
 
---[[
-    Roads should initially be perpendicular to the citychunk edge.
---]]
-
 -- Takes a table of road origin points from which it picks 2 randomly
 -- and puts the pair into a table. It repeats the process until
 -- all origins are in pairs. If an odd number of origins is in the
@@ -87,19 +83,14 @@ end
 -- Example:
 -- input: {p1, p2, p3, p4, p5}
 -- output: {{p1, p3}, {p2, p4}} (p5 got skipped)
-local function connect_road_origins(origins)
+local function connect_road_origins(citychunk_origin, road_origins)
+    local hash = pcmg.citychunk_hash(citychunk_origin)
     local points = {}
-    for _, origin in pairs(origins) do
+    for _, origin in pairs(road_origins) do
         -- copy the table to avoid "fun" in other parts of the code
         table.insert(points, vector.new(origin))
     end
-    local old_randomness = pcmg.save_randomness()
-    local citychunk_seed = mapgen_seed
-    for _, point in pairs(points) do
-        citychunk_seed = citychunk_seed*point.z*point.x
-    end
-    citychunk_seed = math.floor(citychunk_seed)
-    math.randomseed(citychunk_seed)
+    math.randomseed(hash, mapgen_seed)
     if #points % 2 ~= 0 then
         -- remove one point if for some reason the number of points was odd
         table.remove(points)
@@ -114,7 +105,7 @@ local function connect_road_origins(origins)
         table.remove(points, p2_index)
         table.insert(point_pairs, {p1, p2})
     end
-    math.randomseed(old_randomness)
+    math.randomseed(os.time())
     return point_pairs
 end
 
@@ -159,7 +150,6 @@ end
 
 local function draw_wobbly_road(megacanv, points)
     local hash = pcmg.citychunk_hash(megacanv.origin)
-    local old_randomness = pcmg.save_randomness()
     math.randomseed(hash, mapgen_seed)
     local start = points[1]
     local finish = points[2]
@@ -172,17 +162,15 @@ local function draw_wobbly_road(megacanv, points)
         megacanv:move_all_cursors(random_move)
         draw_road_cursor(megacanv)
     end
-    math.randomseed(old_randomness)
+    math.randomseed(os.time())
 end
 
 -- for testing overgeneration
-local function draw_origins(megacanv, points)
-    local start = points[1]
-    local finish = points[2]
-    megacanv:set_all_cursors(start)
-    megacanv:draw_circle(1, road_origin_id)
-    megacanv:set_all_cursors(finish)
-    megacanv:draw_circle(1, road_origin_id)
+local function draw_points(megacanv, points)
+    for _, point in pairs(points) do
+        megacanv:set_all_cursors(point)
+        megacanv:draw_circle(1, road_origin_id)
+    end
 end
 
 -- Draws random circles with asphalt and pavement
@@ -191,9 +179,7 @@ end
 local function draw_random_dots(megacanv, nr, padding)
     local nr = nr or 100
     local hash = pcmg.citychunk_hash(megacanv.origin)
-    local citychunk_seed = hash
-    local old_randomness = pcmg.save_randomness()
-    math.randomseed(citychunk_seed, mapgen_seed)
+    math.randomseed(hash, mapgen_seed)
     for x = 1, nr do
         local point = pcmg.random_pos_in_citychunk(megacanv.origin)
         megacanv:set_all_cursors(point)
@@ -201,22 +187,21 @@ local function draw_random_dots(megacanv, nr, padding)
         megacanv:draw_circle(15, road_asphalt_id)
         megacanv:draw_circle(1, road_center_id)
     end
-    math.randomseed(old_randomness)
+    math.randomseed(os.time())
 end
 
 -- cache for canvas data, see megacanvas.lua
 local canvas_cache = pcmg.canvas_cache.new()
 
 local function road_generator(megacanv)
-    local citychunk_coords = pcmg.citychunk_coords(megacanv.central.origin)
-    local road_points = pcmg.citychunk_road_origins(citychunk_coords)
-    local connected_points = connect_road_origins(road_points)
+    local road_origins = pcmg.citychunk_road_origins(megacanv.central.origin)
+    local connected_points = connect_road_origins(megacanv.central.origin, road_origins)
     for _, points in ipairs(connected_points) do
         draw_road(megacanv, points)
         --draw_wobbly_road(megacanv, points)
-        draw_origins(megacanv, points)
     end
-    draw_random_dots(megacanv, 10)
+    draw_points(megacanv, road_origins)
+    --draw_random_dots(megacanv, 10)
 end
 
 function pcmg.citychunk_road_canvas(citychunk_origin)
