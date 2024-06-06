@@ -182,28 +182,6 @@ function vector.split(v, nr)
     end
 end
 
--- Return edge descriptions for the citychunk.
--- Edges can have two types: "x" - the edge goes along
--- the x-axis, "z" - the edge goes along the z-axis.
--- nr (number) of the edge is the position on the axis
--- perpendicular to the axis type, e.g. "x" edge the nr
--- is the z coordinate and vice versa
-function pcmg.citychunk_edges(citychunk_coords)
-    local x = citychunk_coords.x
-    local z = citychunk_coords.z
-    local edges = {
-        {type = "x_bottom", nr = z, origin = x},     -- bottom
-        {type = "x_top", nr = z + 1, origin = x},    -- top
-        {type = "z_left", nr = x, origin = z},       -- left
-        {type = "z_right", nr = x + 1, origin = z},  -- right
-    }
-    return edges
-end
-
-function pcmg.save_randomness()
-    return math.floor(math.random() * 10e20)
-end
-
 function vector.modf(v)
     local x_int, x_frac = math.modf(v.x)
     local y_int, y_frac = math.modf(v.y)
