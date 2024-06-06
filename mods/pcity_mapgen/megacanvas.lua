@@ -34,17 +34,36 @@ local citychunk = sizes.citychunk
 
 pcmg.megacanvas = {}
 local megacanvas = pcmg.megacanvas
--- megacanvas.__index = megacanvas
 
 local function make_method(method)
     return function (self, ...)
-        method(self.central, ...)
+        -- products are stuff returned by each function
+        local products = {}
+        local central_hash = pcmg.citychunk_hash(self.central.origin)
+        products[central_hash] = method(self.central, ...)
         for _, neighbor in pairs(self.neighbors) do
             local hash = pcmg.citychunk_hash(neighbor.origin)
             if not self.cache.complete[hash] then
-                method(neighbor, ...)
+                products[hash] = method(neighbor, ...)
             end
         end
+        local product_type
+        for _, product in pairs(products) do
+            if type(product) ~= nil then
+                product_type = type(product)
+                break
+            end
+        end
+        -- For functions that return a boolean, the returned
+        -- value is a logical OR of products from all canvases
+        if product_type == "boolean" then
+            local r
+            for _, product in pairs(products) do
+                r = product or r
+            end
+            return r
+        end
+        return products
     end
 end
 
@@ -61,9 +80,22 @@ end
 
 local blank_id = 1
 
--- cache for canvas data
--- it has 'citychunks' and 'complete' fields
-local function initialize_cache(cache)
+--[[
+    Cache for canvas data.
+    Each table in 'cache' is keyed by citychunk hash.
+    * 'citychunks': contains canvases
+    * 'partially_complete': bool values, true means the citychunk
+    was overgenerated from other citychunks, but was not itself fully generated
+    * 'complete': bool values, true means the citychunk was both overgenerated
+    and generated.
+    * 'citychunk_meta': arbitrary user-provided data
+--]]
+
+pcmg.canvas_cache = {}
+local canvas_cache = pcmg.canvas_cache
+
+function canvas_cache.new()
+    local cache = {}
     if not cache.citychunks then
         cache.citychunks = {}
     end
@@ -73,6 +105,10 @@ local function initialize_cache(cache)
     if not cache.complete then
         cache.complete = {}
     end
+    if not cache.citychunk_meta then
+        cache.citychunk_meta = {}
+    end
+    return cache
 end
 
 local function neighboring_canvases(citychunk_origin, cache)
@@ -89,7 +125,7 @@ end
 
 function megacanvas.new(citychunk_origin, cache)
     local megacanv = {}
-    initialize_cache(cache)
+    canvas_cache.new()
     megacanv.cache = cache
     megacanv.origin = vector.copy(citychunk_origin)
     megacanv.cursor = vector.new(0, 0, 0) -- abs pos only
@@ -127,21 +163,23 @@ function megacanvas:mark_partially_complete()
 end
 
 local function neighbor_recurse(megacanv, generator_function, recursion_level)
-    if recursion_level > 0 then
-        recursion_level = recursion_level - 1
-        for _, neighbor in pairs(megacanv.neighbors) do
-            local hash = pcmg.citychunk_hash(neighbor.origin)
-            if not megacanv.cache.complete[hash] then
-                local new_megacanv = pcmg.megacanvas.new(neighbor.origin, megacanv.cache)
-                if not megacanv.cache.partially_complete[hash] then
-                    generator_function(new_megacanv)
-                    new_megacanv:mark_partially_complete()
-                end
-                neighbor_recurse(new_megacanv, generator_function, recursion_level)
-            end
-        end
-        megacanv:mark_complete()
+    local central_hash = pcmg.citychunk_hash(megacanv.origin)
+    if not megacanv.cache.partially_complete[central_hash] then
+        generator_function(megacanv)
+        megacanv:mark_partially_complete()
     end
+    if recursion_level <= 0 then
+        return
+    end
+    recursion_level = recursion_level - 1
+    for _, neighbor in pairs(megacanv.neighbors) do
+        local hash = pcmg.citychunk_hash(neighbor.origin)
+        if not megacanv.cache.complete[hash] then
+            local new_megacanv = pcmg.megacanvas.new(neighbor.origin, megacanv.cache)
+            neighbor_recurse(new_megacanv, generator_function, recursion_level)
+        end
+    end
+    megacanv:mark_complete()
 end
 
 --[[
@@ -157,6 +195,5 @@ end
 --]]
 function megacanvas:generate(generator_function, recursion_level)
     local rlevel = recursion_level or 1
-    generator_function(self)
     neighbor_recurse(self, generator_function, rlevel)
 end
