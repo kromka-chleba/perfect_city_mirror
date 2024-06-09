@@ -113,9 +113,11 @@ Seba never saw the potato seller in person, but imagined a man with no face wear
 pushing him into a linen potato bag. Several years later the potato seller stopped showing up,
 nevertheless Seba kept hearing the faint echo as if the faceless man was still lurking somewhere in the city.
 
-### 2.5 Road sign monster
+### 2.5 Chimera
 
-### 2.6 Konstal 105N
+### 2.6 Road sign monster
+
+### 2.7 Konstal 105N
 
 ## 3. Characters
 
