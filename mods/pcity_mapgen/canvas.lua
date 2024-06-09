@@ -24,6 +24,7 @@ local vector = vector
 local pcmg = pcity_mapgen
 local sizes = dofile(mod_path.."/sizes.lua")
 local units = sizes.units
+local canvas_shapes = pcmg.canvas_shapes
 
 local materials_by_id, materials_by_name = dofile(mod_path.."/canvas_ids.lua")
 
@@ -203,6 +204,24 @@ function canvas:search_for_material(shape, material_id)
     return false
 end
 
+function canvas:draw_shape(shape)
+    if not self.cursor_inside then
+        return
+    end
+    for _, cell in pairs(shape) do
+        local point = cell.pos + self.cursor
+        self:read_write_cell(point.x, point.z, cell.material)
+    end
+end
+
+function canvas:draw_brush(brush)
+    if not self.cursor_inside then
+        return
+    end
+    local shape = brush:get_shape()
+    self:draw_shape(shape)
+end
+
 -- Draws a rectangle with in the citychunk. 'x_side' and 'z_side' are
 -- the dimensions of the rectangle drawn. 'centered' is a bool that when
 -- true will center the rectangle around the cursor, when false the rectangle
@@ -214,68 +233,19 @@ function canvas:draw_rectangle(x_side, z_side, material_id, centered)
     if not self.cursor_inside then
         return
     end
-    local square = {}
-    for x = 0, x_side - 1 do
-        for z = 0, z_side - 1 do
-            table.insert(square, vector.new(x, 0, z))
-        end
-    end
-    if centered then
-        local center = vector.new(
-            math.floor(x_side / 2),
-            0,
-            math.floor(z_side / 2)
-        )
-        for i = 1, #square do
-            square[i] = square[i] - center
-        end
-    end
-    for i = 1, #square do
-        -- write to canvas
-        local point = square[i] + self.cursor
-        self:write_cell(point.x, point.z, material_id)
-    end
+    local shape =
+        canvas_shapes.make_rectangle(x_side, z_side, material_id, centered)
+    self:draw_shape(shape)
 end
 
 -- Works just like canvas:draw_rectangle (see above) but draws
 -- a square.
 function canvas:draw_square(side, material_id, centered)
     assert(side >= 1, "Canvas square side is smaller than 1: "..side)
+    if not self.cursor_inside then
+        return
+    end
     self:draw_rectangle(side, side, material_id, centered)
-end
-
--- A cache for shapes to make drawing circles faster
-local circle_memory = {}
-
-for id, _ in pairs(materials_by_id) do
-    -- initialize memory
-    circle_memory[id] = {}
-end
-
--- Creates a shape for circle with with diameter of
--- 2 * 'radius' + 1. The circle is attached to the
--- cursor by the centermost node.
-local function make_circle(radius, material_id)
-    if circle_memory[material_id][radius] then
-        return circle_memory[material_id][radius]
-    end
-    local square = {}
-    for x = -radius, radius do
-        for z = -radius, radius do
-            table.insert(square, vector.new(x, 0, z))
-        end
-    end
-    local center = vector.new(0, 0, 0)
-    -- square to circle
-    local circle = {}
-    for _, pos in pairs(square) do
-        local v = pos - center
-        if vector.length(v) <= radius then
-            table.insert(circle, pos)
-        end
-    end
-    circle_memory[material_id][radius] = circle
-    return circle
 end
 
 -- Draws a circle as created by 'make_circle' (see above)
@@ -285,13 +255,9 @@ function canvas:draw_circle(radius, material_id)
     if not self.cursor_inside then
         return
     end
-    local circle = make_circle(radius, material_id)
-    for i = 1, #circle do
-        -- write to canvas
-        local point = circle[i] + self.cursor
-        --self:write_cell(point.x, point.z, material_id)
-        self:read_write_cell(point.x, point.z, material_id)
-    end
+    local shape =
+        canvas_shapes.make_circle(radius, material_id)
+    self:draw_shape(shape)
 end
 
 -- Searches for a material in the area of canvas covered by
@@ -302,7 +268,7 @@ function canvas:search_in_circle(radius, material_id)
     if not self.cursor_inside then
         return
     end
-    local circle = make_circle(radius, material_id)
+    local circle = canvas_shapes.make_circle(radius, material_id)
     if self:search_for_material(circle, material_id) then
         return true
     end
