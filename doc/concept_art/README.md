@@ -14,3 +14,4 @@ Yeah, I'm terrible at drawing!
 - drill_man.png
 - claus.jpg
 - roadsign_monster.png
+- chimera.jpg
