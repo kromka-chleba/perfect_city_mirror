@@ -25,6 +25,8 @@ local mlib = dofile(mod_path.."/mlib.lua")
 local sizes = dofile(mod_path.."/sizes.lua")
 local _, materials_by_name = dofile(mod_path.."/canvas_ids.lua")
 local units = sizes.units
+local canvas_shapes = pcmg.canvas_shapes
+local canvas_brush = pcmg.canvas_brush
 
 -- Sizes of map division units
 local node = sizes.node
@@ -118,10 +120,10 @@ local road_origin_id = materials_by_name["road_origin"]
 local road_radius = 5
 local pavement_radius = 8
 
-local function draw_road_cursor(megacanv)
-    megacanv:draw_circle(road_radius, road_asphalt_id)
-    megacanv:draw_circle(pavement_radius, road_pavement_id)
-end
+local road_shape = canvas_shapes.combine_shapes(
+    canvas_shapes.make_circle(pavement_radius, road_pavement_id),
+    canvas_shapes.make_circle(road_radius, road_asphalt_id)
+)
 
 local function draw_road(megacanv, points)
     local start = points[1]
@@ -133,16 +135,16 @@ local function draw_road(megacanv, points)
     local moves_x = math.abs(vec.x)
     local moves_z = math.abs(vec.z)
     megacanv:set_all_cursors(start)
-    draw_road_cursor(megacanv)
+    megacanv:draw_shape(road_shape)
     while (moves_x > 0 or moves_z > 0) do
         if moves_x > 0 then
             megacanv:move_all_cursors(step_x)
-            draw_road_cursor(megacanv)
+            megacanv:draw_shape(road_shape)
             moves_x = moves_x - 1
         end
         if moves_z > 0 then
             megacanv:move_all_cursors(step_z)
-            draw_road_cursor(megacanv)
+            megacanv:draw_shape(road_shape)
             moves_z = moves_z - 1
         end
     end
@@ -154,13 +156,13 @@ local function draw_wobbly_road(megacanv, points)
     local start = points[1]
     local finish = points[2]
     megacanv:set_all_cursors(start)
-    draw_road_cursor(megacanv)
+    megacanv:draw_shape(road_shape)
     while (megacanv.cursor ~= finish) do
         local gravity = vector.direction(megacanv.cursor, finish)
         gravity = vector.round(gravity)
         local random_move = vector.random(-1, 1) + gravity
         megacanv:move_all_cursors(random_move)
-        draw_road_cursor(megacanv)
+        megacanv:draw_shape(road_shape)
     end
     math.randomseed(os.time())
 end
@@ -183,7 +185,7 @@ local function draw_random_dots(megacanv, nr, padding)
     for x = 1, nr do
         local point = pcmg.random_pos_in_citychunk(megacanv.origin)
         megacanv:set_all_cursors(point)
-        megacanv:draw_circle(18, road_pavement_id)
+        megacanv:draw_circle(17, road_pavement_id)
         megacanv:draw_circle(15, road_asphalt_id)
         megacanv:draw_circle(1, road_center_id)
     end
@@ -197,10 +199,10 @@ local function road_generator(megacanv)
     local road_origins = pcmg.citychunk_road_origins(megacanv.central.origin)
     local connected_points = connect_road_origins(megacanv.central.origin, road_origins)
     for _, points in ipairs(connected_points) do
-        draw_road(megacanv, points)
-        --draw_wobbly_road(megacanv, points)
+        --draw_road(megacanv, points)
+        draw_wobbly_road(megacanv, points)
     end
-    draw_points(megacanv, road_origins)
+    --draw_points(megacanv, road_origins)
     --draw_random_dots(megacanv, 10)
 end
 
