@@ -122,6 +122,27 @@ local function unhash_shape_positions(hashed)
     return unhashed
 end
 
+function cs.make_line(...)
+    local vec, material_id = ...
+    local args = {...}
+    local hash = cs.cheap_hash("line", args)
+    if cs.cache[hash] then
+        return cs.cache[hash]
+    end
+    local samples = vector.split(vec, vector.length(vec) * 3)
+    local current_pos = vector.new(0, 0, 0)
+    local current_hash = minetest.hash_node_position(current_pos)
+    local cells = {}
+    for _, vec in pairs(samples) do
+        current_pos = current_pos + vec
+        local pos = vector.floor(current_pos)
+        current_hash = minetest.hash_node_position(pos)
+        cells[current_hash] = {pos = pos, material = material_id}
+    end
+    cs.cache[hash] = unhash_shape_positions(cells)
+    return cells
+end
+
 function cs.combine_shapes(shape1, shape2)
     local hashed_1 = hash_shape_positions(shape1)
     local hashed_2 = hash_shape_positions(shape2)
