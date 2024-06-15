@@ -22,123 +22,89 @@ local math = math
 local mlib = dofile(mod_path.."/mlib.lua")
 local vector = vector
 local pcmg = pcity_mapgen
+local sizes = dofile(mod_path.."/sizes.lua")
+local units = sizes.units
+
+-- Sizes of map division units
+local node = sizes.node
+local mapchunk = sizes.mapchunk
+local citychunk = sizes.citychunk
+
 pcmg.path = {}
 local path = pcmg.path
+path.__index = path
 
-local path_metatable = {}
-
-local allowed_keys = {
-    start = true,
-    segments = true,
-}
-
-function path.length(pth)
-    local sum = 0
-    for _, segment in pairs(pth.segments) do
-        sum = sum + vector.length(segment)
-    end
-    return sum
+function path.new(start, finish)
+    assert(vector.check(start), "Path: start '"..dump(start).."' is not a vector.")
+    assert(vector.check(finish), "Path: finish '"..dump(finish).."' is not a vector.")
+    local pth = {}
+    pth.start = vector.floor(start)
+    pth.finish = vector.floor(finish)
+    pth.locked = false
+    pth.points = {}
+    return setmetatable(pth, path)
 end
 
-function path.finish(pth)
-    local finish = pth.start
-    for _, segment in ipairs(pth.segments) do
-        finish = vector.add(finish, segment)
-    end
-    return finish
+function path:lock()
+    self.locked = true
 end
 
-function path.points(pth)
-    local points = {pth.start}
-    local current_point = pth.start
-    for _, segment in ipairs(pth.segments) do
-        current_point = vector.add(current_point, segment)
-        table.insert(points, current_point)
-    end
-    return points
+function path:unlock()
+    self.locked = false
 end
 
-local function validate_input(start, segments)
-    assert(vector.check(start), "Start \'"..dump(start).."\' is not a vector!")
-    for _, segment in ipairs(segments) do
-        assert(vector.check(segment),
-               "Segment \'"..dump(segment).."\' is not a vector!")
+function path:add_point(pos)
+    assert(vector.check(pos), "Path: pos '"..dump(pos).."' is not a vector.")
+    if not self.locked then
+        table.insert(self.points, pos)
     end
 end
 
--- fires when pth[key] is nil
-function path_metatable.__index(pth, key)
-    if key == "finish" then
-        local finish = path.finish(pth)
-        rawset(pth, key, finish)
-        return finish
-    end
-    return rawget(pth, key)
-end
-
-function path_metatable.__newindex(pth, key, value)
-    if allowed_keys[key] then
-        rawset(pth, key, value)
-    else
-        assert(false, "Key \'"..key.."\' is not supported by the path type!")
+function path:remove_point()
+    if not self.locked then
+        table.remove(self.points)
     end
 end
 
-function path_metatable.__concat(p1, p2)
-    assert(p1.__type == "path" and
-           p2.__type == "path",
-           "p2: \'"..dump(p2).."\' is not a path!"
-    )
-    local new_segments = {}
-    for _, segment in ipairs(p1.segments) do
-        table.insert(new_segments, vector.new(segment))
+function path:all_points()
+    local all_points = {}
+    table.insert(all_points, self.start)
+    for _, point in ipairs(self.points) do
+        table.insert(all_points, point)
     end
-    for _, segment in ipairs(p2.segments) do
-        table.insert(new_segments, vector.new(segment))
-    end
-    return path.new(vector.copy(p1.start), new_segments)
+    table.insert(all_points, self.finish)
+    return all_points
 end
 
-local function points_to_segments(points)
-    local segments = {}
-    for i = 1, #points - 1 do
-        local vec = vector.subtract(points[i + 1], points[i])
-        table.insert(segments, vec)
+function path:make_straight(segment_nr)
+    if self.locked then
+        return
     end
-    return segments
+    local v = (self.finish - self.start) / segment_nr
+    local current_pos = self.start
+    for i = 1, segment_nr - 1 do
+        current_pos = current_pos + v
+        self:add_point(vector.floor(current_pos))
+    end
+    self:lock()
 end
 
--- Can take either start + segments or points
-function path.new(start, segments)
-    local pth = setmetatable({["__type"] = "path"}, path_metatable)
-    if type(start) == "table" and not segments then
-        -- got a table of points
-        validate_input(start[1], start)
-        pth.start = start[1]
-        pth.segments = points_to_segments(start)
-    else
-        -- got start and segments
-        validate_input(start, segments)
-        pth.start = start
-        pth.segments = segments
+function path:make_wave(segment_nr)
+    if self.locked then
+        return
     end
-    -- users shouldn't change finish because it is automatically calculated
-    rawset(pth, "finish", path.finish(pth))
-    return pth
-end
-
--- divides a path into smaller segments and returns points
--- along the path including start and stop
-local function sample_path(path, sample_size)
-    local segments = {}
-    for _, segment in ipairs(path.segments) do
-        local length = vector.length(segment)
-        local nr = math.floor(length / sample_size)
-        local new_segments = vector.split(segment, nr)
-        for _, new_segment in ipairs(new_segments) do
-            table.insert(segments, new_segment)
-        end
+    local v = (self.finish - self.start) / segment_nr
+    local total_distance = vector.distance(self.start, self.finish)
+    local direction = vector.normalize(v)
+    local perpendicular = vector.rotate(direction, vector.new(0, math.pi / 2, 0))
+    local current_pos = self.start
+    for i = 1, segment_nr - 1 do
+        current_pos = current_pos + v
+        local distance = vector.distance(self.start, current_pos)
+        local distance_cofactor = math.sin(distance / total_distance * math.pi)
+        local wave = math.sin(distance / total_distance * math.pi * 10)
+        local pos = current_pos + perpendicular * distance_cofactor * wave * 40
+        self:add_point(vector.floor(pos))
     end
-    local new_path = path.new(path.start)
-    return path.points(new_path)
+    self:lock()
 end
