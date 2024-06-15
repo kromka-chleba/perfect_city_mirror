@@ -125,9 +125,7 @@ local road_shape = canvas_shapes.combine_shapes(
     canvas_shapes.make_circle(road_radius, road_asphalt_id)
 )
 
-local function draw_road(megacanv, points)
-    local start = points[1]
-    local finish = points[2]
+local function draw_road(megacanv, start, finish)
     local vec = vector.round(finish - start)
     local step = vector.sign(vec)
     local step_x = vector.new(step.x, 0, 0)
@@ -150,11 +148,23 @@ local function draw_road(megacanv, points)
     end
 end
 
-local function draw_wobbly_road(megacanv, points)
+local function draw_straight_road(megacanv, start, finish)
     local hash = pcmg.citychunk_hash(megacanv.origin)
     math.randomseed(hash, mapgen_seed)
-    local start = points[1]
-    local finish = points[2]
+    megacanv:set_all_cursors(start)
+    megacanv:draw_shape(road_shape)
+    while (megacanv.cursor ~= finish) do
+        local gravity = vector.direction(megacanv.cursor, finish)
+        gravity = vector.round(gravity)
+        megacanv:move_all_cursors(gravity)
+        megacanv:draw_shape(road_shape)
+    end
+    math.randomseed(os.time())
+end
+
+local function draw_wobbly_road(megacanv, start, finish)
+    local hash = pcmg.citychunk_hash(megacanv.origin)
+    math.randomseed(hash, mapgen_seed)
     megacanv:set_all_cursors(start)
     megacanv:draw_shape(road_shape)
     while (megacanv.cursor ~= finish) do
@@ -163,6 +173,20 @@ local function draw_wobbly_road(megacanv, points)
         local random_move = vector.random(-1, 1) + gravity
         megacanv:move_all_cursors(random_move)
         megacanv:draw_shape(road_shape)
+    end
+    math.randomseed(os.time())
+end
+
+local function draw_waved_road(megacanv, start, finish)
+    local hash = pcmg.citychunk_hash(megacanv.origin)
+    math.randomseed(hash, mapgen_seed)
+    local path = pcmg.path.new(start, finish)
+    path:make_wave(20)
+    local path_points = path:all_points()
+    for i = 2, #path_points do
+        local segment_start = path_points[i - 1]
+        local segment_finish = path_points[i]
+        draw_straight_road(megacanv, segment_start, segment_finish)
     end
     math.randomseed(os.time())
 end
@@ -192,6 +216,20 @@ local function draw_random_dots(megacanv, nr, padding)
     math.randomseed(os.time())
 end
 
+local function draw_random_lines(megacanv, nr)
+    local nr = nr or 100
+    local hash = pcmg.citychunk_hash(megacanv.origin)
+    math.randomseed(hash, mapgen_seed)
+    for x = 1, nr do
+        local point = pcmg.random_pos_in_citychunk(megacanv.origin)
+        megacanv:set_all_cursors(point)
+        local v = vector.random(-30, 30)
+        local line = canvas_shapes.make_line(v, road_center_id)
+        megacanv:draw_shape(line)
+    end
+    math.randomseed(os.time())
+end
+
 -- cache for canvas data, see megacanvas.lua
 local canvas_cache = pcmg.canvas_cache.new()
 
@@ -199,11 +237,16 @@ local function road_generator(megacanv)
     local road_origins = pcmg.citychunk_road_origins(megacanv.central.origin)
     local connected_points = connect_road_origins(megacanv.central.origin, road_origins)
     for _, points in ipairs(connected_points) do
-        --draw_road(megacanv, points)
-        draw_wobbly_road(megacanv, points)
+        local start = points[1]
+        local finish = points[2]
+        --draw_road(megacanv, start, finish)
+        --draw_wobbly_road(megacanv, start, finish)
+        draw_waved_road(megacanv, start, finish)
+        --draw_straight_road(megacanv, start, finish)
     end
-    --draw_points(megacanv, road_origins)
+    draw_points(megacanv, road_origins)
     --draw_random_dots(megacanv, 10)
+    --draw_random_lines(megacanv, 10)
 end
 
 function pcmg.citychunk_road_canvas(citychunk_origin)
