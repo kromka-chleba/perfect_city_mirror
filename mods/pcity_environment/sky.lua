@@ -197,7 +197,8 @@ local function get_default_sky()
         base_color = "#3e423f",
         textures = default_textures(),
         fog = {
-            fog_distance = 200,
+            fog_distance = 800,
+            fog_start = 0,
         },
     }
     return default_sky
