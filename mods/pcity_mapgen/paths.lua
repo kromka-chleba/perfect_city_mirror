@@ -89,7 +89,7 @@ function path:make_straight(segment_nr)
     self:lock()
 end
 
-function path:make_wave(segment_nr)
+function path:make_wave(segment_nr, amplitude, density)
     if self.locked then
         return
     end
@@ -102,8 +102,8 @@ function path:make_wave(segment_nr)
         current_pos = current_pos + v
         local distance = vector.distance(self.start, current_pos)
         local distance_cofactor = math.sin(distance / total_distance * math.pi)
-        local wave = math.sin(distance / total_distance * math.pi * 10)
-        local pos = current_pos + perpendicular * distance_cofactor * wave * 40
+        local wave = math.sin(distance / total_distance * 2 * math.pi * density)
+        local pos = current_pos + perpendicular * distance_cofactor * wave * amplitude
         self:add_point(vector.floor(pos))
     end
     self:lock()
