@@ -55,16 +55,30 @@ function pcmg.citychunk_coords(pos)
     return origin
 end
 
--- Returs origin point of a mapchunk in node position.
+-- Returs origin point of a mapchunk stated in absolute node position.
 function pcmg.mapchunk_origin(pos)
     local coords = pcmg.mapchunk_coords(pos)
     return units.mapchunk_to_node(coords)
 end
 
--- Returs origin point of a citychunk in node position.
+-- Returs terminus point of a mapchunk stated in absolute node position.
+function pcmg.mapchunk_terminus(pos)
+    local origin = pcmg.citychunk_origin(pos)
+    local t = mapchunk.in_nodes
+    return origin + vector.new(t, t, t)
+end
+
+-- Returs origin point of a citychunk stated in absolute node position.
 function pcmg.citychunk_origin(pos)
     local coords = pcmg.citychunk_coords(pos)
     return units.citychunk_to_node(coords)
+end
+
+-- Returs terminus point of a citychunk stated in absolute node position.
+function pcmg.citychunk_terminus(pos)
+    local origin = pcmg.citychunk_origin(pos)
+    local t = citychunk.in_nodes - 1
+    return origin + vector.new(t, t, t)
 end
 
 -- Returns mapchunk hash for a given position
@@ -81,7 +95,7 @@ end
 
 -- Returns node position relative to citychunk origin point.
 -- citychunk pos is in citychunks
-function pcmg.node_citychunk_relative_pos(citychunk_pos)
+function pcmg.node_citychunk_relative_pos(pos)
     local pos = units.citychunk_to_node(citychunk_pos)
     local origin = pcmg.citychunk_origin(pos)
     return pos - origin
@@ -165,6 +179,13 @@ function pcmg.trim_segment_to_mapchunk(mapchunk_poly, p1, p2)
     end
 end
 
+local mapgen_seed = minetest.get_mapgen_setting("seed")
+
+function pcmg.set_randomseed(citychunk_origin)
+    local hash = pcmg.citychunk_hash(citychunk_origin)
+    math.randomseed(hash, mapgen_seed)
+end
+
 -- splits a vector into a table of smaller vectors
 -- nr is the number of new vectors
 function vector.split(v, nr)
@@ -202,6 +223,10 @@ function vector.sign(v)
     return vector.apply(v, math.sign)
 end
 
+function vector.ceil(v)
+    return vector.apply(v, math.ceil)
+end
+
 function vector.abs(v)
     return vector.apply(v, math.abs)
 end
@@ -214,8 +239,12 @@ function table.better_length(t)
     return count
 end
 
+function vector.create(f, ...)
+    return vector.new(f(...), f(...), f(...))
+end
+
 function vector.random(...)
-    return vector.new(math.random(...), math.random(...), math.random(...))
+    return vector.create(math.random, ...)
 end
 
 function pcmg.random_pos_in_citychunk(citychunk_origin)

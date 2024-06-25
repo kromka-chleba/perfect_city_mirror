@@ -146,9 +146,9 @@ end
 -- Moves cursors of the central citychunk and neighbors
 -- by 'vec' which is vector
 function megacanvas:move_all_cursors(vec)
-    local v = vector.round(vec) -- only integer moves allowed
-    self:set_all_cursors(self.cursor + v)
+    self:set_all_cursors(self.cursor + vec)
 end
+
 
 -- Marks the central citychunk as complete in the citychunk cache
 function megacanvas:mark_complete()
@@ -196,4 +196,33 @@ end
 function megacanvas:generate(generator_function, recursion_level)
     local rlevel = recursion_level or 1
     neighbor_recurse(self, generator_function, rlevel)
+end
+
+function megacanvas:draw_straight(shape, start, finish)
+    self:set_all_cursors(start)
+    self:draw_shape(shape)
+    local gravity = vector.direction(self.cursor, finish)
+    while (vector.distance(self.cursor, finish) >= 1) do
+        self:move_all_cursors(gravity)
+        self:draw_shape(shape)
+    end
+end
+
+function megacanvas:draw_wobbly(shape, start, finish)
+    self:set_all_cursors(start)
+    self:draw_shape(shape)
+    while (vector.distance(self.cursor, finish) >= 1) do
+        local gravity = vector.direction(self.cursor, finish)
+        local random_move = vector.random(-1, 1) + gravity
+        self:move_all_cursors(random_move)
+        self:draw_shape(shape)
+    end
+end
+
+function megacanvas:draw_random(shape, nr)
+    for x = 1, nr do
+        local point = pcmg.random_pos_in_citychunk(self.origin)
+        self:set_all_cursors(point)
+        self:draw_shape(shape)
+    end
 end
