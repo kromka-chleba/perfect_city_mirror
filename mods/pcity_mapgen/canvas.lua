@@ -73,6 +73,9 @@ if citychunk.in_mapchunks < 3 then
     canvas_margin = mapchunk.in_nodes
 end
 local canvas_size = citychunk.in_nodes
+local margin_vector = vector.new(canvas_margin, canvas_margin, canvas_margin)
+local canvas_min = citychunk.pos_min - margin_vector
+local canvas_max = citychunk.pos_max + margin_vector
 
 -- Creates a blank citychunk array
 local function new_blank()
@@ -92,28 +95,18 @@ end
 function canvas.new(citychunk_origin)
     local canv = {}
     canv.origin = vector.copy(citychunk_origin)
+    canv.terminus = pcmg.citychunk_terminus(canv.origin)
     canv.array = new_blank()
     canv.cursor_inside = true
     canv.cursor = vector.new(0, 0, 0)
     return setmetatable(canv, canvas)
 end
 
--- Checks if citychunk-relative position is in bounds of
--- the canvas (the citychunk + margin around it)
-local function is_position_in_canvas(x, z)
-    if x >= -canvas_margin and x < canvas_size + canvas_margin and
-        z >= -canvas_margin and z < canvas_size + canvas_margin then
-        return true
-    else
-        return false
-    end
-end
-
 -- Sets cursor to a mapchunk-relative position
 -- x, z should have values from 0 to citychunk size - 1
-function canvas:set_cursor(x, z)
-    self.cursor_inside = is_position_in_canvas(x, z)
-    self.cursor = vector.new(x, 0, z)
+function canvas:set_cursor(pos)
+    self.cursor_inside = vector.in_area(pos, canvas_min, canvas_max)
+    self.cursor = vector.copy(pos)
 end
 
 -- Sets cursor to an absolute position 'pos'
@@ -121,13 +114,12 @@ end
 -- to citychunk-relative position that the cursor stores
 function canvas:set_cursor_absolute(pos)
     local relative = pos - self.origin
-    self:set_cursor(relative.x, relative.z)
+    self:set_cursor(relative)
 end
 
 -- Moves cursor by a vector 'vec'
 function canvas:move_cursor(vec)
-    local v = vector.round(vec) -- only integer moves allowed
-    self:set_cursor(self.cursor.x + v.x, self.cursor.z + v.z)
+    self:set_cursor(self.cursor + vec)
 end
 
 -- Reads a cell for a citychunk-relative position given by x, z
@@ -191,8 +183,9 @@ function canvas:search_for_material(shape, material_id)
     if not self.cursor_inside then
         return
     end
+    local cursor_pos = vector.round(self.cursor)
     for i = 1, #shape do
-        local point = shape[i] + self.cursor
+        local point = shape[i] + current_pos
         local material = self:read_cell(point.x, point.z)
         if type(material) ~= "number" then
             minetest.log("error", dump(type(material)))
@@ -208,8 +201,9 @@ function canvas:draw_shape(shape)
     if not self.cursor_inside then
         return
     end
+    local cursor_pos = vector.round(self.cursor)
     for _, cell in pairs(shape) do
-        local point = cell.pos + self.cursor
+        local point = cell.pos + cursor_pos
         self:read_write_cell(point.x, point.z, cell.material)
     end
 end

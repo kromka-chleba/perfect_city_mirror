@@ -28,7 +28,7 @@ local mapchunk_size = blocks_per_chunk * 16
 -- By default -32
 local mapchunk_offset = -16 * math.floor(blocks_per_chunk / 2)
 -- Citychunk size in mapchunks
-local citychunk_size = 10
+local citychunk_size = 5
 
 -- Translates node position into mapchunk position.
 function units.node_to_mapchunk(pos)
@@ -70,13 +70,20 @@ sizes.node = {
     in_mapchunks = 1 / mapchunk_size,
     in_citychunks = 1 / (mapchunk_size * citychunk_size),
 }
+local mapchunk_max = mapchunk_size - 1
 sizes.mapchunk = {
     in_nodes = mapchunk_size,
     in_citychunks = 1 / citychunk_size,
+    pos_min = vector.zero(),
+    pos_max = vector.new(mapchunk_max, mapchunk_max, mapchunk_max),
 }
+local citychunk_in_nodes = citychunk_size * mapchunk_size
+local citychunk_max = citychunk_in_nodes - 1
 sizes.citychunk = {
-    in_nodes = citychunk_size * mapchunk_size,
+    in_nodes = citychunk_in_nodes,
     in_mapchunks = citychunk_size,
+    pos_min = vector.zero(),
+    pos_max = vector.new(citychunk_max, citychunk_max, citychunk_max),
 }
 
 -- Height of most rooms
