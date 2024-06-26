@@ -39,7 +39,7 @@ local citychunk = sizes.citychunk
 
 --[[
     ** Overview **
-    Canvas is a data type for storing and processing 2D citychunk data.
+    Canvas is a data type for storing and processing 2D citychunk (node) data.
     Canvas is meant to be a blueprint that provides a layer of abstraction between
     map planning and actual mapgen. The main use case is generating complex map
     layouts, for example a layout of a city.
@@ -51,8 +51,11 @@ local citychunk = sizes.citychunk
     The cursor can be moved around and set to an arbitrary position in the citychunk,
     but also in a slightly bigger area called "canvas margin" that includes parts
     of surrounding citychunks. This design allows for overgeneration, but doesn't
-    provide it directly as the canvas can only write/read its own cells contained
+    provide it directly as the canvas can only write/read its own cells that are contained
     in the citychunk. Real overgeneration is provided by Megacanvas (see megacanvas.lua).
+
+    Also see the comment on the bottom of the file, if tempted to add more features
+    to the canvas.
 --]]
 
 pcmg.canvas = {}
@@ -277,3 +280,13 @@ function canvas:mapchunk_indices(pos_min, pos_max)
     local array_pos_max = pos_max - self.origin + vector.new(1, 1, 1)
     return array_pos_min, array_pos_max
 end
+
+--[[
+    READ THIS:
+    Before adding more features into the canvas, keep in mind that
+    it doesn't provide overgeneration by itself.
+    This means canvas will only properly overgenerate things
+    that don't rely on randomness or rely on randomness that
+    is reproducible and independent on the citychunk (i.e.
+    randomness NOT bootstrapped with values like citychunk origin/hash)
+--]]

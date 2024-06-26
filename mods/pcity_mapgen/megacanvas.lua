@@ -219,6 +219,24 @@ function megacanvas:draw_wobbly(shape, start, finish)
     end
 end
 
+local path_styles = {
+    straight = megacanvas.draw_straight,
+    wobbly = megacanvas.draw_wobbly,
+}
+
+function megacanvas:draw_path(shape, path, style)
+    local draw_function = style
+    if type(style) ~= "function" then
+        draw_function = path_styles[style]
+    end
+    local path_points = path:all_points()
+    for i = 2, #path_points do
+        local start = path_points[i - 1]
+        local finish = path_points[i]
+        draw_function(self, shape, start, finish)
+    end
+end
+
 function megacanvas:draw_random(shape, nr)
     for x = 1, nr do
         local point = pcmg.random_pos_in_citychunk(self.origin)
