@@ -43,8 +43,6 @@ if citychunk.in_mapchunks == 1 then
     road_margin = 15
 end
 
-
-
 --[[
     Road origin points are points where road generation starts.
     Every citychunk has 4 origin points, 1 per edge.
@@ -123,31 +121,26 @@ local road_shape = canvas_shapes.combine_shapes(
     canvas_shapes.make_circle(road_radius, road_asphalt_id)
 )
 
-local function draw_road(megacanv, start, finish)
-    local vec = vector.round(finish - start)
-    local step = vector.sign(vec)
-    local step_x = vector.new(step.x, 0, 0)
-    local step_z = vector.new(0, 0, step.z)
-    local moves_x = math.abs(vec.x)
-    local moves_z = math.abs(vec.z)
-    megacanv:set_all_cursors(start)
-    megacanv:draw_shape(road_shape)
-    while (moves_x > 0 or moves_z > 0) do
-        if moves_x > 0 then
-            megacanv:move_cursor(step_x)
-            megacanv:draw_shape(road_shape)
-            moves_x = moves_x - 1
-        end
-        if moves_z > 0 then
-            megacanv:move_cursor(step_z)
-            megacanv:draw_shape(road_shape)
-            moves_z = moves_z - 1
-        end
+-- for testing overgeneration
+local function draw_points(megacanv, points)
+    for _, point in pairs(points) do
+        megacanv:set_all_cursors(point)
+        megacanv:draw_circle(1, road_origin_id)
     end
 end
 
+local function draw_road(megacanv, start, finish)
+    local path = pcmg.path.new(start, finish)
+    path:make_slanted()
+    megacanv:draw_path(road_shape, path, "straight")
+end
+
 local function draw_straight_road(megacanv, start, finish)
-    megacanv:draw_straight(road_shape, start, finish)
+    local path = pcmg.path.new(start, finish)
+    --path:split(20)
+    megacanv:draw_path(road_shape, path, "straight")
+    --local points = path:all_points()
+    --draw_points(megacanv, points)
 end
 
 local function draw_wobbly_road(megacanv, start, finish)
@@ -160,21 +153,8 @@ local function draw_waved_road(megacanv, start, finish)
     pcmg.set_randomseed(megacanv.origin)
     local path = pcmg.path.new(start, finish)
     path:make_wave(50, 30, 5)
-    local path_points = path:all_points()
-    for i = 2, #path_points do
-        local segment_start = path_points[i - 1]
-        local segment_finish = path_points[i]
-        draw_straight_road(megacanv, segment_start, segment_finish)
-    end
+    megacanv:draw_path(road_shape, path, "straight")
     math.randomseed(os.time())
-end
-
--- for testing overgeneration
-local function draw_points(megacanv, points)
-    for _, point in pairs(points) do
-        megacanv:set_all_cursors(point)
-        megacanv:draw_circle(1, road_origin_id)
-    end
 end
 
 -- Draws random circles with asphalt and pavement
@@ -209,12 +189,12 @@ local function road_generator(megacanv)
     for _, points in ipairs(connected_points) do
         local start = points[1]
         local finish = points[2]
-        --draw_road(megacanv, start, finish)
-        draw_wobbly_road(megacanv, start, finish)
+        draw_road(megacanv, start, finish)
+        --draw_wobbly_road(megacanv, start, finish)
         --draw_waved_road(megacanv, start, finish)
         --draw_straight_road(megacanv, start, finish)
     end
-    draw_points(megacanv, road_origins)
+    --draw_points(megacanv, road_origins)
     --draw_random_dots(megacanv, 100)
     --draw_random_lines(megacanv, 10)
 end
