@@ -28,7 +28,7 @@ local mapchunk_size = blocks_per_chunk * 16
 -- By default -32
 local mapchunk_offset = -16 * math.floor(blocks_per_chunk / 2)
 -- Citychunk size in mapchunks
-local citychunk_size = 5
+local citychunk_size = tonumber(minetest.settings:get("pcity_citychunk_size")) or 10
 
 -- Translates node position into mapchunk position.
 function units.node_to_mapchunk(pos)
