@@ -28,3 +28,219 @@ function pcn.get_hard_sound(table)
   end
   return table
 end
+
+minetest.register_node(
+    mod_name..":curb_middle",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb.obj",
+        description = "Curb",
+        tiles = {{name = mod_name.."_curb_middle.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, -0.25},
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, -0.25},
+        },
+        sounds = get_hard_sound()
+    }
+)
+
+minetest.register_node(
+    mod_name..":curb_gap",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb.obj",
+        description = "Curb gap",
+        tiles = {{name = mod_name.."_curb_middle.png^"..
+                      mod_name.."_curb_gap.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, -0.25},
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, -0.25},
+        },
+        sounds = get_hard_sound()
+    }
+)
+
+minetest.register_node(
+    mod_name..":curb_corner",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb_corner.obj",
+        description = "Curb Corner",
+        tiles = {{name = mod_name.."_curb_middle.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {
+                {-0.5, -0.5, -0.5, 0.5, -0.3, -0.25},
+                {0.25, -0.5, -0.5, 0.5, -0.3, 0.5},
+            },
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {
+                {-0.5, -0.5, -0.5, 0.5, -0.3, 0.0},
+                {-0.5, -0.5, 0.0, 0.0, -0.3, 0.5},
+            },
+        },
+        sounds = get_hard_sound()
+    }
+)
+
+minetest.register_node(
+    mod_name..":curb_small",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb_small.obj",
+        description = "Curb Small",
+        tiles = {{name = mod_name.."_curb_middle.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, -0.25, -0.3, -0.25},
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, -0.25, -0.3, -0.25},
+            --fixed = {-0.5, -0.5, -0.5, 0.0, -0.3, 0.0},
+        },
+        sounds = get_hard_sound()
+    }
+)
+
+minetest.register_node(
+    mod_name..":curb_u_shaped",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb_u_shaped.obj",
+        description = "Curb U-Shaped",
+        tiles = {{name = mod_name.."_curb_middle.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {
+                {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+            },
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {
+                {-0.5, -0.5, -0.5, 0.5, -0.3, 0.0},
+            },
+        },
+        sounds = get_hard_sound()
+    }
+)
+
+minetest.register_node(
+    mod_name..":curb_road",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb_road.obj",
+        description = "Road Curb",
+        tiles = {{name = mod_name.."_curb_road.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0},
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0},
+        },
+        sounds = get_hard_sound()
+    }
+)
+
+minetest.register_node(
+    mod_name..":curb_road_corner",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb_road_corner.obj",
+        description = "Road Curb Corner",
+        tiles = {{name = mod_name.."_curb_road_slab.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {
+                {-0.5, -0.5, -0.5, 0.5, -0.3, 0.0},
+                {-0.5, -0.5, 0.0, 0.0, -0.3, 0.5},
+            },
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {
+                {-0.5, -0.5, -0.5, 0.5, -0.3, 0.0},
+                {-0.5, -0.5, 0.0, 0.0, -0.3, 0.5},
+            },
+        },
+        sounds = get_hard_sound()
+    }
+)
+
+minetest.register_node(
+    mod_name..":curb_road_small",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb_road_small.obj",
+        description = "Road Curb Small",
+        tiles = {{name = mod_name.."_curb_road.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.0, -0.3, 0.0},
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.0, -0.3, 0.0},
+        },
+        sounds = get_hard_sound()
+    }
+)
+
+minetest.register_node(
+    mod_name..":curb_road_slab",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_curb_road_slab.obj",
+        description = "Road Curb Slab",
+        tiles = {{name = mod_name.."_curb_road_slab.png"}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+        selection_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+        },
+        collision_box = {
+            type = "fixed",
+            fixed = {-0.5, -0.5, -0.5, 0.5, -0.3, 0.5},
+        },
+        sounds = get_hard_sound()
+    }
+)
