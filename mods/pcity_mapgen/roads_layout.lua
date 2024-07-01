@@ -189,9 +189,9 @@ local function road_generator(megacanv)
     for _, points in ipairs(connected_points) do
         local start = points[1]
         local finish = points[2]
-        draw_road(megacanv, start, finish)
+        --draw_road(megacanv, start, finish)
         --draw_wobbly_road(megacanv, start, finish)
-        --draw_waved_road(megacanv, start, finish)
+        draw_waved_road(megacanv, start, finish)
         --draw_straight_road(megacanv, start, finish)
     end
     --draw_points(megacanv, road_origins)
