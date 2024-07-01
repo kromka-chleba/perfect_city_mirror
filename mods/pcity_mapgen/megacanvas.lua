@@ -231,8 +231,8 @@ function megacanvas:draw_path(shape, path, style)
     end
     local path_points = path:all_points()
     for i = 2, #path_points do
-        local start = path_points[i - 1]
-        local finish = path_points[i]
+        local start = path_points[i - 1].pos
+        local finish = path_points[i].pos
         draw_function(self, shape, start, finish)
     end
 end
