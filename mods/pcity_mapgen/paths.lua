@@ -175,6 +175,14 @@ function path:all_points()
     return points
 end
 
+function path:all_positions()
+    local positions = {}
+    for _, p in ipairs(self:all_points()) do
+        table.insert(positions, p.pos)
+    end
+    return positions
+end
+
 -- Returns the length of the path
 function path:length()
     local points = self:all_points()
@@ -237,9 +245,11 @@ function path:make_slanted(segment_length)
         return
     end
     local vec = self.finish.pos - self.start.pos
-    local mid_point = self.start.pos + vector.new(vec.z, 0, vec.z)
-    if math.abs(vec.x) < math.abs(vec.z) then
-        mid_point = self.start.pos + vector.new(vec.x, 0, vec.x)
+    local sign = vector.sign(vec)
+    local abs_x, abs_z = math.abs(vec.x), math.abs(vec.z)
+    local mid_point = self.start.pos + vector.new(abs_z * sign.x, 0, abs_z * sign.z)
+    if abs_x < abs_z then
+        mid_point = self.start.pos + vector.new(abs_x * sign.x, 0, abs_x * sign.z)
     end
     self:insert(mid_point)
     if segment_length then
