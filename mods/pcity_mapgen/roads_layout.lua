@@ -126,13 +126,16 @@ local function draw_points(megacanv, points)
     for _, point in pairs(points) do
         megacanv:set_all_cursors(point)
         megacanv:draw_circle(1, road_origin_id)
+        --megacanv:draw_shape(road_shape)
     end
 end
 
 local function draw_road(megacanv, start, finish)
     local path = pcmg.path.new(start, finish)
     path:make_slanted()
+    local points = path:all_positions()
     megacanv:draw_path(road_shape, path, "straight")
+    draw_points(megacanv, points)
 end
 
 local function draw_straight_road(megacanv, start, finish)
@@ -189,9 +192,9 @@ local function road_generator(megacanv)
     for _, points in ipairs(connected_points) do
         local start = points[1]
         local finish = points[2]
-        --draw_road(megacanv, start, finish)
+        draw_road(megacanv, start, finish)
         --draw_wobbly_road(megacanv, start, finish)
-        draw_waved_road(megacanv, start, finish)
+        --draw_waved_road(megacanv, start, finish)
         --draw_straight_road(megacanv, start, finish)
     end
     --draw_points(megacanv, road_origins)

@@ -1,6 +1,6 @@
 # Perfect City
 Created by lord_of_the_dumpster
-for `Minetest 5.8+`
+for `Minetest 5.9+`
 
 TRIGGER WARNING: horror, gore, sensitive subjects (suicide, mental illness), bad language
 
@@ -33,6 +33,7 @@ https://wiki.minetest.net/Games#Installing_games
 1. **Some nodes**
 1. **Character model & skin**
 1. **Moody skyline**
+1. **Road generation (WIP)**
 
 ## Planned features
 1. **Randomly generated city**
@@ -74,6 +75,10 @@ Some general guidelines:
 No, I got the idea of a maze city with no people around 2013. I slowly developed it over years in my head and only recently stumbled upon the backrooms.
 I'm a huge fan of liminal spaces though and seeing the backrooms for Minetest motivated me to do my game in Minetest.
 The only idea I got from the other game is upscaling the player model to make the scale of everything appear more natural.
+
+> Are you insane?
+
+Yes.
 
 > Can I make this game proprietary?
 

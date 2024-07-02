@@ -162,26 +162,6 @@ function megacanvas:mark_partially_complete()
     self.cache.partially_complete[hash] = true
 end
 
-local function neighbor_recurse(megacanv, generator_function, recursion_level)
-    local central_hash = pcmg.citychunk_hash(megacanv.origin)
-    if not megacanv.cache.partially_complete[central_hash] then
-        generator_function(megacanv)
-        megacanv:mark_partially_complete()
-    end
-    if recursion_level <= 0 then
-        return
-    end
-    recursion_level = recursion_level - 1
-    for _, neighbor in pairs(megacanv.neighbors) do
-        local hash = pcmg.citychunk_hash(neighbor.origin)
-        if not megacanv.cache.complete[hash] then
-            local new_megacanv = pcmg.megacanvas.new(neighbor.origin, megacanv.cache)
-            neighbor_recurse(new_megacanv, generator_function, recursion_level)
-        end
-    end
-    megacanv:mark_complete()
-end
-
 --[[
     Generates a citychunk using the 'generator_function'
     which takes a megacanvas as its argument.
@@ -193,9 +173,25 @@ end
     'generator_function' MUST use reproducible randomness, otherwise
     overgeneration won't work.
 --]]
-function megacanvas:generate(generator_function, recursion_level)
-    local rlevel = recursion_level or 1
-    neighbor_recurse(self, generator_function, rlevel)
+function megacanvas:generate(generator_function, recursion_level, ...)
+    local recursion_level = recursion_level or 1
+    local central_hash = pcmg.citychunk_hash(self.origin)
+    if not self.cache.partially_complete[central_hash] then
+        generator_function(self, ...)
+        self:mark_partially_complete()
+    end
+    if recursion_level <= 0 then
+        return
+    end
+    recursion_level = recursion_level - 1
+    for _, neighbor in pairs(self.neighbors) do
+        local hash = pcmg.citychunk_hash(neighbor.origin)
+        if not self.cache.complete[hash] then
+            local new_megacanv = pcmg.megacanvas.new(neighbor.origin, self.cache)
+            new_megacanv:generate(generator_function, recursion_level, ...)
+        end
+    end
+    self:mark_complete()
 end
 
 function megacanvas:draw_straight(shape, start, finish)
