@@ -5,7 +5,7 @@ Tracks mapchunks players visited and stores info about them.
 
 Authors of source code
 ----------------------
-Jan Wielkiewicz (GPLv3)
+Jan Wielkiewicz (GPLv3+)
 
 ## General idea
 
