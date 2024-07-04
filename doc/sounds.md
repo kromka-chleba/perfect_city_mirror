@@ -23,11 +23,15 @@ https://freesound.org/people/UNIVERSFIELD/sounds/742850/
 
 https://freesound.org/people/UNIVERSFIELD/sounds/740204/
 
+https://freesound.org/people/newlocknew/sounds/584952/
+
 ## Weather:
 
 https://freesound.org/people/Vrymaa/sounds/735350/
 
 https://freesound.org/people/Vrymaa/sounds/734931/
+
+https://freesound.org/people/DWOBoyle/sounds/136692/
 
 ## Ambience:
 
@@ -48,6 +52,26 @@ https://freesound.org/people/Rico_Casazza/sounds/691025/
 https://freesound.org/people/klankbeeld/sounds/325442/
 
 https://freesound.org/people/cormi/sounds/85086/
+
+https://freesound.org/people/conleec/sounds/159740/
+
+https://freesound.org/people/talithamaree_2L/sounds/593575/
+
+https://freesound.org/people/jimmygian/sounds/473616/
+
+https://freesound.org/people/magnus589/sounds/379738/
+
+https://freesound.org/people/lolamadeus/sounds/161223/
+
+https://freesound.org/people/klankbeeld/sounds/469073/
+
+https://freesound.org/people/more7859/sounds/489401/
+
+https://freesound.org/people/klankbeeld/sounds/576588/
+
+https://freesound.org/people/klankbeeld/sounds/379315/
+
+https://freesound.org/people/klankbeeld/sounds/622190/
 
 ## Weird:
 
