@@ -1,4 +1,4 @@
-![Perfect City](menu/header.png)
+![Perfect City](doc/logo.png)
 
 Created by lord_of_the_dumpster
 for `Minetest 5.9+`
