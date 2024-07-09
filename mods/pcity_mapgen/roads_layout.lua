@@ -183,9 +183,6 @@ local function draw_random_lines(megacanv, nr)
     math.randomseed(os.time())
 end
 
--- cache for canvas data, see megacanvas.lua
-local canvas_cache = pcmg.canvas_cache.new()
-
 local function road_generator(megacanv)
     local road_origins = pcmg.citychunk_road_origins(megacanv.central.origin)
     local connected_points = connect_road_origins(megacanv.central.origin, road_origins)
@@ -201,6 +198,9 @@ local function road_generator(megacanv)
     --draw_random_dots(megacanv, 100)
     --draw_random_lines(megacanv, 10)
 end
+
+-- cache for canvas data, see megacanvas.lua
+local canvas_cache = pcmg.canvas_cache.new()
 
 function pcmg.citychunk_road_canvas(citychunk_origin)
     local t1 = minetest.get_us_time()

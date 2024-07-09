@@ -94,8 +94,8 @@ local blank_id = 1
 pcmg.canvas_cache = {}
 local canvas_cache = pcmg.canvas_cache
 
-function canvas_cache.new()
-    local cache = {}
+function canvas_cache.new(c)
+    local cache = c or {}
     if not cache.citychunks then
         cache.citychunks = {}
     end
@@ -125,8 +125,7 @@ end
 
 function megacanvas.new(citychunk_origin, cache)
     local megacanv = {}
-    canvas_cache.new()
-    megacanv.cache = cache
+    megacanv.cache = canvas_cache.new(cache)
     megacanv.origin = vector.copy(citychunk_origin)
     megacanv.cursor = vector.new(0, 0, 0) -- abs pos only
     local hash = pcmg.citychunk_hash(citychunk_origin)
