@@ -60,10 +60,23 @@ end
 function point:unlink()
     self.next = false
     self.previous = false
+    self.path = false
 end
 
 function point:unlink_next()
     self.next = false
+end
+
+function point:iterator()
+    local i = 0
+    local current_point = self
+    return function ()
+        current_point = current_point.next
+        i = i + 1
+        if current_point then
+            return i, current_point
+        end
+    end
 end
 
 function path.new(start, finish)
@@ -77,8 +90,8 @@ function path.new(start, finish)
     pth.start = point.new(start, pth)
     pth.finish = point.new(finish, pth)
     point.link(pth.start, pth.finish)
-    pth.locked = false
-    pth.points = {}
+    pth.points = setmetatable({}, {__mode = "kv"})
+    pth.point_nr = 0 -- nr of intermediate points
     return pth
 end
 
@@ -86,55 +99,53 @@ function path.check(p)
     return getmetatable(p) == path
 end
 
-function path:lock()
-    self.locked = true
-end
-
-function path:unlock()
-    self.locked = false
+function path:get_point(nr)
+    if type(nr) ~= "number" or
+        nr <= 0 or nr > self.point_nr then
+        return
+    end
+    for i, p in self:iterator() do
+        if i == nr then
+            return p
+        end
+    end
 end
 
 -- Inserts a point into the path before the finish point
--- or at the position specified by 'tab_pos' which is the index
--- in the table of intermediate points (path.points).
+-- or at the position specified by 'nr' which is the number
+-- of one of the intermediate points (path.points).
 -- Used when the destination (finish) point stays the same
 -- but an intermediate point is added.
-function path:insert(pos, tab_pos)
+function path:insert(pos, nr)
     if not vector.check(pos) then
         error("Path: pos '"..dump(pos).."' is not a vector.")
     end
-    if tab_pos and tab_pos > #self.points and tab_pos <= 0 then
-        error("Path: tab_pos '"..dump(tab_pos).."' is not a valid index (out of bounds or not a number).")
+    if nr and type(nr) ~= "number" then
+        error("Path: nr '"..dump(nr).."' is not a number.")
     end
-    if self.locked then
-        return
-    end
-    local tab_pos = tab_pos or #self.points + 1
-    local previous_point = self.points[tab_pos - 1] or self.start
+    local next_point = self:get_point(nr) or self.finish
     local new_point = point.new(pos, self)
-    local next_point = self.points[tab_pos] or self.finish
+    local previous_point = next_point.previous
     point.link(previous_point, new_point, next_point)
-    table.insert(self.points, tab_pos, new_point)
+    self.points[new_point] = new_point
+    self.point_nr = self.point_nr + 1
 end
 
 -- Removes the intermediate point that's before the finish
--- or, if specified, the point at position specified by 'tab_pos'
+-- or, at the position specified by 'nr' if given.
 -- Used when the destination (finish) point stays the same
 -- but an intermediate point is removed.
-function path:remove(tab_pos)
-    if tab_pos and tab_pos > #self.points and tab_pos <= 0 then
-        error("Path: tab_pos '"..dump(tab_pos).."' is not a valid index (out of bounds or not a number).")
-    end
-    if self.locked then
+function path:remove(nr)
+    if self.point_nr <= 0 then
         return
     end
-    local middle_point = self.points[tab_pos]
+    if nr and type(nr) ~= "number" then
+        error("Path: nr '"..dump(nr).."' is not a number.")
+    end
+    local middle_point = self:get_point(nr) or self.finish.previous
+    point.link(middle_point.previous, middle_point.next)
     middle_point:unlink()
-    local tab_pos = tab_pos or #self.points
-    local previous_point = self.points[tab_pos - 1] or self.start
-    local next_point = self.points[tab_pos + 1] or self.finish
-    point.link(previous_point, next_point)
-    table.remove(self.points, tab_pos or #self.points)
+    self.point_nr = self.point_nr - 1
 end
 
 -- Extends the path by adding a new finish point,
@@ -143,24 +154,24 @@ function path:extend(pos)
     if not vector.check(pos) then
         error("Path: pos '"..dump(start).."' is not a vector.")
     end
-    if self.locked then
-        return
-    end
     local new_point = point.new(pos, self)
     point.link(self.finish, new_point)
-    table.insert(self.points, self.finish)
+    self.points[self.finish] = self.finish
     self.finish = new_point
+    self.point_nr = self.point_nr + 1
 end
 
 -- Shortens the table by removing the finish point and
 -- setting a new one using the last intermediate point.
 function path:shorten()
-    if #self.points <= 0 or self.locked then
+    if #self.points <= 0 then
         return
     end
-    self.finish:unlink()
-    self.finish = table.remove(self.points)
+    local old_finish = self.finish
+    self.finish = self.finish.previous
     self.finish:unlink_next()
+    old_finish:unlink()
+    self.point_nr = self.point_nr - 1
 end
 
 -- Returns positions of all points of the path
@@ -168,10 +179,9 @@ end
 function path:all_points()
     local points = {}
     table.insert(points, self.start)
-    for _, p in ipairs(self.points) do
+    for _, p in self.start:iterator() do
         table.insert(points, p)
     end
-    table.insert(points, self.finish)
     return points
 end
 
@@ -211,19 +221,12 @@ function path:split(segment_length)
 end
 
 function path:make_straight(segment_length)
-    if self.locked then
-        return
-    end
     if segment_length then
         self:split(segment_length)
     end
-    self:lock()
 end
 
 function path:make_wave(segment_nr, amplitude, density)
-    if self.locked then
-        return
-    end
     local v = (self.finish.pos - self.start.pos) / segment_nr
     local total_distance = vector.distance(self.start.pos, self.finish.pos)
     local direction = vector.normalize(v)
@@ -237,13 +240,9 @@ function path:make_wave(segment_nr, amplitude, density)
         local pos = current_pos + perpendicular * distance_cofactor * wave * amplitude
         self:insert(pos)
     end
-    self:lock()
 end
 
 function path:make_slanted(segment_length)
-    if self.locked then
-        return
-    end
     local vec = self.finish.pos - self.start.pos
     local sign = vector.sign(vec)
     local abs_x, abs_z = math.abs(vec.x), math.abs(vec.z)
@@ -255,5 +254,4 @@ function path:make_slanted(segment_length)
     if segment_length then
         self:split(segment_length)
     end
-    self:lock()
 end

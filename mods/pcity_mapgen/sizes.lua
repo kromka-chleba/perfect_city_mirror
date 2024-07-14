@@ -84,6 +84,8 @@ sizes.citychunk = {
     in_mapchunks = citychunk_size,
     pos_min = vector.zero(),
     pos_max = vector.new(citychunk_max, citychunk_max, citychunk_max),
+    overgen_margin = 2 * sizes.mapchunk.in_nodes or
+        citychunk_size < 3 and sizes.mapchunk.in_nodes
 }
 
 -- Height of most rooms

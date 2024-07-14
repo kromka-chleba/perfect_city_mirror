@@ -71,12 +71,9 @@ local blank_id = 1
     is partially outside the canvas.
     This means overgeneration will only work for nodes in that area.
 --]]
-local canvas_margin = 2 * mapchunk.in_nodes
-if citychunk.in_mapchunks < 3 then
-    canvas_margin = mapchunk.in_nodes
-end
+local canvas_margin = sizes.citychunk.overgen_margin
 local canvas_size = citychunk.in_nodes
-local margin_vector = vector.new(canvas_margin, canvas_margin, canvas_margin)
+local margin_vector = vector.new(1, 1, 1) * canvas_margin
 local canvas_min = citychunk.pos_min - margin_vector
 local canvas_max = citychunk.pos_max + margin_vector
 
