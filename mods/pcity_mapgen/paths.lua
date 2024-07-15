@@ -30,6 +30,11 @@ path.__index = path
 local point = {}
 point.__index = point
 
+-- Creates a new instance of the Point class. Points store absolute
+-- world position, the previous and the next point in a sequence and
+-- the path (see the Path class below) they belong to. Points can be
+-- linked to create linked lists which should be helpful for
+-- road/street generation algorithms.
 function point.new(pos, pth)
     if not vector.check(pos) then
         error("Path: pos '"..dump(pos).."' is not a vector.")
@@ -45,10 +50,12 @@ function point.new(pos, pth)
     return setmetatable(p, point)
 end
 
+-- Checks if the object is a point.
 function point.check(p)
     return getmetatable(p) == point
 end
 
+-- Links points in order, accepts any number of points.
 function point.link(...)
     local points = {...}
     for i = 1, #points - 1 do
@@ -57,16 +64,27 @@ function point.link(...)
     end
 end
 
+-- Unlinks the point from both the previous and the next point.
 function point:unlink()
+    self.next.previous = false
     self.next = false
+    self.previous.next = false
     self.previous = false
-    self.path = false
 end
 
+-- Unlinks the current point from the next point.
 function point:unlink_next()
+    self.next.previous = false
     self.next = false
 end
 
+-- Returns an iterator function for a point. The iterator function
+-- lets you traverse the linked list of points and returns two values:
+-- 'i' - the ordinal number of the next point starting from the
+-- current point (so the number of points between the point the
+-- iterator was created for) and 'current_point' - the next point in
+-- the sequence (linked list/path). Use just like 'ipairs'.
+-- Example: for i, p in my_point:iterator() do ... end
 function point:iterator()
     local i = 0
     local current_point = self
@@ -79,6 +97,10 @@ function point:iterator()
     end
 end
 
+-- Creates an instance of the Path class. Paths store a sequence of
+-- points (have a direction). Each path has a start and a finish point
+-- and optionally intermediate points. Each point is an instance of
+-- the Point class, so the path is actually a linked list of points.
 function path.new(start, finish)
     if not vector.check(start) then
         error("Path: start '"..dump(start).."' is not a vector.")
@@ -95,16 +117,21 @@ function path.new(start, finish)
     return pth
 end
 
+-- Checks if an object is a path as created by path.new
 function path.check(p)
     return getmetatable(p) == path
 end
 
+-- Returns an intermediate point given by 'nr' that is the ordinal
+-- number of the point in the sequence starting from the first
+-- intermediate point. So 'nr' = 1 will give the first intermediate
+-- point in the path. Returns nil if no point is found at the position.
 function path:get_point(nr)
     if type(nr) ~= "number" or
         nr <= 0 or nr > self.point_nr then
         return
     end
-    for i, p in self:iterator() do
+    for i, p in self.start:iterator() do
         if i == nr then
             return p
         end
