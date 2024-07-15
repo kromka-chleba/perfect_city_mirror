@@ -201,8 +201,8 @@ function path:shorten()
     self.point_nr = self.point_nr - 1
 end
 
--- Returns positions of all points of the path
--- including start, intermediate points and stop.
+-- Returns all points of the path including start,
+-- intermediate points and stop (in order).
 function path:all_points()
     local points = {}
     table.insert(points, self.start)
@@ -212,6 +212,8 @@ function path:all_points()
     return points
 end
 
+-- Returns positions of all points of the path including start,
+-- intermediate points and stop (in order).
 function path:all_positions()
     local positions = {}
     for _, p in ipairs(self:all_points()) do

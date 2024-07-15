@@ -32,9 +32,34 @@ local node = sizes.node
 local mapchunk = sizes.mapchunk
 local citychunk = sizes.citychunk
 
+-------------------------------------------------------------------------
+-- Megacanvas
+-------------------------------------------------------------------------
+
+--[[
+    ** Overview **
+    Megacanvas is an class for managing overgeneration across
+    multiple canvas objects. It has a cursor pointing to an
+    absolute position and replicates that cursor setting for
+    each canvas it manages (every canvas points to the same
+    absolute position). By default a megacanvas manages the
+    central chunk and all its 8 neighbors. Overgeneration is
+    provided by calling canvas methods for each canvas at the
+    absolute cursor position. Writing to each canvas happens
+    only if cursor of each canvas is in the overgeneration
+    margin area (see canvas.lua for details). Megacanvas also
+    provides smart caching of partially generated and already
+    fully generated canvases.
+--]]
+
 pcmg.megacanvas = {}
 local megacanvas = pcmg.megacanvas
 
+-- Allows calling methods of the Canvas class from Megacanvas.
+-- Calls the method for the central citychunk and all neighbors,
+-- returns a table with returned values of each citychunk canvas. When
+-- the returned value is a boolean, it returns a logical OR of the
+-- returned values.
 local function make_method(method)
     return function (self, ...)
         -- products are stuff returned by each function
@@ -43,9 +68,7 @@ local function make_method(method)
         products[central_hash] = method(self.central, ...)
         for _, neighbor in pairs(self.neighbors) do
             local hash = pcmg.citychunk_hash(neighbor.origin)
-            if not self.cache.complete[hash] then
-                products[hash] = method(neighbor, ...)
-            end
+            products[hash] = method(neighbor, ...)
         end
         local product_type
         for _, product in pairs(products) do
@@ -67,6 +90,11 @@ local function make_method(method)
     end
 end
 
+-- Allows Megacanvas objects to call Megacanvas or Canvas methods.
+-- If there's no method with 'key' name in the Megacanvas class, it
+-- looks for the method in the Canvas class.
+-- When using methods from the Canvas class, a method created by
+-- 'make_method' is used (see above).
 megacanvas.__index = function(object, key)
     if megacanvas[key] then
         object[key] = megacanvas[key]
