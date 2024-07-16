@@ -74,15 +74,15 @@ local blank_id = 1
 local canvas_margin = sizes.citychunk.overgen_margin
 local canvas_size = citychunk.in_nodes
 local margin_vector = vector.new(1, 1, 1) * canvas_margin
-local canvas_min = citychunk.pos_min - margin_vector
-local canvas_max = citychunk.pos_max + margin_vector
+local margin_min = citychunk.pos_min - margin_vector
+local margin_max = citychunk.pos_max + margin_vector
 
 -- Creates a blank citychunk array
 local function new_blank()
     local blank_template = {}
-    for x = 1, canvas_size do
+    for x = 1, canvas_size + 2 * canvas_margin do
         blank_template[x] = {}
-        for z = 1, canvas_size do
+        for z = 1, canvas_size + 2 * canvas_margin do
             blank_template[x][z] = blank_id
         end
     end
@@ -105,8 +105,9 @@ end
 -- Sets cursor to a mapchunk-relative position
 -- x, z should have values from 0 to citychunk size - 1
 function canvas:set_cursor(pos)
-    self.cursor_inside = vector.in_area(pos, canvas_min, canvas_max)
+    self.cursor_inside = vector.in_area(pos, margin_min, margin_max)
     self.cursor = vector.copy(pos)
+    self.cursor.y = 0
 end
 
 -- Sets cursor to an absolute position 'pos'
@@ -126,7 +127,7 @@ end
 -- Returns material ID of the cell or blank_id if the position
 -- is out of bounds of the canvas
 function canvas:read_cell(x, z)
-    local new_x, new_z = x + 1, z + 1
+    local new_x, new_z = x + 1 + canvas_margin , z + 1 + canvas_margin
     if self.array[new_x] then
         return self.array[new_x][new_z] or blank_id
     end
@@ -148,7 +149,7 @@ end
 -- When the position is out of bounds, no data is written.
 function canvas:write_cell(x, z, material_id)
     local priority = materials_by_id[material_id].priority
-    local new_x, new_z = x + 1, z + 1
+    local new_x, new_z = x + 1 + canvas_margin, z + 1 + canvas_margin
     if self.array[new_x] and self.array[new_x][new_z] and
         priority >= self:cell_priority(x, z) then
         self.array[new_x][new_z] = material_id
@@ -158,7 +159,7 @@ end
 -- A function that combines functions of 'read_cell', 'write_cell' and
 -- 'cell_priority'. It likely makes it faster.
 function canvas:read_write_cell(x, z, material_id)
-    local new_x, new_z = x + 1, z + 1
+    local new_x, new_z = x + 1 + canvas_margin, z + 1 + canvas_margin
     if not self.array[new_x] then
         return
     end
@@ -273,8 +274,10 @@ end
 -- specify min and max position of the mapchunk in the canvas.
 -- 'pos_min', 'pos_max' are min and max absolute positions of the mapchunk
 function canvas:mapchunk_indices(pos_min, pos_max)
-    local array_pos_min = pos_min - self.origin + vector.new(1, 1, 1)
-    local array_pos_max = pos_max - self.origin + vector.new(1, 1, 1)
+    local array_pos_min =
+        pos_min - self.origin + vector.new(1, 1, 1) + margin_vector
+    local array_pos_max =
+        pos_max - self.origin + vector.new(1, 1, 1) + margin_vector
     return array_pos_min, array_pos_max
 end
 
@@ -285,5 +288,7 @@ end
     This means canvas will only properly overgenerate things
     that don't rely on randomness or rely on randomness that
     is reproducible and independent on the citychunk (i.e.
-    randomness NOT bootstrapped with values like citychunk origin/hash)
+    randomness NOT bootstrapped with values like citychunk origin/hash).
+    Use Megacanvas instead for functions that use not reproducible
+    randomness or avoid it altogether.
 --]]
