@@ -47,6 +47,7 @@ function point.new(pos, pth)
     p.path = pth
     p.previous = false
     p.next = false
+    p.branches = {}
     return setmetatable(p, point)
 end
 
@@ -97,16 +98,31 @@ function point:iterator()
     end
 end
 
+-- Starts a new path at the position of the point.
+-- Uses the same position object for the point and the start point of
+-- the new path so that these points remain attached when changing position.
+-- Returns the new path (branch).
+function point:branch(finish)
+    self.path.branching_points[self] = self
+    local pth = path.new(self.pos, finish, self)
+    pth.start.pos = self.pos
+    self.branches[pth] = pth
+    return pth
+end
+
 -- Creates an instance of the Path class. Paths store a sequence of
 -- points (have a direction). Each path has a start and a finish point
 -- and optionally intermediate points. Each point is an instance of
 -- the Point class, so the path is actually a linked list of points.
-function path.new(start, finish)
+function path.new(start, finish, trunk)
     if not vector.check(start) then
         error("Path: start '"..dump(start).."' is not a vector.")
     end
     if not vector.check(finish) then
         error("Path: finish '"..dump(finish).."' is not a vector.")
+    end
+    if trunk and not point.check(trunk) then
+        error("Path: trunk '"..dump(trunk).."' is not a point.")
     end
     local pth = setmetatable({}, path)
     pth.start = point.new(start, pth)
@@ -114,6 +130,8 @@ function path.new(start, finish)
     point.link(pth.start, pth.finish)
     pth.points = setmetatable({}, {__mode = "kv"})
     pth.point_nr = 0 -- nr of intermediate points
+    pth.trunk = trunk -- optional trunk point
+    pth.branching_points = setmetatable({}, {__mode = "kv"})
     return pth
 end
 
@@ -122,14 +140,17 @@ function path.check(p)
     return getmetatable(p) == path
 end
 
--- Returns an intermediate point given by 'nr' that is the ordinal
--- number of the point in the sequence starting from the first
--- intermediate point. So 'nr' = 1 will give the first intermediate
--- point in the path. Returns nil if no point is found at the position.
+-- Returns a point given by 'nr' that is the ordinal
+-- number of the point in the sequence starting from the start.
+-- So 'nr' = will give the start point, 'nr' = 1 will give the first intermediate
+-- point in the path, etc. Returns nil if no point is found at the position.
 function path:get_point(nr)
     if type(nr) ~= "number" or
-        nr <= 0 or nr > self.point_nr then
+        nr < 0 or nr > self.point_nr + 1 then
         return
+    end
+    if nr == 0 then
+        return self.start
     end
     for i, p in self.start:iterator() do
         if i == nr then
@@ -138,20 +159,24 @@ function path:get_point(nr)
     end
 end
 
+function path:random_intermediate_point()
+    return self:get_point(math.random(1, self.point_nr))
+end
+
 -- Inserts a point into the path before the finish point
 -- or at the position specified by 'nr' which is the number
 -- of one of the intermediate points (path.points).
 -- Used when the destination (finish) point stays the same
 -- but an intermediate point is added.
 function path:insert(pos, nr)
-    if not vector.check(pos) then
-        error("Path: pos '"..dump(pos).."' is not a vector.")
+    if not vector.check(pos) and not point.check(pos) then
+        error("Path: pos '"..dump(pos).."' is not a vector nor a point.")
     end
     if nr and type(nr) ~= "number" then
         error("Path: nr '"..dump(nr).."' is not a number.")
     end
     local next_point = self:get_point(nr) or self.finish
-    local new_point = point.new(pos, self)
+    local new_point = point.check(pos) and pos or point.new(pos, self)
     local previous_point = next_point.previous
     point.link(previous_point, new_point, next_point)
     self.points[new_point] = new_point
@@ -178,10 +203,10 @@ end
 -- Extends the path by adding a new finish point,
 -- moves the old finish point down the table.
 function path:extend(pos)
-    if not vector.check(pos) then
-        error("Path: pos '"..dump(start).."' is not a vector.")
+    if not vector.check(pos) and not point.check(pos) then
+        error("Path: pos '"..dump(start).."' is not a vector nor a point.")
     end
-    local new_point = point.new(pos, self)
+    local new_point = point.check(pos) and pos or point.new(pos, self)
     point.link(self.finish, new_point)
     self.points[self.finish] = self.finish
     self.finish = new_point
@@ -236,16 +261,37 @@ end
 -- Splits path into segments with max length specified by
 -- 'segment_length', leaves segments shorter than that untouched.
 function path:split(segment_length)
-    local points = self:all_points()
-    local i = 2
-    while (#points >= i) do
-        local v = points[i].pos - points[i - 1].pos
+    local i = 1
+    local current_point = self.start
+    while (current_point.next) do
+        local v = current_point.next.pos - current_point.pos
         if vector.length(v) > segment_length then
             local new_segment = vector.normalize(v) * segment_length
-            local current_pos = points[i - 1].pos + new_segment.pos
-            path:insert(current_pos, i - 1)
+            local current_pos = current_point.pos + new_segment
+            self:insert(current_pos, i)
         end
+        current_point = current_point.next
         i = i + 1
+    end
+end
+
+-- Transfers points from p2 to p1. This action is destructive for p2 -
+-- it changes point ownership of its points from p2 to p1. Therefore
+-- p2 should be discarded after merging points into p1.
+function path.merge(p1, p2)
+    if vector.equals(p1.finish.pos, p2.start.pos) then
+        for _, branch in pairs(p1.finish.branches) do
+            p2.start.branches[branch] = branch
+        end
+        p1:shorten()
+    end
+    for _, bp in pairs(p2.branching_points) do
+        p1.branching_points[bp] = bp
+    end
+    local points = p2:all_points()
+    for _, pnt in ipairs(points) do
+        pnt.path = p1
+        p1:extend(pnt)
     end
 end
 

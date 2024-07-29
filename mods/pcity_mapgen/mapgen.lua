@@ -29,6 +29,8 @@ local sizes = dofile(mod_path.."/sizes.lua")
 
 dofile(mod_path.."/utils.lua")
 dofile(mod_path.."/paths.lua")
+dofile(mod_path.."/pathpaver.lua")
+dofile(mod_path.."/megapathpaver.lua")
 dofile(mod_path.."/canvas_brushes.lua")
 dofile(mod_path.."/canvas.lua")
 dofile(mod_path.."/megacanvas.lua")
@@ -127,18 +129,24 @@ local function helper_grid(mapgen_args)
     vm:set_data(data)
 end
 
+local road_canvas_cache = pcmg.megacanvas.cache.new()
+local pathpaver_cache = pcmg.megapathpaver.cache.new()
+
 local function mapgen(vm, pos_min, pos_max, blockseed)
     local t1 = minetest.get_us_time()
     local mapgen_args = {vm, pos_min, pos_max, blockseed}
     if pos_max.y >= sizes.ground_level and sizes.ground_level >= pos_min.y then
-        local citychunk_origin = pcmg.citychunk_origin(pos_min)
-        local citychunk_coords = pcmg.citychunk_coords(pos_min)
-        local citychunk_hash = pcmg.citychunk_hash(pos_min)
-        local road_points = pcmg.citychunk_road_origins(citychunk_coords)
-        --pcmg.check_road_points(road_points)
         helper_grid(mapgen_args)
-        local city_canvas = pcmg.citychunk_road_canvas(citychunk_origin)
-        pcmg.write_roads(mapgen_args, city_canvas)
+        local citychunk_origin = pcmg.citychunk_origin(pos_min)
+        local hash = pcmg.citychunk_hash(pos_min)
+        if not road_canvas_cache.complete[hash] then
+            local megacanv = pcmg.megacanvas.new(citychunk_origin, road_canvas_cache)
+            local megapathpav = pathpaver_cache.pathpavers[hash] or
+                pcmg.megapathpaver.new(citychunk_origin, pathpaver_cache)
+            pcmg.generate_roads(megacanv, megapathpav)
+        end
+        local canvas = road_canvas_cache.citychunks[hash]
+        pcmg.write_roads(mapgen_args, canvas)
         --minetest.log("error", string.format("elapsed time: %g ms", (minetest.get_us_time() - t1) / 1000))
     end
 end
