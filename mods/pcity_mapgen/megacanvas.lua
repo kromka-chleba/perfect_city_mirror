@@ -119,10 +119,9 @@ local blank_id = 1
     * 'citychunk_meta': arbitrary user-provided data
 --]]
 
-pcmg.canvas_cache = {}
-local canvas_cache = pcmg.canvas_cache
+megacanvas.cache = {}
 
-function canvas_cache.new(c)
+function megacanvas.cache.new(c)
     local cache = c or {}
     if not cache.citychunks then
         cache.citychunks = {}
@@ -153,13 +152,13 @@ end
 
 function megacanvas.new(citychunk_origin, cache)
     local megacanv = {}
-    megacanv.cache = canvas_cache.new(cache)
+    megacanv.cache = megacanvas.cache.new(cache)
     megacanv.origin = vector.copy(citychunk_origin)
     megacanv.cursor = vector.new(0, 0, 0) -- abs pos only
     local hash = pcmg.citychunk_hash(citychunk_origin)
     megacanv.central = cache.citychunks[hash] or pcmg.canvas.new(citychunk_origin)
     cache.citychunks[hash] = megacanv.central
-    megacanv.neighbors = neighboring_canvases(citychunk_origin, cache)
+    megacanv.neighbors = neighboring_canvases(megacanv.origin, cache)
     return setmetatable(megacanv, megacanvas)
 end
 
@@ -199,6 +198,9 @@ end
     will be generated.
     'generator_function' MUST use reproducible randomness, otherwise
     overgeneration won't work.
+    'generator_function' is only ran once for a citychunk that's not
+    marked as 'complete ' or 'partially_complete', so for fresh
+    citychunks only.
 --]]
 function megacanvas:generate(generator_function, recursion_level, ...)
     local recursion_level = recursion_level or 1
@@ -252,11 +254,30 @@ function megacanvas:draw_path(shape, path, style)
     if type(style) ~= "function" then
         draw_function = path_styles[style]
     end
-    local path_points = path:all_points()
-    for i = 2, #path_points do
-        local start = path_points[i - 1].pos
-        local finish = path_points[i].pos
+    local current_point = path.start
+    while (current_point.next) do
+        local start = current_point.pos
+        local finish = current_point.next.pos
         draw_function(self, shape, start, finish)
+        current_point = current_point.next
+    end
+    for _, bp in pairs(path.branching_points) do
+        for _, branch in pairs(bp.branches) do
+            self:draw_path(shape, branch, style)
+        end
+    end
+end
+
+function megacanvas:draw_path_points(shape, path)
+    local all_pos = path:all_positions()
+    for _, pos in pairs(all_pos) do
+        self:set_all_cursors(pos)
+        self:draw_shape(shape)
+    end
+    for _, bp in pairs(path.branching_points) do
+        for _, branch in pairs(bp.branches) do
+            self:draw_path_points(shape, branch)
+        end
     end
 end
 

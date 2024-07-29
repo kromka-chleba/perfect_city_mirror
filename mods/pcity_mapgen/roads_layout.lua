@@ -121,12 +121,13 @@ local road_shape = canvas_shapes.combine_shapes(
     canvas_shapes.make_circle(road_radius, road_asphalt_id)
 )
 
+local point_shape = pcmg.canvas_shapes.make_circle(1, road_origin_id)
+
 -- for testing overgeneration
 local function draw_points(megacanv, points)
     for _, point in pairs(points) do
         megacanv:set_all_cursors(point)
-        megacanv:draw_circle(1, road_origin_id)
-        --megacanv:draw_shape(road_shape)
+        megacanv:draw_shape(point_shape)
     end
 end
 
@@ -183,32 +184,30 @@ local function draw_random_lines(megacanv, nr)
     math.randomseed(os.time())
 end
 
-local function road_generator(megacanv)
+local function road_generator(megacanv, megapathpav)
     local road_origins = pcmg.citychunk_road_origins(megacanv.central.origin)
     local connected_points = connect_road_origins(megacanv.central.origin, road_origins)
+    local first_path
     for _, points in ipairs(connected_points) do
         local start = points[1]
         local finish = points[2]
-        draw_road(megacanv, start, finish)
-        --draw_wobbly_road(megacanv, start, finish)
-        --draw_waved_road(megacanv, start, finish)
-        --draw_straight_road(megacanv, start, finish)
+        if not first_path then
+            first_path = pcmg.path.new(start, finish)
+            first_path:make_slanted(10)
+        else
+            local random_point = first_path:random_intermediate_point()
+            local pth1 = random_point:branch(start)
+            local pth2 = random_point:branch(finish)
+            pth1:make_slanted()
+            pth2:make_slanted()
+        end
     end
-    --draw_points(megacanv, road_origins)
-    --draw_random_dots(megacanv, 100)
-    --draw_random_lines(megacanv, 10)
+    megacanv:draw_path(road_shape, first_path, "straight")
+    megacanv:draw_path_points(point_shape, first_path)
 end
 
--- cache for canvas data, see megacanvas.lua
-local canvas_cache = pcmg.canvas_cache.new()
-
-function pcmg.citychunk_road_canvas(citychunk_origin)
+function pcmg.generate_roads(megacanv, megapathpav)
     local t1 = minetest.get_us_time()
-    local hash = pcmg.citychunk_hash(citychunk_origin)
-    if not canvas_cache.complete[hash] then
-        local megacanv = pcmg.megacanvas.new(citychunk_origin, canvas_cache)
-        megacanv:generate(road_generator)
-        minetest.log("error", string.format("Overgen time: %g ms", (minetest.get_us_time() - t1) / 1000))
-    end
-    return canvas_cache.citychunks[hash]
+    megacanv:generate(road_generator, nil, megapathpav)
+    minetest.log("error", string.format("Overgen time: %g ms", (minetest.get_us_time() - t1) / 1000))
 end
