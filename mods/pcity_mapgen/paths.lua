@@ -320,10 +320,10 @@ end
 function path:make_slanted(segment_length)
     local vec = self.finish.pos - self.start.pos
     local sign = vector.sign(vec)
-    local abs_x, abs_z = math.abs(vec.x), math.abs(vec.z)
-    local mid_point = self.start.pos + vector.new(abs_z * sign.x, 0, abs_z * sign.z)
-    if abs_x < abs_z then
-        mid_point = self.start.pos + vector.new(abs_x * sign.x, 0, abs_x * sign.z)
+    local abs = vector.abs(vec)
+    local mid_point = self.start.pos + vector.new(abs.z * sign.x, 0, abs.z * sign.z)
+    if abs.x < abs.z then
+        mid_point = self.start.pos + vector.new(abs.x * sign.x, 0, abs.x * sign.z)
     end
     self:insert(mid_point)
     if segment_length then
