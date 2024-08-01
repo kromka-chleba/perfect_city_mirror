@@ -211,14 +211,6 @@ function vector.modf(v)
         vector.new(x_frac, y_frac, z_frac)
 end
 
-function math.sign(n)
-    if n >= 0 then
-        return 1
-    else
-        return -1
-    end
-end
-
 function vector.sign(v)
     return vector.apply(v, math.sign)
 end
