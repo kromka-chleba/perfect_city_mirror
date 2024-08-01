@@ -226,9 +226,9 @@ end
 function megacanvas:draw_straight(shape, start, finish)
     self:set_all_cursors(start)
     self:draw_shape(shape)
-    local gravity = vector.direction(self.cursor, finish)
     while (vector.distance(self.cursor, finish) >= 1) do
-        self:move_all_cursors(gravity)
+        local gravity = vector.direction(self.cursor, finish)
+        self:move_all_cursors(vector.round(gravity))
         self:draw_shape(shape)
     end
 end
