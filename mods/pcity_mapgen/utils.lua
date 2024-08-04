@@ -83,14 +83,14 @@ end
 
 -- Returns mapchunk hash for a given position
 function pcmg.mapchunk_hash(pos)
-    local coords = pcmg.mapchunk_coords(pos)
-    return minetest.hash_node_position(coords)
+    local origin = pcmg.mapchunk_origin(pos)
+    return minetest.hash_node_position(origin)
 end
 
 -- Returns citychunk hash for a given position
 function pcmg.citychunk_hash(pos)
-    local coords = pcmg.citychunk_coords(pos)
-    return minetest.hash_node_position(coords)
+    local origin = pcmg.citychunk_origin(pos)
+    return minetest.hash_node_position(origin)
 end
 
 -- Returns node position relative to citychunk origin point.
