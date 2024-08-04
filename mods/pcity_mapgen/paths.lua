@@ -47,6 +47,7 @@ function point.new(pos, pth)
     p.path = pth
     p.previous = false
     p.next = false
+    p.attached = setmetatable({}, {__mode = "kv"})
     p.branches = {}
     return setmetatable(p, point)
 end
@@ -67,16 +68,68 @@ end
 
 -- Unlinks the point from both the previous and the next point.
 function point:unlink()
-    self.next.previous = false
+    if self.next then
+        self.next.previous = false
+    end
     self.next = false
-    self.previous.next = false
+    if self.previous then
+        self.previous.next = false
+    end
     self.previous = false
+    self.path.points[self] = nil
 end
 
 -- Unlinks the current point from the next point.
-function point:unlink_next()
+function point:unlink_from_next()
     self.next.previous = false
     self.next = false
+end
+
+-- Attaches the 'p' point to this point. Moves the 'p' point to the
+-- position of this point. This means the points now share their
+-- position (setting position of one point with 'point:set_position'
+-- will also change the position of all attached points).
+function point:attach(p)
+    if not point.check(p) then
+        error("Path: p '"..dump(p).."' is not a point.")
+    end
+    self.attached[p] = p -- attach 'p' to 'self'
+    p.attached[self] = self -- attach self to 'p'
+    self.path.attached_points[self] = self -- mark 'self' as attached in its path
+    p.path.attached_points[p] = p -- mark 'p' as attached in its path
+    p.pos = self.pos -- synch pos
+end
+
+-- Detaches this point from all points it is attached to (if no
+-- aruments passed to the method) or points passed to the method.
+-- '...' is any number of points.
+function point:detach(...)
+    local points = ... and {...} or self.attached
+    for _, p in pairs(points) do
+        p.attached[self] = nil -- detach 'self' from points attached to it
+        if next(p.attached) == nil then
+            -- if 'p' has no other attached points, unmark it from
+            -- attached points in its path
+            p.path.attached_points[p] = nil
+        end
+        self.attached[p] = nil -- detach 'p' from 'self'
+    end
+    if next(self.attached) == nil then
+        -- if 'self' has no other attached points, unmark it from
+        -- attached points in its path
+        self.path.attached_points[self] = nil
+    end
+end
+
+-- Sets position of the given point and all attached points to 'pos'.
+function point:set_position(pos)
+    if not vector.check(pos) then
+        error("Path: pos '"..dump(pos).."' is not a vector.")
+    end
+    self.pos = pos
+    for _, a in pairs(attached) do
+        a.pos = pos
+    end
 end
 
 -- Returns an iterator function for a point. The iterator function
@@ -91,6 +144,22 @@ function point:iterator()
     local current_point = self
     return function ()
         current_point = current_point.next
+        i = i + 1
+        if current_point then
+            return i, current_point
+        end
+    end
+end
+
+-- Works just like 'point:iterator()', but instead it iterates in
+-- reverse order - lets you traverse the path from a given point to
+-- the start point.
+-- Example: for i, p in my_point:reverse_iterator() do ... end
+function point:reverse_iterator()
+    local i = 0
+    local current_point = self
+    return function ()
+        current_point = current_point.previous
         i = i + 1
         if current_point then
             return i, current_point
@@ -132,6 +201,7 @@ function path.new(start, finish, trunk)
     pth.point_nr = 0 -- nr of intermediate points
     pth.trunk = trunk -- optional trunk point
     pth.branching_points = setmetatable({}, {__mode = "kv"})
+    pth.attached_points = setmetatable({}, {__mode = "kv"})
     return pth
 end
 
@@ -215,15 +285,37 @@ end
 
 -- Shortens the table by removing the finish point and
 -- setting a new one using the last intermediate point.
-function path:shorten()
-    if #self.points <= 0 then
+function path:shorten(nr)
+    for i = 1, nr or 1 do
+        if next(self.points) == nil then
+            return
+        end
+        local old_finish = self.finish
+        self.finish = self.finish.previous
+        self.finish:unlink_from_next()
+        old_finish:unlink()
+        self.point_nr = self.point_nr - 1
+    end
+end
+
+-- Cuts off (removes from the path) all points that come after the
+-- point specified by 'point'. Sets 'point' as the new finish.
+function path:cut_off(point)
+    if not self.points[point] and not
+        self.finish == point then
         return
     end
-    local old_finish = self.finish
-    self.finish = self.finish.previous
-    self.finish:unlink_next()
-    old_finish:unlink()
-    self.point_nr = self.point_nr - 1
+    if self.finish == point then
+        self:shorten()
+        return
+    end
+    for _, p in self.finish:reverse_iterator() do
+        if p == point then
+            break
+        end
+        self:shorten()
+    end
+    self:shorten()
 end
 
 -- Returns all points of the path including start,

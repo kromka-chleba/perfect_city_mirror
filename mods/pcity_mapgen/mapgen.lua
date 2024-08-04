@@ -141,9 +141,7 @@ local function mapgen(vm, pos_min, pos_max, blockseed)
         local hash = pcmg.citychunk_hash(pos_min)
         if not road_canvas_cache.complete[hash] then
             local megacanv = pcmg.megacanvas.new(citychunk_origin, road_canvas_cache)
-            local megapathpav = pathpaver_cache.pathpavers[hash] or
-                pcmg.megapathpaver.new(citychunk_origin, pathpaver_cache)
-            pcmg.generate_roads(megacanv, megapathpav)
+            pcmg.generate_roads(megacanv, pathpaver_cache)
         end
         local canvas = road_canvas_cache.citychunks[hash]
         pcmg.write_roads(mapgen_args, canvas)

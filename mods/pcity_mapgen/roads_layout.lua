@@ -112,6 +112,7 @@ local road_asphalt_id = materials_by_name["road_asphalt"]
 local road_pavement_id = materials_by_name["road_pavement"]
 local road_center_id = materials_by_name["road_center"]
 local road_origin_id = materials_by_name["road_origin"]
+local road_midpoint_id = materials_by_name["road_midpoint"]
 
 local road_radius = 5
 local pavement_radius = 8
@@ -121,30 +122,15 @@ local road_shape = canvas_shapes.combine_shapes(
     canvas_shapes.make_circle(road_radius, road_asphalt_id)
 )
 
-local point_shape = pcmg.canvas_shapes.make_circle(1, road_origin_id)
+local midpoint_shape = pcmg.canvas_shapes.make_circle(1, road_midpoint_id)
+local origin_shape = pcmg.canvas_shapes.make_circle(1, road_origin_id)
 
 -- for testing overgeneration
 local function draw_points(megacanv, points)
     for _, point in pairs(points) do
         megacanv:set_all_cursors(point)
-        megacanv:draw_shape(point_shape)
+        megacanv:draw_shape(origin_shape)
     end
-end
-
-local function draw_road(megacanv, start, finish)
-    local path = pcmg.path.new(start, finish)
-    path:make_slanted()
-    local points = path:all_positions()
-    megacanv:draw_path(road_shape, path, "straight")
-    draw_points(megacanv, points)
-end
-
-local function draw_straight_road(megacanv, start, finish)
-    local path = pcmg.path.new(start, finish)
-    --path:split(20)
-    megacanv:draw_path(road_shape, path, "straight")
-    --local points = path:all_points()
-    --draw_points(megacanv, points)
 end
 
 local function draw_wobbly_road(megacanv, start, finish)
@@ -171,43 +157,49 @@ local function draw_random_dots(megacanv, nr)
     math.randomseed(os.time())
 end
 
-local function draw_random_lines(megacanv, nr)
-    local nr = nr or 100
-    pcmg.set_randomseed(megacanv.origin)
-    for x = 1, nr do
-        local point = pcmg.random_pos_in_citychunk(megacanv.origin)
-        megacanv:set_all_cursors(point)
-        local v = vector.random(-30, 30)
-        local line = canvas_shapes.make_line(v, road_center_id)
-        megacanv:draw_shape(line)
+local function build_road(megapathpav, start, finish)
+    local guide_path = pcmg.path.new(start, finish)
+    guide_path:make_slanted(10)
+    local colliding
+    for _, p in guide_path.start:iterator() do
+        local collisions = megapathpav:colliding_points(p.pos, 30, true)
+        if next(collisions) then
+            colliding = collisions
+            guide_path:cut_off(p)
+        end
     end
-    math.randomseed(os.time())
+    if colliding then
+        local _, col = next(colliding)
+        guide_path:shorten(4)
+        local extension =
+            pcmg.path.new(guide_path.finish.pos, col.pos)
+        extension:make_slanted(10)
+        guide_path:merge(extension)
+        local branch = col:branch(finish)
+        branch:make_slanted(10)
+    end
+    return guide_path
 end
 
-local function road_generator(megacanv, megapathpav)
-    local road_origins = pcmg.citychunk_road_origins(megacanv.central.origin)
-    local connected_points = connect_road_origins(megacanv.central.origin, road_origins)
-    local first_path
+local function road_generator(megacanv, pathpaver_cache)
+    local road_origins = pcmg.citychunk_road_origins(megacanv.origin)
+    local connected_points = connect_road_origins(megacanv.origin, road_origins)
+    local megapathpav = pcmg.megapathpaver.new(megacanv.origin, pathpaver_cache)
     for _, points in ipairs(connected_points) do
         local start = points[1]
         local finish = points[2]
-        if not first_path then
-            first_path = pcmg.path.new(start, finish)
-            first_path:make_slanted(10)
-        else
-            local random_point = first_path:random_intermediate_point()
-            local pth1 = random_point:branch(start)
-            local pth2 = random_point:branch(finish)
-            pth1:make_slanted()
-            pth2:make_slanted()
-        end
+        local path = build_road(megapathpav, start, finish)
+        megapathpav:save_path(path)
+        draw_points(megacanv, road_origins)
     end
-    megacanv:draw_path(road_shape, first_path, "straight")
-    megacanv:draw_path_points(point_shape, first_path)
+    for _, path in pairs(megapathpav.paths) do
+        megacanv:draw_path(road_shape, path, "straight")
+        megacanv:draw_path_points(midpoint_shape, path)
+    end
 end
 
-function pcmg.generate_roads(megacanv, megapathpav)
+function pcmg.generate_roads(megacanv, pathpaver_cache)
     local t1 = minetest.get_us_time()
-    megacanv:generate(road_generator, nil, megapathpav)
+    megacanv:generate(road_generator, 1, pathpaver_cache)
     minetest.log("error", string.format("Overgen time: %g ms", (minetest.get_us_time() - t1) / 1000))
 end

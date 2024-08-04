@@ -81,10 +81,11 @@ function megapathpaver.new(citychunk_origin, cache)
     local hash = pcmg.citychunk_hash(citychunk_origin)
     mpp.central = cache.pathpavers[hash] or pcmg.pathpaver.new(citychunk_origin)
     mpp.neighbors = neighboring_pathpavers(mpp.origin, cache)
+    mpp.paths = mpp.central.paths
     return setmetatable(mpp, megapathpaver)
 end
 
-function megapathpaver.save_path(pth)
+function megapathpaver:save_path(pth)
     self.central.paths[pth] = pth
     for _, pnt in pairs(pth:all_points()) do
         self:save_point(pnt)
@@ -93,4 +94,8 @@ end
 
 function megapathpaver.check(p)
     return getmetatable(p) == megapathpaver
+end
+
+function megapathpaver:colliding_points(...)
+    return self.central:colliding_points(...)
 end

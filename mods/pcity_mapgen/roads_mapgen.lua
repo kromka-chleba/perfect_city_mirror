@@ -59,6 +59,7 @@ local asphalt_id = minetest.get_content_id(road_definition.floor)
 local pavement_id = minetest.get_content_id(road_definition.pavement)
 local blue_id = minetest.get_content_id("pcity_nodes:roughcast_blue")
 local green_id = minetest.get_content_id("pcity_nodes:roughcast_green")
+local red_id = minetest.get_content_id("pcity_nodes:roughcast_red")
 
 -- canvas material IDs
 local blank_id = materials_by_name["blank"]
@@ -66,6 +67,7 @@ local road_asphalt_id = materials_by_name["road_asphalt"]
 local road_pavement_id = materials_by_name["road_pavement"]
 local road_center_id = materials_by_name["road_center"]
 local road_origin_id = materials_by_name["road_origin"]
+local road_midpoint_id = materials_by_name["road_midpoint"]
 
 function pcmg.write_roads(mapgen_args, canv)
     local t1 = minetest.get_us_time()
@@ -91,6 +93,8 @@ function pcmg.write_roads(mapgen_args, canv)
                     data[i] = blue_id
                 elseif cell_id == road_origin_id then
                     data[i] = green_id
+                elseif cell_id == road_midpoint_id then
+                    data[i] = red_id
                 end
             end
         end

@@ -51,12 +51,57 @@ function pathpaver.new(citychunk_origin)
     return setmetatable(p, pathpaver)
 end
 
+-- Checks if position 'pos' is inside the citychunk and its
+-- overgeneration area. Returns a boolean.
+function pathpaver:pos_in_margin(pos)
+    return vector.in_area(pos, self.margin_min, self.margin_max)
+end
+
+-- Checks if position 'pos' is inside the citychunk (NOT including its
+-- overgeneration area. Returns a boolean.
+function pathpaver:pos_in_citychunk(pos)
+    return vector.in_area(pos, self.origin, self.origin +
+                          sizes.citychunk.pos_max)
+end
+
 function pathpaver.check(p)
     return getmetatable(p) == pathpaver
 end
 
+-- Saves the 'pnt' point in the pathpaver.
 function pathpaver:save_point(pnt)
-    if vector.in_area(pnt.pos, self.margin_min, self.margin_max) then
+    if self:pos_in_margin(pnt.pos) then
         self.points[pnt] = pnt
     end
+end
+
+function pathpaver:path_points()
+    local all = {}
+    for _, path in pairs(self.paths) do
+        local points = path:all_points()
+        for _, p in pairs(points) do
+            all[p] = p
+        end
+    end
+    return all
+end
+
+-- Checks if a position given by 'pos' is contained in the radius of
+-- a point given by 'radius'. Returns all points that contain the
+-- position within the radius. Returns false if no colliding points
+-- were found for the position. When 'only_paths' is 'true', the
+-- function will only search in points that belong to paths saved in
+-- the current pathpaver and won't include overgenerated points from
+-- neighboring citychunks. When 'only_paths' is 'false' (the default),
+-- the function will check all points in the pathpaver.
+function pathpaver:colliding_points(pos, radius, only_paths)
+    local colliding = {}
+    local points = only_paths and self:path_points() or self.points
+    for _, point in pairs(points) do
+        local distance = vector.distance(pos, point.pos)
+        if distance <= radius then
+            table.insert(colliding, point)
+        end
+    end
+    return colliding
 end

@@ -201,11 +201,15 @@ end
     'generator_function' is only ran once for a citychunk that's not
     marked as 'complete ' or 'partially_complete', so for fresh
     citychunks only.
+
+    XXX: Replace with a canvas-independent (over)generator?
 --]]
 function megacanvas:generate(generator_function, recursion_level, ...)
     local recursion_level = recursion_level or 1
     local central_hash = pcmg.citychunk_hash(self.origin)
-    if not self.cache.partially_complete[central_hash] then
+    if not self.cache.partially_complete[central_hash] and
+        not self.cache.complete[central_hash]
+    then
         generator_function(self, ...)
         self:mark_partially_complete()
     end
