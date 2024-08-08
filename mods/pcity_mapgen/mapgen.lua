@@ -25,7 +25,7 @@ local units = sizes.units
 
 dofile(mod_path.."/metastore.lua")
 dofile(mod_path.."/utils.lua")
-dofile(mod_path.."/paths.lua")
+dofile(mod_path.."/path.lua")
 dofile(mod_path.."/pathpaver.lua")
 dofile(mod_path.."/megapathpaver.lua")
 dofile(mod_path.."/canvas_brushes.lua")
