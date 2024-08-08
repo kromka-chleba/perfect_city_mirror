@@ -350,9 +350,9 @@ function path:length()
     return length
 end
 
--- Splits path into segments with max length specified by
+-- Subdivides path into segments with max length specified by
 -- 'segment_length', leaves segments shorter than that untouched.
-function path:split(segment_length)
+function path:subdivide(segment_length)
     local i = 1
     local current_point = self.start
     while (current_point.next) do
@@ -389,7 +389,7 @@ end
 
 function path:make_straight(segment_length)
     if segment_length then
-        self:split(segment_length)
+        self:subdivide(segment_length)
     end
 end
 
@@ -419,6 +419,6 @@ function path:make_slanted(segment_length)
     end
     self:insert(mid_point)
     if segment_length then
-        self:split(segment_length)
+        self:subdivide(segment_length)
     end
 end
