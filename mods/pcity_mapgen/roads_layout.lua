@@ -114,8 +114,8 @@ local road_center_id = materials_by_name["road_center"]
 local road_origin_id = materials_by_name["road_origin"]
 local road_midpoint_id = materials_by_name["road_midpoint"]
 
-local road_radius = 5
-local pavement_radius = 8
+local road_radius = 9
+local pavement_radius = 13
 
 local road_shape = canvas_shapes.combine_shapes(
     canvas_shapes.make_circle(pavement_radius, road_pavement_id),
@@ -157,6 +157,8 @@ local function draw_random_dots(megacanv, nr)
     math.randomseed(os.time())
 end
 
+local road_metastore = pcmg.metastore.new()
+
 local function build_road(megapathpav, start, finish)
     local guide_path = pcmg.path.new(start, finish)
     guide_path:make_slanted(10)
@@ -177,11 +179,13 @@ local function build_road(megapathpav, start, finish)
         guide_path:merge(extension)
         local branch = col:branch(finish)
         branch:make_slanted(10)
+        -- road_metastore:set(branch, "style", "wobbly")
     end
     return guide_path
 end
 
 local function road_generator(megacanv, pathpaver_cache)
+    megacanv:set_metastore(road_metastore)
     local road_origins = pcmg.citychunk_road_origins(megacanv.origin)
     local connected_points = connect_road_origins(megacanv.origin, road_origins)
     local megapathpav = pcmg.megapathpaver.new(megacanv.origin, pathpaver_cache)
@@ -193,6 +197,11 @@ local function road_generator(megacanv, pathpaver_cache)
         draw_points(megacanv, road_origins)
     end
     for _, path in pairs(megapathpav.paths) do
+        -- for _, p in path.start:iterator() do
+        --     if math.random() > 0.5 then
+        --         road_metastore:set(p, "style", "wobbly")
+        --     end
+        -- end
         megacanv:draw_path(road_shape, path, "straight")
         megacanv:draw_path_points(midpoint_shape, path)
     end

@@ -38,7 +38,7 @@ local private_const = setmetatable({}, {__mode = "k"})
 
 function metastore:__newindex(key, value)
     -- forbid setting new keys for this class
-    minetest.log("error", "Metastore: Don't set values directly, use 'metastore:set' instead.")
+    minetest.log("error", "Metastore: Don't set values directly, use 'metastore:set', etc. instead.")
 end
 
 function metastore.new()
