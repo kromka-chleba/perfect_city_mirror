@@ -159,7 +159,16 @@ function megacanvas.new(citychunk_origin, cache)
     megacanv.central = cache.citychunks[hash] or pcmg.canvas.new(citychunk_origin)
     cache.citychunks[hash] = megacanv.central
     megacanv.neighbors = neighboring_canvases(megacanv.origin, cache)
-    return setmetatable(megacanv, megacanvas)
+    megacanv.metastore = pcmg.metastore.new()
+    setmetatable(megacanv, megacanvas)
+    megacanv:set_metastore(megacanv.metastore)
+    return megacanv
+end
+
+function megacanvas:set_metastore(mt)
+    self.metastore = pcmg.metastore.check(mt) and mt
+    local set_metastore = make_method(pcmg.canvas["set_metastore"])
+    set_metastore(self, mt)
 end
 
 -- Sets cursors of the central citychunk and neighbors
@@ -248,18 +257,28 @@ function megacanvas:draw_wobbly(shape, start, finish)
     end
 end
 
-local path_styles = {
+-- Line drawstyle
+local line_styles = {
     straight = megacanvas.draw_straight,
     wobbly = megacanvas.draw_wobbly,
 }
 
-function megacanvas:draw_path(shape, path, style)
-    local draw_function = style
-    if type(style) ~= "function" then
-        draw_function = path_styles[style]
+function megacanvas:register_drawstyle(name, func)
+    if type(name) ~= "string" then
+        error("Megacanvas: drawstyle 'name' has to be a string but is: "..dump(name))
     end
+    if type(func) ~= "function" then
+        error("Megacanvas: drawstyle 'func' has to be a function but is: "..dump(func))
+    end
+    line_styles[name] = func
+end
+
+function megacanvas:draw_path(shape, path, style)
     local current_point = path.start
+    local path_style = self.metastore:get(path, "style")
     while (current_point.next) do
+        local point_style = self.metastore:get(current_point, "style")
+        local draw_function = line_styles[point_style or path_style or style]
         local start = current_point.pos
         local finish = current_point.next.pos
         draw_function(self, shape, start, finish)

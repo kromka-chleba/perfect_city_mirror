@@ -99,7 +99,15 @@ function canvas.new(citychunk_origin)
     canv.array = new_blank()
     canv.cursor_inside = true
     canv.cursor = vector.new(0, 0, 0)
+    canv.metastore = pcmg.metastore.new()
     return setmetatable(canv, canvas)
+end
+
+function canvas:set_metastore(mt)
+    if not pcmg.metastore.check(mt) then
+        error("Canvas: 'mt' is not a proper metastore object: "..dump(mt))
+    end
+    self.metastore = mt
 end
 
 -- Sets cursor to a mapchunk-relative position
