@@ -182,8 +182,14 @@ end
 local mapgen_seed = minetest.get_mapgen_setting("seed")
 
 function pcmg.set_randomseed(citychunk_origin)
-    local hash = pcmg.citychunk_hash(citychunk_origin)
-    math.randomseed(hash, mapgen_seed)
+    local coords = pcmg.citychunk_coords(citychunk_origin)
+    local seed = bit.tobit(mapgen_seed)
+    seed = bit.rol(seed, coords.x)
+    if seed % 2 == 0 then
+        seed = bit.bxor(seed, bit.tobit(mapgen_seed))
+    end
+    seed = bit.rol(seed, coords.z)
+    math.randomseed(math.abs(seed))
 end
 
 -- splits a vector into a table of smaller vectors
