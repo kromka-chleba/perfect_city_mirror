@@ -16,11 +16,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-pcity_mapgen = {}
-local pcmg = pcity_mapgen
-
--- Load files
-local mod_path = minetest.get_modpath("pcity_mapgen")
+-- This mod name and path
+local mod_name = minetest.get_current_modname()
+local mod_path = minetest.get_modpath(mod_name)
+-- Cirno's Perfect Math Library
+local CPML_mod_path = minetest.get_modpath("pcity_cpml")
 
 -- These are necessary so the mapgen works at all lol
 minetest.register_alias("mapgen_stone", "pcity_nodes:asphalt")
@@ -34,5 +34,5 @@ if minetest.settings:get("pcity_enable_hills") == "true" then
 end
 
 dofile(mod_path.."/biomes.lua")
-
+minetest.register_mapgen_script(CPML_mod_path.."/init.lua")
 minetest.register_mapgen_script(mod_path.."/mapgen.lua")
