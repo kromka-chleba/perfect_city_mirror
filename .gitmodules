@@ -1,0 +1,3 @@
+[submodule "mods/pcity_cpml"]
+	path = mods/pcity_cpml
+	url = https://codeberg.org/lord_of_the_dumpster/pcity_cpml.git
