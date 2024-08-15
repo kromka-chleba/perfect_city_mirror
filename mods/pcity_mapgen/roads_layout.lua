@@ -21,7 +21,6 @@ local mod_path = minetest.get_modpath("pcity_mapgen")
 local pcmg = pcity_mapgen
 local units = pcmg.units
 local math = math
-local mlib = dofile(mod_path.."/mlib.lua")
 local sizes = dofile(mod_path.."/sizes.lua")
 local _, materials_by_name = dofile(mod_path.."/canvas_ids.lua")
 local units = sizes.units

@@ -20,7 +20,6 @@ local mod_name = minetest.get_current_modname()
 local mod_path = minetest.get_modpath("pcity_mapgen")
 
 local math = math
-local mlib = dofile(mod_path.."/mlib.lua")
 local pcmg = pcity_mapgen
 local sizes = dofile(mod_path.."/sizes.lua")
 local units = sizes.units
@@ -115,68 +114,6 @@ function pcmg.citychunk_neighbors(pos)
         end
     end
     return neighbors
-end
-
--- Returns a polygon in mlib format:
--- { x1, z1, x2, z2, x3, z3, ... }
--- for a given mapchunk in citychunk units
-function pcmg.mapchunk_polygon(origin)
-    local citychunk_coords = units.mapchunk_to_citychunk(origin)
-    local mic = mapchunk.in_citychunks
-    local p1 = citychunk_coords
-    local p2 = vector.add(citychunk_coords, vector.new(mic, 0, 0))
-    local p3 = vector.add(citychunk_coords, vector.new(mic, 0, mic))
-    local p4 = vector.add(citychunk_coords, vector.new(0, 0, mic))
-    return {p1.x, p1.z, p2.x, p2.z, p3.x, p3.z, p4.x, p4.z}
-end
-
--- Translates mlib format {x1, z1, x2, z2 ...} into minetest vectors.
-function pcmg.mlib_to_vector(tab)
-    local points = {}
-    for _, point in ipairs(tab) do
-        local p = vector.new(point[1], 0, point[2])
-        table.insert(points, p)
-    end
-    return points
-end
-
--- Trims a segment to mapchunk borders.
--- Returns a table with two points that are both in the mapchunk.
--- Returns nil if the segment is out of the mapchunk.
--- mapchunk_poly is a square (polygon) in mlib format as returned by mapchunk_polygon.
--- p1, p2 are points of the segment to be trimmed.
--- The function preserves the order of points in the path.
-function pcmg.trim_segment_to_mapchunk(mapchunk_poly, p1, p2)
-    if not mlib.polygon.isSegmentInside(p1.x, p1.z, p2.x, p2.z, mapchunk_poly) then
-        -- return nil if segment is not inside the mapchunk
-        return
-    end
-    local new_points = mlib.polygon.getSegmentIntersection(
-        p1.x, p1.z, p2.x, p2.z, mapchunk_poly)
-    if not new_points then
-        -- no intersections, the segment doesn't touch borders
-        return {p1, p2}
-    end
-    new_points = pcmg.mlib_to_vector(new_points)
-    local p3, p4 = unpack(new_points)
-    local old_direction = vector.direction(p1, p2)
-    if p3 and p4 then
-        -- two intersections
-        local p3_to_p4 = vector.direction(p3, p4)
-        if vector.equals(old_direction, p3_to_p4) then
-            return {p3, p4}
-        else
-            return {p4, p3}
-        end
-    else
-        -- one intersection, must be between p1 and p2
-        local p3_to_p2 = vector.direction(p3, p2)
-        if vector.equals(old_direction, p3_to_p2) then
-            return {p3, p2}
-        else
-            return {p1, p3}
-        end
-    end
 end
 
 local mapgen_seed = minetest.get_mapgen_setting("seed")
