@@ -144,3 +144,51 @@ Quotes:
 "I was keeping the celestial bodies moving for you, I moved the Sun and stopped the Earth, but I cannot do so any longer"
 
 "If you ever meet my evil twin brother - Claus, don't talk to him. He's a broken and cynical man and will surely try to deceive you. Don't play his wicked games, Seba."
+
+### 3.2 Imaginary Girlfriend
+
+Theme: "Like those precious summer days - the blue sky, green trees
+and orange sun. Will you stay with me forever?".
+
+Full of energy and sincere, always knows what to say when you feel
+down.  "We used to spend so much time together as kids, don't you
+remember?"  Loves hanging around with you, will do stupid shit with
+you like building a dam and poking a dead bird with a stick.
+A nostalgic and warm feeling fills your heart, the feeling in your
+guts is love. You wish this summer never ends.
+
+Quotes:
+
+"I'll always be your bro, bro."
+
+"I like you for who you are, Seba."
+
+"Give me your hand!"
+
+"I'm really happy I've met you!"
+
+"You know, I'm a girl after all..."
+
+### 3.3 Imaginary Childhood Bro
+
+Theme: "Like those precious summer days - the blue sky, green trees
+and orange sun. Will you stay with me forever?".
+
+Full of energy and sincere, always knows what to say when you feel
+down.  "We used to spend so much time together as kids, don't you
+remember?"  Loves hanging around with you, will do stupid shit with
+you like building a dam and poking a dead bird with a stick.
+A nostalgic and warm feeling fills your heart, the feeling in your
+guts is love. You wish this summer never ends.
+
+Quotes:
+
+"I'll always be your bro, bro."
+
+"I like you for who you are, Seba."
+
+"Give me your hand!"
+
+"I'm really happy I've met you!"
+
+"N-no, you can't, we're both boys!"
