@@ -143,7 +143,7 @@ if the faceless man was still lurking somewhere in the city.
 
 ### 3.1 Sebastian (Seba)
 
-Theme: "Like a dream about another person's life. Who am I even, is
+Theme: "Like a dream about another person's life. Who even am I, is
 this where I belong?"
 
 Seba is a man who freshly entered adulthood, a Polish wigga with
@@ -152,7 +152,7 @@ neighborhood, he feels one with concrete. Not too talkative, thinks
 first then speaks. Seba carefully watches his environment and acts
 accordingly to contain any shitstorm before it happens. Was not too
 popular in school, but did not make many foes either. Liked by his
-close buddy Mariusz who often invites Seba to hang out with his band
+close buddy Mariusz who often invites Seba to hang out with his crew
 to drink, smoke and hit on hoes. Seba is loyal to his girlfriend and
 would do everything for her.
 
@@ -164,7 +164,7 @@ creation of the world in 7.5 days", "Everything About Concrete",
 "Ferdydurke", "Goat Anatomy" and "The Selfish Gene".  Seba is
 surprisingly intelligent for who he is, curiosity often leads him to
 strange places. "What the fuck are you reading, Seba?" asked
-Mariusz. "Be careful or you'll become an egghead ehehehe". "I found
+Mariusz, "Be careful or you'll become an egghead ehehehe". "I found
 these books next to a trashcan, they look good enough to sell them" he
 replied, "Don't worry about it too much".
 
