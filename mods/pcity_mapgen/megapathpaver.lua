@@ -98,3 +98,7 @@ end
 function megapathpaver:colliding_points(...)
     return self.central:colliding_points(...)
 end
+
+function megapathpaver:colliding_segments(...)
+    return self.central:colliding_segments(...)
+end

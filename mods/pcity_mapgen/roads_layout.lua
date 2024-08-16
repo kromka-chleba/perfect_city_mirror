@@ -158,27 +158,42 @@ end
 
 local road_metastore = pcmg.metastore.new()
 
+-- local function build_road(megapathpav, start, finish)
+--     local guide_path = pcmg.path.new(start, finish)
+--     guide_path:make_slanted(10)
+--     local colliding
+--     for _, p in guide_path.start:iterator() do
+--         local collisions = megapathpav:colliding_points(p.pos, 30, true)
+--         if next(collisions) then
+--             colliding = collisions
+--             guide_path:cut_off(p)
+--         end
+--     end
+--     if colliding then
+--         local _, col = next(colliding)
+--         guide_path:shorten(4)
+--         local extension =
+--             pcmg.path.new(guide_path.finish.pos, col.pos)
+--         extension:make_slanted(10)
+--         guide_path:merge(extension)
+--         local branch = col:branch(finish)
+--         branch:make_slanted(10)
+--         -- road_metastore:set(branch, "style", "wobbly")
+--     end
+--     return guide_path
+-- end
+
 local function build_road(megapathpav, start, finish)
     local guide_path = pcmg.path.new(start, finish)
-    guide_path:make_slanted(10)
-    local colliding
-    for _, p in guide_path.start:iterator() do
-        local collisions = megapathpav:colliding_points(p.pos, 30, true)
-        if next(collisions) then
-            colliding = collisions
-            guide_path:cut_off(p)
+    guide_path:make_slanted()
+    local current_point = guide_path.start
+    for nr, p in guide_path.start:iterator() do
+        local colliding =
+            megapathpav:colliding_segments(current_point.pos, p.pos, 1)
+        if next(colliding) then
+            guide_path:insert(colliding[1].intersections[1], nr)
         end
-    end
-    if colliding then
-        local _, col = next(colliding)
-        guide_path:shorten(4)
-        local extension =
-            pcmg.path.new(guide_path.finish.pos, col.pos)
-        extension:make_slanted(10)
-        guide_path:merge(extension)
-        local branch = col:branch(finish)
-        branch:make_slanted(10)
-        -- road_metastore:set(branch, "style", "wobbly")
+        current_point = p
     end
     return guide_path
 end
