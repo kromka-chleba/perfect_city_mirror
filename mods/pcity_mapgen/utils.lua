@@ -182,6 +182,16 @@ function vector.random(...)
     return vector.create(math.random, ...)
 end
 
+-- Calculates an average from multiple vectors.
+function vector.average(...)
+    local vectors = {...}
+    local avg = vectors[1]
+    for i = 2, #vectors do
+        avg = (avg + vectors[i]) / 2
+    end
+    return avg
+end
+
 function pcmg.random_pos_in_citychunk(citychunk_origin)
     local point = citychunk_origin + vector.random(0, citychunk.in_nodes - 1)
     return point

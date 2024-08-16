@@ -21,6 +21,7 @@ local mod_path = minetest.get_modpath("pcity_mapgen")
 local math = math
 local vector = vector
 local pcmg = pcity_mapgen
+local cpml = cpml_proxy
 local sizes = dofile(mod_path.."/sizes.lua")
 
 local pathpaver_margin = sizes.citychunk.overgen_margin
@@ -100,6 +101,31 @@ function pathpaver:colliding_points(pos, radius, only_paths)
         local distance = vector.distance(pos, point.pos)
         if distance <= radius then
             table.insert(colliding, point)
+        end
+    end
+    return colliding
+end
+
+-- Finds segments in the pathpaver that intersect with a segment
+-- formed by 'pos1' and 'pos2' within the 'treshold'. It searches only
+-- through the paths that belong to the current citychunk.
+function pathpaver:colliding_segments(pos1, pos2, treshold)
+    local treshold = treshold or 1 -- one node by default
+    local colliding = {}
+    local seg1 = {pos1, pos2}
+    for _, pth in pairs(self.paths) do
+        local current_point = pth.start
+        for _, p in pth.start:iterator() do
+            local seg2 = {current_point.pos, p.pos}
+            local intersections, distance =
+                cpml.intersect.segment_segment(seg1, seg2, treshold)
+            if intersections then
+                local i1, i2 = intersections[1], intersections[2]
+                table.insert(colliding, {segment = {current_point, p},
+                                         intersections = {i1, i2},
+                                         distance = distance})
+            end
+            current_point = p
         end
     end
     return colliding

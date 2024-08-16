@@ -211,7 +211,7 @@ end
 
 -- Returns a point given by 'nr' that is the ordinal
 -- number of the point in the sequence starting from the start.
--- So 'nr' = will give the start point, 'nr' = 1 will give the first intermediate
+-- So 'nr' = 0 will give the start point, 'nr' = 1 will give the first intermediate
 -- point in the path, etc. Returns nil if no point is found at the position.
 function path:get_point(nr)
     if type(nr) ~= "number" or
