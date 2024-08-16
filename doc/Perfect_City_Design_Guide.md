@@ -141,7 +141,69 @@ if the faceless man was still lurking somewhere in the city.
 
 ## 3. Characters
 
-### 3.1 Copernicus (Kopernik)
+### 3.1 Sebastian (Seba)
+
+Theme: "Like a dream about another person's life. Who am I even, is
+this where I belong?"
+
+Seba is a man who freshly entered adulthood, a Polish wigga with
+simple values and goals. Seba is a patriot - he loves his country and
+neighborhood, he feels one with concrete. Not too talkative, thinks
+first then speaks. Seba carefully watches his environment and acts
+accordingly to contain any shitstorm before it happens. Was not too
+popular in school, but did not make many foes either. Liked by his
+close buddy Mariusz who often invites Seba to hang out with his band
+to drink, smoke and hit on hoes. Seba is loyal to his girlfriend and
+would do everything for her.
+
+"But is this really who I am?"
+
+Seba's room is filled with many books: "Making Beer at Home for
+Beginners", "Ontology of Everything" (unknown author), "A myth about
+creation of the world in 7.5 days", "Everything About Concrete",
+"Ferdydurke", "Goat Anatomy" and "The Selfish Gene".  Seba is
+surprisingly intelligent for who he is, curiosity often leads him to
+strange places. "What the fuck are you reading, Seba?" asked
+Mariusz. "Be careful or you'll become an egghead ehehehe". "I found
+these books next to a trashcan, they look good enough to sell them" he
+replied, "Don't worry about it too much".
+
+"Am I lying to him or myself?"
+
+Not too religious, the John Paul 2 portrait he got from his parents
+ended up in the drawer. "Do you have faith in God, Sebastian?" is a
+question he often hears from his relatives. "Yes, don't worry,
+Grandma".
+
+"Is there a god?"
+
+Seba likes taking walks around his neighborhood to check if concrete
+is still there. The smell of hot asphalt fills his nose as if it was a
+fresh mountain breeze. These apartment blocks bring back memories like
+a monument to his past self, both the good and the bad moments of his
+life. This concrete knows his pain and sees his tears, remembers the
+darkest days.
+
+"I hope my neighborhood stays like this forever..."
+
+Quotes:
+
+"Am I fucked up, or is the world fucked up?"
+
+"What the fuck, a talking picture?"
+
+"Copernicus, are you a fag? Your voice is..."
+
+"You may be a fag, but you're also a Great Pole, I trust you, Copernicus!"
+
+"This is my city, my neighborhood. I was born here, don't you get it
+Copernicus?"
+
+"I need to find my girlfriend."
+
+"This is insane, this makes no sense. Why does it exist? Why?"
+
+### 3.2 Copernicus (Kopernik)
 
 Theme: "He stopped the Earth and moved the Sun, but he was actually a
 German, so for Sebastian both the Earth and the Sun stopped and stars
@@ -174,7 +236,7 @@ and stopped the Earth, but I cannot do so any longer"
 him. He's a broken and cynical man and will surely try to deceive
 you. Don't play his wicked games, Seba."
 
-### 3.2 Imaginary Girlfriend
+### 3.3 Imaginary Girlfriend
 
 Theme: "Like those precious summer days - the blue sky, green trees
 and orange sun. Will you stay with me forever?".
@@ -198,7 +260,7 @@ Quotes:
 
 "You know, I'm a girl after all..."
 
-### 3.3 Imaginary Childhood Bro
+### 3.4 Imaginary Childhood Bro
 
 Theme: "Like those precious summer days - the blue sky, green trees
 and orange sun. Will you stay with me forever?".
