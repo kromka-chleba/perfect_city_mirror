@@ -104,7 +104,7 @@ end
 
 function canvas:set_metastore(mt)
     if not pcmg.metastore.check(mt) then
-        error("Canvas: 'mt' is not a proper metastore object: "..dump(mt))
+        error("Canvas: 'mt' is not a proper metastore object: "..shallow_dump(mt))
     end
     self.metastore = mt
 end
@@ -196,7 +196,7 @@ function canvas:search_for_material(shape, material_id)
         local point = shape[i] + current_pos
         local material = self:read_cell(point.x, point.z)
         if type(material) ~= "number" then
-            minetest.log("error", dump(type(material)))
+            minetest.log("error", type(material))
         end
         if material == material_id then
             return true

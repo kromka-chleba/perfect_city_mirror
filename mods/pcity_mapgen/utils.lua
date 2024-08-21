@@ -196,3 +196,34 @@ function pcmg.random_pos_in_citychunk(citychunk_origin)
     local point = citychunk_origin + vector.random(0, citychunk.in_nodes - 1)
     return point
 end
+
+local function print_table(t, ret, name)
+    table.insert(ret, string.format("%s: \n {\n", name))
+    for k, v in pairs(t) do
+        if type(v) ~= "table" and type(v) ~= "function" then
+            table.insert(ret, string.format("\t %s = %s , \n", k, v))
+        else
+            table.insert(ret, string.format("\t %s = <%s> , \n", k, type(v)))
+        end
+    end
+    table.insert(ret, "}\n")
+end
+
+-- Dumps information about an object as a formatted string. Doesn't
+-- follow any references so it is both safe and fast for printing big
+-- objects with circular references. Prints names of keys in the
+-- object and its metatable and prints types of the values.
+function shallow_dump(obj)
+    local ret = {"\n"}
+    table.insert(ret, string.format("type: %s \n", type(obj)))
+    if type(obj) == "table" then
+        print_table(obj, ret, "object")
+    else
+        table.insert(ret, string.format("value: %s \n", obj))
+    end
+    local mt = getmetatable(obj)
+    if mt then
+        print_table(mt, ret, "metatable")
+    end
+    return string.format("\n OBJECT START %s OBJECT END", table.concat(ret, " "))
+end

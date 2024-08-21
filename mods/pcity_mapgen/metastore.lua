@@ -55,7 +55,7 @@ end
 function metastore:init_store(object)
     if type(object) ~= "table" then
         error("Metastore: Trying to initialize storage, but 'object': "..
-              dump(object).." is not a table.")
+              shallow_dump(object).." is not a table.")
     end
     local store = private[self]
     local store_const = private_const[self]
