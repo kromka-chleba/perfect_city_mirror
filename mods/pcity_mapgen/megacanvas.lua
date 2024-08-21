@@ -264,10 +264,10 @@ local line_styles = {
 
 function megacanvas:register_drawstyle(name, func)
     if type(name) ~= "string" then
-        error("Megacanvas: drawstyle 'name' has to be a string but is: "..dump(name))
+        error("Megacanvas: drawstyle 'name' has to be a string but is: "..shallow_dump(name))
     end
     if type(func) ~= "function" then
-        error("Megacanvas: drawstyle 'func' has to be a function but is: "..dump(func))
+        error("Megacanvas: drawstyle 'func' has to be a function but is: "..shallow_dump(func))
     end
     line_styles[name] = func
 end

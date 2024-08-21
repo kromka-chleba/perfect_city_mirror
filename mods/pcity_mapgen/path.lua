@@ -33,10 +33,10 @@ point.__index = point
 -- otherwise throws errors
 local function point_new_checks(pos, pth)
     if not vector.check(pos) then
-        error("Path: pos '"..dump(pos).."' is not a vector.")
+        error("Path: pos '"..shallow_dump(pos).."' is not a vector.")
     end
     if not path.check(pth) then
-        error("Path: pth '"..dump(pth).."' is not a path.")
+        error("Path: pth '"..shallow_dump(pth).."' is not a path.")
     end
 end
 
@@ -88,7 +88,9 @@ end
 
 -- Unlinks the current point from the next point.
 function point:unlink_from_next()
-    self.next.previous = false
+    if self.next.previous == self then
+        self.next.previous = false
+    end
     self.next = false
 end
 
@@ -98,7 +100,7 @@ end
 -- will also change the position of all attached points).
 function point:attach(p)
     if not point.check(p) then
-        error("Path: p '"..dump(p).."' is not a point.")
+        error("Path: p '"..shallow_dump(p).."' is not a point.")
     end
     self.attached[p] = p -- attach 'p' to 'self'
     p.attached[self] = self -- attach self to 'p'
@@ -131,7 +133,7 @@ end
 -- Sets position of the given point and all attached points to 'pos'.
 function point:set_position(pos)
     if not vector.check(pos) then
-        error("Path: pos '"..dump(pos).."' is not a vector.")
+        error("Path: pos '"..shallow_dump(pos).."' is not a vector.")
     end
     self.pos = pos
     for _, a in pairs(attached) do
@@ -190,13 +192,13 @@ end
 -- otherwise throws errors
 local function path_new_checks(start, finish, trunk)
     if not vector.check(start) then
-        error("Path: start '"..dump(start).."' is not a vector.")
+        error("Path: start '"..shallow_dump(start).."' is not a vector.")
     end
     if not vector.check(finish) then
-        error("Path: finish '"..dump(finish).."' is not a vector.")
+        error("Path: finish '"..shallow_dump(finish).."' is not a vector.")
     end
     if trunk and not point.check(trunk) then
-        error("Path: trunk '"..dump(trunk).."' is not a point.")
+        error("Path: trunk '"..shallow_dump(trunk).."' is not a point.")
     end
 end
 
@@ -253,10 +255,10 @@ end
 -- otherwise throws errors
 local function path_insert_checks(pos, nr)
     if not vector.check(pos) and not point.check(pos) then
-        error("Path: pos '"..dump(pos).."' is not a vector nor a point.")
+        error("Path: pos '"..shallow_dump(pos).."' is not a vector nor a point.")
     end
     if nr and type(nr) ~= "number" then
-        error("Path: nr '"..dump(nr).."' is not a number.")
+        error("Path: nr '"..shallow_dump(nr).."' is not a number.")
     end
 end
 
@@ -285,10 +287,10 @@ local function path_remove_checks(self, nr)
         return
     end
     if type(nr) ~= "number" and not point.check(nr) then
-        error("Path: nr '"..dump(nr).."' is not a number nor a point.")
+        error("Path: nr '"..shallow_dump(nr).."' is not a number nor a point.")
     end
     if point.check(nr) and not self.points[nr] then
-        error("Path: point nr '"..dump(nr).."' does not belong to the path .")
+        error("Path: point nr '"..shallow_dump(nr).."' does not belong to the path .")
     end
 end
 
@@ -313,7 +315,7 @@ end
 -- moves the old finish point down the table.
 function path:extend(pos)
     if not vector.check(pos) and not point.check(pos) then
-        error("Path: pos '"..dump(start).."' is not a vector nor a point.")
+        error("Path: pos '"..shallow_dump(start).."' is not a vector nor a point.")
     end
     local new_point = point.check(pos) and pos or point.new(pos, self)
     point.link(self.finish, new_point)
