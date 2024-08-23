@@ -251,6 +251,40 @@ function path:random_intermediate_point()
     end
 end
 
+-- Checks if the point belongs to the path as either start,
+-- intermediate or finish point. Returns a boolean.
+function path:point_in_path(point)
+    return self.points[point] or
+        self.start == point or
+        self.finish == point
+end
+
+-- Inserts a new point into the path after 'point' which is a point
+-- that belongs to the path. When 'pos' is a vector, a new point will
+-- be created with the position. When 'pos' is a point, that point
+-- will be inserted into the path instead.
+-- Returns the freshly inserted point.
+function path:insert_after(pos, point)
+    if not self:point_in_path(point) or not point.next then
+        return
+    end
+    local new_point = point.check(pos) and pos or point.new(pos, self)
+    new_point.path = self
+    point.link(point, new_point, point.next)
+    self.points[new_point] = new_point
+    self.point_nr = self.point_nr + 1
+    return new_point
+end
+
+-- Inserts a new point into the path after 'point' which is a point
+-- that belongs to the path. When 'pos' is a vector, a new point will
+-- be created with the position. When 'pos' is a point, that point
+-- will be inserted into the path instead.
+-- Returns the freshly inserted point.
+function path:insert_before(pos, point)
+    return self:insert_after(pos, point.previous)
+end
+
 -- Checks if arguments passed to 'path:insert' are valid,
 -- otherwise throws errors
 local function path_insert_checks(pos, nr)
@@ -270,14 +304,11 @@ end
 -- uses the provided point instead of creating a new one.
 -- Used when the destination (finish) point stays the
 -- same but an intermediate point is added.
+-- Returns the freshly inserted point.
 function path:insert(pos, nr)
     path_insert_checks(pos, nr)
-    local next_point = self:get_point(nr) or self.finish
-    local new_point = point.check(pos) and pos or point.new(pos, self)
-    local previous_point = next_point.previous
-    point.link(previous_point, new_point, next_point)
-    self.points[new_point] = new_point
-    self.point_nr = self.point_nr + 1
+    local point = self:get_point(nr) or self.finish
+    return self:insert_before(pos, point)
 end
 
 -- Checks if arguments passed to 'path:remove' are valid,
@@ -476,19 +507,27 @@ function path:make_wave(segment_nr, amplitude, density)
     end
 end
 
--- Creates a path by connecting 'self.start' and 'self.finish'
--- so that there's only one break point that forms a 45 degree
--- angle. When 'segment_length' is given, the path will be further
--- subdivided into segments with max length of 'segment_length'.
+-- Creates a path by connecting 'self.start' and 'self.finish' so that
+-- there's only one break point that forms a 45 degree angle with its
+-- neighbors. When 'self.start' and 'self.finish' are parallel to
+-- either the x or z axis, the function will simply make a straight
+-- line. The "straight" region (parallel to x or z axis) is always
+-- longer or equal to the "slanted" region. When 'segment_length' is
+-- given, the path will be further subdivided into segments with max
+-- length of 'segment_length'.
 function path:make_slanted(segment_length)
     local vec = self.finish.pos - self.start.pos
     local sign = vector.sign(vec)
     local abs = vector.abs(vec)
-    local mid_point = self.start.pos + vector.new(abs.z * sign.x, 0, abs.z * sign.z)
-    if abs.x < abs.z then
-        mid_point = self.start.pos + vector.new(abs.x * sign.x, 0, abs.x * sign.z)
+    if abs.x ~= 0 and abs.z ~= 0 then
+        -- add a mid point only if start and finish are not aligned on x or z axes
+        local mid_point = self.start.pos +
+            vector.new(abs.z * sign.x, 0, abs.z * sign.z)
+        if abs.x < abs.z then
+            mid_point = self.start.pos + vector.new(abs.x * sign.x, 0, abs.x * sign.z)
+        end
+        self:insert(mid_point)
     end
-    self:insert(mid_point)
     if segment_length then
         self:subdivide(segment_length)
     end
