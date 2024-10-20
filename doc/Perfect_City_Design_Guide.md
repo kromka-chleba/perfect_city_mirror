@@ -236,7 +236,7 @@ and stopped the Earth, but I cannot do so any longer"
 him. He's a broken and cynical man and will surely try to deceive
 you. Don't play his wicked games, Seba."
 
-### 3.3 Imaginary Girlfriend
+### 3.3 Alex (Ari) Ariadne - Imaginary Girlfriend
 
 Theme: "Like those precious summer days - the blue sky, green trees
 and orange sun. Will you stay with me forever?".
@@ -260,7 +260,7 @@ Quotes:
 
 "You know, I'm a girl after all..."
 
-### 3.4 Imaginary Childhood Bro
+### 3.4 Alex (Ari) Ariadne - Imaginary Childhood Bro
 
 Theme: "Like those precious summer days - the blue sky, green trees
 and orange sun. Will you stay with me forever?".
