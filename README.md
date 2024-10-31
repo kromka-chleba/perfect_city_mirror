@@ -3,12 +3,13 @@
 Created by lord_of_the_dumpster
 for `Minetest 5.9+`
 
-TRIGGER WARNING: horror, gore, sensitive subjects (suicide, mental illness), bad language
+**TRIGGER WARNING: horror, gore, sensitive subjects (suicide, mental illness), bad language**
 
-DISCLAIMER: _The project is in early ALPHA, right now there's almost nothing here!_
+DISCLAIMER: _This game is a horror game and contains depictions of sensitive subjects such as gore, mental illness and suicide and therefore is not suited for some audiences. The game's target audience are adults._
 
 ## About
 Perfect City is a psychological horror game about an infinite maze city of a broken mind.
+_The project is in early ALPHA._
 
 ## Story
 The main character, Seba (Sebastian) is a wigga living in Poland. One day he gets a call from his best friend and discovers his girlfriend has been kidnapped!!!
