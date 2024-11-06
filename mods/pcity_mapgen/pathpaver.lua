@@ -108,24 +108,21 @@ end
 
 -- Finds segments in the pathpaver that intersect with a segment
 -- formed by 'pos1' and 'pos2' within the 'treshold'. It searches only
--- through the paths that belong to the current citychunk.
+-- through the paths that belong to the current citychunk. Returns a
+-- list keyed by path objects, values are a table {segment,
+-- intersections, distance} where 'segment' is an ordered table with
+-- two points, 'intersections' is a table with two positions (vectors)
+-- of intersections on each segment, 'distance' is the distance
+-- between the two segments if they form an intersection within
+-- 'treshold'.
 function pathpaver:colliding_segments(pos1, pos2, treshold)
     local treshold = treshold or 1 -- one node by default
     local colliding = {}
-    local seg1 = {pos1, pos2}
+    local seg = {pos1, pos2}
     for _, pth in pairs(self.paths) do
-        local current_point = pth.start
-        for _, p in pth.start:iterator() do
-            local seg2 = {current_point.pos, p.pos}
-            local intersections, distance =
-                cpml.intersect.segment_segment(seg1, seg2, treshold)
-            if intersections then
-                local i1, i2 = intersections[1], intersections[2]
-                table.insert(colliding, {segment = {current_point, p},
-                                         intersections = {i1, i2},
-                                         distance = distance})
-            end
-            current_point = p
+        local intersections = pth:find_intersections(seg, treshold)
+        if next(intersections) then
+            colliding[pth] = intersections
         end
     end
     return colliding

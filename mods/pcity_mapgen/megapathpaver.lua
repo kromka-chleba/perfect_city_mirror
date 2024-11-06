@@ -85,7 +85,7 @@ function megapathpaver.new(citychunk_origin, cache)
 end
 
 function megapathpaver:save_path(pth)
-    self.central.paths[pth] = pth
+    table.insert(self.central.paths, pth)
     for _, pnt in pairs(pth:all_points()) do
         self:save_point(pnt)
     end

@@ -183,18 +183,48 @@ local road_metastore = pcmg.metastore.new()
 --     return guide_path
 -- end
 
-local function build_road(megapathpav, start, finish)
-    local guide_path = pcmg.path.new(start, finish)
-    guide_path:make_slanted()
+-- local function handle_colliding_points(megapathpav, guide_path)
+--     local colliding = {}
+--     for _, p in guide_path.start:iterator() do
+--         local collisions =
+--             megapathpav:colliding_points(p.pos, pavement_radius * 8, true)
+--         if next(collisions) then
+--             colliding = collisions
+--             guide_path:cut_off(p)
+--         end
+--     end
+-- end
+
+local function handle_colliding_segments(megapathpav, guide_path)
     local current_point = guide_path.start
-    for nr, p in guide_path.start:iterator() do
-        local colliding =
+    for _, p in guide_path.start:iterator() do
+        local col_segs =
             megapathpav:colliding_segments(current_point.pos, p.pos, 1)
-        if next(colliding) then
-            guide_path:insert(colliding[1].intersections[1], nr)
+        -- XXX BUG HERE, using ipairs but it's a hashtable
+        for _, cs in ipairs(col_segs) do
+            local intersect = cs.intersections[1]
+            -- local col_points =
+            --     megapathpav:colliding_points(intersect, pavement_radius * 3, true)
+            -- if not next(col_points) then
+            minetest.log("error", shallow_dump(intersect))
+                local crossroads1 = guide_path:insert_before(intersect, p)
+                local colliding_road = cs.segment[1].path
+                local crossroads2 = colliding_road:insert_before(intersect, cs.segment[2])
+                crossroads2:attach(crossroads1)
+            -- else
+            --     guide_path:cut_off(p)
+            -- end
         end
         current_point = p
     end
+end
+
+local function build_road(megapathpav, start, finish)
+    local guide_path = pcmg.path.new(start, finish)
+    guide_path:make_slanted()
+    --guide_path:unsubdivide(1/180 * math.pi)
+    handle_colliding_segments(megapathpav, guide_path)
+    --handle_colliding_points(megapathpav, guide_path)
     return guide_path
 end
 
@@ -224,5 +254,5 @@ end
 function pcmg.generate_roads(megacanv, pathpaver_cache)
     local t1 = minetest.get_us_time()
     megacanv:generate(road_generator, 1, pathpaver_cache)
-    minetest.log("error", string.format("Overgen time: %g ms", (minetest.get_us_time() - t1) / 1000))
+    --minetest.log("error", string.format("Overgen time: %g ms", (minetest.get_us_time() - t1) / 1000))
 end

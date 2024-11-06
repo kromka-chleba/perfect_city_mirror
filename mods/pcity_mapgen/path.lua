@@ -20,6 +20,7 @@ local mod_name = minetest.get_current_modname()
 local mod_path = minetest.get_modpath("pcity_mapgen")
 local math = math
 local vector = vector
+local cpml = pcity_cpml_proxy
 local pcmg = pcity_mapgen
 
 pcmg.path = {}
@@ -420,6 +421,56 @@ function path:length()
         length = length + vector.length(v)
     end
     return length
+end
+
+-- Executes 'func' for each segment in the path. 'func' has to accept
+-- the following arguments: 'seg' which is an ordered table of two
+-- points {[1] = p1, [2] = p2} and optionally other arguments
+-- '...'. Returns a list of values returned by 'func' for each
+-- segment. Keys of the returned list will match ordinal number of the
+-- segment in the path only when each value returned by 'func' is not
+-- 'nil'.
+function path:for_each_segment(func, ...)
+    local p1 = self.start
+    local outputs = {}
+    for _, p2 in self.start:iterator() do
+        local out = func({p1, p2}, ...)
+        table.insert(outputs, out)
+        p1 = p2
+    end
+    return outputs
+end
+
+-- A helper function for 'path:find_intersections' to get intersection
+-- data for two segments.
+-- 'path_seg' is an ordered table with two points, 'seg' is an ordered
+-- table with two *positions* (vectors), 'treshold' is a distance
+-- between two segments for which two segments are considered intersecting.
+-- Returns a table {segment, intersections, distance} where 'segment'
+-- is an ordered table with two points, 'intersections' is a table
+-- with two positions (vectors) of intersections on each
+-- segment. 'distance' is the distance between the two segments if
+-- they form an intersection within 'treshold'.
+local function segment_intersect(path_seg, seg, treshold)
+    local seg1 = {path_seg[1].pos, path_seg[2].pos}
+    local seg2 = seg -- this is already a position
+    local intersections, distance =
+        cpml.intersect.segment_segment(seg1, seg2, treshold)
+    if intersections then
+        return {segment = path_seg,
+                intersections = intersections,
+                distance = distance}
+    end
+end
+
+-- Finds intersections of each segment in path and the 'seg' segment defined
+-- as {[1] = pos1, [2] = pos2} where 'pos1' and 'pos2' are vectors,
+-- 'treshold' is a distance between two segments for which two
+-- segments are considered intersecting.
+-- Returns a table of intersection data for each segment in the path
+-- as returned by 'segment_intersect'.
+function path:find_intersections(seg, treshold)
+    return self:for_each_segment(segment_intersect, seg, treshold)
 end
 
 -- Subdivides path into segments with max length specified by

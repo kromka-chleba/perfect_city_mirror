@@ -68,11 +68,13 @@ local road_center_id = materials_by_name["road_center"]
 local road_origin_id = materials_by_name["road_origin"]
 local road_midpoint_id = materials_by_name["road_midpoint"]
 
+local data = {}
+
 function pcmg.write_roads(mapgen_args, canv)
     local t1 = minetest.get_us_time()
     local vm, pos_min, pos_max, blockseed = unpack(mapgen_args)
     local citychunk_origin = pcmg.citychunk_origin(pos_min)
-    local data = vm:get_data()
+    vm:get_data(data)
     local emin, emax = vm:get_emerged_area()
     local va = VoxelArea(emin, emax)
 
@@ -101,5 +103,5 @@ function pcmg.write_roads(mapgen_args, canv)
 
     -- Write data
     vm:set_data(data)
-    --minetest.log("error", string.format("chunk writing time: %g ms", (minetest.get_us_time() - t1) / 1000))
+    minetest.log("error", string.format("chunk writing time: %g ms", (minetest.get_us_time() - t1) / 1000))
 end
