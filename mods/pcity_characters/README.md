@@ -5,6 +5,6 @@
 
 * every texture, model, sound unless stated otherwise
 
-## Not covered by copyright?
+## CC0, public domain
 
-* pcity\_characters\_palette.png (a composite of GIMP palettes)
+* pcity\_characters\_palette.png (a composite of GIMP palettes, https://gitlab.gnome.org/GNOME/gimp/-/blob/master/LICENSE)
