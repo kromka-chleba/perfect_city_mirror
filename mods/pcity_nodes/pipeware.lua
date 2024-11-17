@@ -51,3 +51,20 @@ minetest.register_node(
         wallmounted_rotate_vertical = true,
     }
 )
+
+minetest.register_node(
+    mod_name..":sink",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_sink.obj",
+        description = "Sink",
+        tiles = {
+            {name = mod_name.."_metal.png"},
+            {name = color_palette},
+        },
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "wallmounted",
+        wallmounted_rotate_vertical = true,
+    }
+)
