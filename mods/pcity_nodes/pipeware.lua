@@ -68,3 +68,33 @@ minetest.register_node(
         wallmounted_rotate_vertical = true,
     }
 )
+
+minetest.register_node(
+    mod_name..":toilet_open",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_toilet_open.obj",
+        description = "Toilet open",
+        tiles = {
+            {name = color_palette},
+        },
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+    }
+)
+
+minetest.register_node(
+    mod_name..":toilet_closed",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_toilet_closed.obj",
+        description = "Toilet closed",
+        tiles = {
+            {name = color_palette},
+        },
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+    }
+)
