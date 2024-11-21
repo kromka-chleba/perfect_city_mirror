@@ -34,3 +34,47 @@ minetest.register_node(
         paramtype2 = "4dir",
     }
 )
+
+minetest.register_node(
+    mod_name..":table_corner",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_table_corner.obj",
+        description = "Table Corner",
+        tiles = {
+            {name = color_palette},
+        },
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+    }
+)
+
+minetest.register_node(
+    mod_name..":table_edge",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_table_edge.obj",
+        description = "Table Edge",
+        tiles = {
+            {name = color_palette},
+        },
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+    }
+)
+
+minetest.register_node(
+    mod_name..":table_middle",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_table_middle.obj",
+        description = "Table Middle",
+        tiles = {
+            {name = color_palette},
+        },
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+    }
+)
