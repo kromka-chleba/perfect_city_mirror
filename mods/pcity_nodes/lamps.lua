@@ -1,6 +1,6 @@
 --[[
     This is a part of "Perfect City".
-    Copyright (C) 2023 Jan Wielkiewicz <tona_kosmicznego_smiecia@interia.pl>
+    Copyright (C) 2023-2024 Jan Wielkiewicz <tona_kosmicznego_smiecia@interia.pl>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,6 +17,8 @@
 --]]
 
 local mod_name = minetest.get_current_modname()
+
+local color_palette = "pcity_common_palette.png"
 
 minetest.register_node(
     mod_name..":lapm_1",
@@ -182,5 +184,20 @@ minetest.register_node(
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
         light_source = 15,
+    }
+)
+
+minetest.register_node(
+    mod_name..":ceiling_lamp_1",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_ceiling_lamp_1.obj",
+        description = "Ceiling Lamp 1",
+        tiles = {
+            {name = color_palette},
+        },
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        light_source = 14,
     }
 )
