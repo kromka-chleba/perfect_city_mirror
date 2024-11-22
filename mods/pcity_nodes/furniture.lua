@@ -123,3 +123,48 @@ minetest.register_node(
         paramtype2 = "4dir",
     }
 )
+
+minetest.register_node(
+    mod_name..":books_1",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_books_1.obj",
+        description = "Books 1",
+        tiles = {
+            {name = color_palette},
+        },
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+    }
+)
+
+minetest.register_node(
+    mod_name..":books_2",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_books_2.obj",
+        description = "Books 2",
+        tiles = {
+            {name = color_palette},
+        },
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+    }
+)
+
+minetest.register_node(
+    mod_name..":books_3",
+    {
+        drawtype = "mesh",
+        mesh = mod_name.."_books_3.obj",
+        description = "Books 3",
+        tiles = {
+            {name = color_palette},
+        },
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        paramtype2 = "4dir",
+    }
+)
