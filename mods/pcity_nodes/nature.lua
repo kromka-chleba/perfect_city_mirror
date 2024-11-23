@@ -1,6 +1,7 @@
 --[[
     This is a part of "Perfect City".
-    Copyright (C) 2024 Jan Wielkiewicz <tona_kosmicznego_smiecia@interia.pl>
+    Copyright (C) 2023 Jan Wielkiewicz <tona_kosmicznego_smiecia@interia.pl>
+    Copyright (C) 2024 TubberPupper (TPH)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,11 +17,21 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
--- This mod name and path
 local mod_name = minetest.get_current_modname()
-local mod_path = minetest.get_modpath(mod_name)
 
-pcity_common = {}
-local pcity_common = pcity_common
+local pcn = pcity_nodes
 
-pcity_common.color_palette = "pcity_common_palette.png"
+minetest.register_node(
+    mod_name..":grass",
+    {
+        description = "Grass",
+        tiles = {{name = mod_name.."_grass.png",
+                  align_style = "world",
+                  scale = 8}},
+        groups = {cracky = 3, stone = 1},
+        paramtype = "light",
+        sounds = {
+          footstep = {name = "pcity_nodes_grass_footstep", gain = 2, pitch = 0.8}
+        }
+    }
+)
