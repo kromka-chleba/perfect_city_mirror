@@ -1,3 +1,6 @@
 [submodule "mods/pcity_cpml"]
 	path = mods/pcity_cpml
 	url = https://codeberg.org/perfect_city_game_studio/pcity_cpml.git
+[submodule "mods/itemshelf_api"]
+	path = mods/itemshelf_api
+	url = https://codeberg.org/perfect_city_game_studio/itemshelf_api.git
