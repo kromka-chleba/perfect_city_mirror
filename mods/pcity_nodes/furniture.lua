@@ -18,7 +18,7 @@
 
 local mod_name = minetest.get_current_modname()
 
-local color_palette = "pcity_common_palette.png"
+local pcc = pcity_common
 
 minetest.register_node(
     mod_name..":chair",
@@ -27,7 +27,7 @@ minetest.register_node(
         mesh = mod_name.."_chair.obj",
         description = "Chair",
         tiles = {
-            {name = color_palette},
+            {name = pcc.color_palette},
         },
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
@@ -42,7 +42,7 @@ minetest.register_node(
         mesh = mod_name.."_table_corner.obj",
         description = "Table Corner",
         tiles = {
-            {name = color_palette},
+            {name = pcc.color_palette},
         },
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
@@ -57,7 +57,7 @@ minetest.register_node(
         mesh = mod_name.."_table_edge.obj",
         description = "Table Edge",
         tiles = {
-            {name = color_palette},
+            {name = pcc.color_palette},
         },
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
@@ -72,7 +72,7 @@ minetest.register_node(
         mesh = mod_name.."_table_middle.obj",
         description = "Table Middle",
         tiles = {
-            {name = color_palette},
+            {name = pcc.color_palette},
         },
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
@@ -86,7 +86,7 @@ minetest.register_node(
         mesh = mod_name.."_shelf_1_left.obj",
         description = "Shelf 1 Left",
         tiles = {
-            {name = color_palette},
+            {name = pcc.color_palette},
         },
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
@@ -101,7 +101,7 @@ minetest.register_node(
         mesh = mod_name.."_shelf_1_middle.obj",
         description = "Shelf 1 Middle",
         tiles = {
-            {name = color_palette},
+            {name = pcc.color_palette},
         },
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
@@ -116,7 +116,7 @@ minetest.register_node(
         mesh = mod_name.."_shelf_1_right.obj",
         description = "Shelf 1 Right",
         tiles = {
-            {name = color_palette},
+            {name = pcc.color_palette},
         },
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
@@ -131,7 +131,7 @@ minetest.register_node(
         mesh = mod_name.."_books_1.obj",
         description = "Books 1",
         tiles = {
-            {name = color_palette},
+            {name = pcc.color_palette},
         },
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
@@ -146,7 +146,7 @@ minetest.register_node(
         mesh = mod_name.."_books_2.obj",
         description = "Books 2",
         tiles = {
-            {name = color_palette},
+            {name = pcc.color_palette},
         },
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
@@ -161,7 +161,7 @@ minetest.register_node(
         mesh = mod_name.."_books_3.obj",
         description = "Books 3",
         tiles = {
-            {name = color_palette},
+            {name = pcc.color_palette},
         },
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
