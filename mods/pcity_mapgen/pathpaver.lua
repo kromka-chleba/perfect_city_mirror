@@ -21,7 +21,7 @@ local mod_path = minetest.get_modpath("pcity_mapgen")
 local math = math
 local vector = vector
 local pcmg = pcity_mapgen
-local cpml = cpml_proxy
+local cpml = pcity_cpml_proxy
 local sizes = dofile(mod_path.."/sizes.lua")
 
 local pathpaver_margin = sizes.citychunk.overgen_margin
