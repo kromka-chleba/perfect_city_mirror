@@ -4,3 +4,6 @@
 [submodule "mods/itemshelf_api"]
 	path = mods/itemshelf_api
 	url = https://codeberg.org/perfect_city_game_studio/itemshelf_api.git
+[submodule "mods/itemstore_api"]
+	path = mods/itemstore_api
+	url = https://codeberg.org/perfect_city_game_studio/itemstore_api.git
