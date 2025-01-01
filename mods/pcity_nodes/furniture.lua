@@ -19,6 +19,7 @@
 local mod_name = minetest.get_current_modname()
 
 local pcc = pcity_common
+local itemstore_api = itemstore_api
 
 minetest.register_node(
     mod_name..":chair",
@@ -76,51 +77,6 @@ minetest.register_node(
         },
         groups = {cracky = 3, stone = 1},
         paramtype = "light",
-    }
-)
-
-minetest.register_node(
-    mod_name..":shelf_1_left",
-    {
-        drawtype = "mesh",
-        mesh = mod_name.."_shelf_1_left.obj",
-        description = "Shelf 1 Left",
-        tiles = {
-            {name = pcc.color_palette},
-        },
-        groups = {cracky = 3, stone = 1},
-        paramtype = "light",
-        paramtype2 = "4dir",
-    }
-)
-
-minetest.register_node(
-    mod_name..":shelf_1_middle",
-    {
-        drawtype = "mesh",
-        mesh = mod_name.."_shelf_1_middle.obj",
-        description = "Shelf 1 Middle",
-        tiles = {
-            {name = pcc.color_palette},
-        },
-        groups = {cracky = 3, stone = 1},
-        paramtype = "light",
-        paramtype2 = "4dir",
-    }
-)
-
-minetest.register_node(
-    mod_name..":shelf_1_right",
-    {
-        drawtype = "mesh",
-        mesh = mod_name.."_shelf_1_right.obj",
-        description = "Shelf 1 Right",
-        tiles = {
-            {name = pcc.color_palette},
-        },
-        groups = {cracky = 3, stone = 1},
-        paramtype = "light",
-        paramtype2 = "4dir",
     }
 )
 
