@@ -24,3 +24,34 @@ pcity_common = {}
 local pcity_common = pcity_common
 
 pcity_common.color_palette = "pcity_common_palette.png"
+
+function pcity_common.node_name(name, mod_name)
+    return mod_name..":"..name
+end
+
+function pcity_common.texture_name(name, mod_name)
+    return mod_name.."_"..name..".png"
+end
+
+function pcity_common.get_nodedef(pos)
+    local node = core.get_node(pos)
+    return core.registered_nodes[node.name]
+end
+
+function pcity_common.node_dir(pos)
+    local node = core.get_node(pos)
+    local param2 = node.param2
+    local paramtype2 = pcity_common.get_nodedef(pos).paramtype2
+    if paramtype2 == "4dir" then
+        return core.fourdir_to_dir(param2)
+    elseif paramtype2 == "facedir" then
+        return core.facedir_to_dir(param2)
+    elseif paramtype2 == "wallmounted" then
+        return core.wallmounted_to_dir(param2)
+    end
+end
+
+function pcity_common.node_rotation(pos)
+    local dir = pcity_common.node_dir(pos)
+    return vector.dir_to_rotation(dir)
+end
