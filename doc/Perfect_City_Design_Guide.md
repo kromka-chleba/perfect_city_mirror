@@ -368,3 +368,61 @@ Quotes:
 "I'm really happy I've met you!"
 
 "N-no, you can't, we're both boys!"
+
+## 4. The City - macroscale areas and "biomes"
+
+The city is divided into several macroscale areas: the surface, the
+basemment, the hell (extension of the basement), suburban areas (near
+the map's edge), the end of the world (the edge), and the place where
+the heaven, surface and hell meet (end of the map). Each location
+serves a unique purpose and they're divided further into biomes
+(subtypes).
+
+### 4.1 The surface
+
+The city proper, the most accessible macroscale area in the game.
+
+#### Biomes
+
+* "Blokowisko"
+
+Endless soviet era prefab apartment blocks distributed
+sparsely. Between them trees, playgrounds, parks, schools, medical
+clinics, concrete and asphalt. The place where you were born and where
+you will die.
+
+Blokowisko is the most common biome in the game filled with blocks
+made from prefabricates. As a mass product they share similar forms
+and shapes, yet subtle differences and their arrangement makes each
+neighborhood unique. Sparsely distributed tower blocks (up to 15
+floors) show you the way and overwhelm you with their might, between
+them regularly placed long 3-4 floor buildings. The scale of each
+district helps you lose your way, especially at night.
+
+* "Postmodern Hell"
+
+In pursuit of more human values postmodern architecture rejected
+massive scale of modern urbanism and eventually forgot what being
+human means. A maze of five-story buildings that try to mimic
+traditional forms but forgot the meaning of tradition. The defining
+values of postmodern philosophy are fences, to separate yourself from
+"intruders" and *the parking lot* which both surround each building
+and make a foundation for it. Grass and trees are not welcome, the
+place was built for cars to thrive and for humans to get lost.
+
+The defining traits of this biome are short buildings with pitched
+roofs that go all the way along narrow one-way streets with dead
+ends. The architect wanted to make them resemble traditional forms but
+had no budget to do so therefore white roughcast was picked for the
+facade. In front of such buildings there are garages and parking lots
+narrowly fitted between the buildings. Walking through this maze makes
+you feel unwelcome and anxious, even though it's only the concrete
+speaking.
+
+* "Park"
+
+Some plants to distract you from the concrete. Parks are surrounded by
+a myserious, nearly magical atmosphere. As you walk between trees and
+benches you can hear blackbirds singing in the distance. Don't let the
+romantic atmosphere to make you stay for too long though as you may
+lose your way home.
