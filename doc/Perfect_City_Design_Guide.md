@@ -172,7 +172,15 @@ form of items that feel otherwise useless, unimportant.
 ## 2. Monsters
 
 Monsters of the Perfect City are personifications of Seba's fears and
-traumas.
+traumas. Monsters should be elements of the city that became alive,
+e.g. anthropomorphic road signs, pipes, electric stuff, ovens,
+etc. While designing a monster think about how it came to be and why,
+this adds depth to the story. The city gave birth to monsters through
+its concrete womb. Most monsters should be slender - this is the
+defining form in the game. Try avoiding typical fleshy horror
+aesthetics. Fear should emerge from interactions of the monster's
+form, its habits, setting, relation to Seba's memories and often
+irrational fears emerging from urban legends and childhood nightmares.
 
 ### 2.1 Tap monster
 
@@ -225,6 +233,15 @@ if the faceless man was still lurking somewhere in the city.
 ### 2.9 Mr Shadow
 
 ## 3. Characters
+
+Characters Seba meets in the city are people he knows or thinks he
+knows from his dreams and his past. Soothing but also myserious and
+irrational, the characters are a counterbalance for the city's
+soul-crushing aura. Elements of comedy are welcome here, especially if
+it makes Seba feel dizzy (that role is mostly on Copernicus). There
+are good, neutral and evil characters, but nothing is completely good
+or evil, the characters are in shades of gray. The characters try to
+help Seba find the way in their own unique ways.
 
 ### 3.1 Sebastian (Seba)
 
@@ -368,6 +385,33 @@ Quotes:
 "I'm really happy I've met you!"
 
 "N-no, you can't, we're both boys!"
+
+### 3.5 Babcia - Seba's Grandma?
+
+Theme: "She forgot where she found it but she was ready to give it to
+the young boy".
+
+Simply grandma, Seba's grandma or everyone else's grandma? Maybe this
+old lady just passes by? Is she my grandma or a nanny? Did she forget
+to pay or did she steal it? Sometimes she works in a Kiosk, sometimes
+she's already retired. She forgot about the city and can still see
+other people. Whoever she is, the grandma will always cook for Seba
+and feed him until he's full.
+
+Quotes:
+
+"You're so slim, go ahead, eat more!"
+
+"Did you pray today? Jesus can see you!"
+
+"Stop whining, Sebastian! Now, eat this."
+
+"When are you getting married?"
+
+"Ahaha, are you dumb? He's scared by a nun. Take it now, no one is
+looking."
+
+"Don't forget to visit your grandma, Sebastian."
 
 ## 4. The City - macroscale areas and "biomes"
 
