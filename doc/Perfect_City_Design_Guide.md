@@ -92,7 +92,7 @@ your dearest friend.
 The city has multiple layers, both physical and psychological.
 Physical layers of the city are: buildings, the outside, the basement
 and the hell (the bottom part of the basement). Psychological layers
-are: the "real" world (the one Seba was before entering the city, the
+are: the "real" world (the one Seba was before entering the city), the
 city, Seba's memories, dreams and nightmares. Although the layers
 exists, their boundaries aren't clear and often get blurred. Seba's
 thoughts and nightmares soak into the city's tissue.
@@ -196,6 +196,14 @@ free out of the wall and start chasing you.  If the tap catches you it
 will vomit the poison straight into your throat.
 
 ### 2.2 Drillman
+
+Seba once heard a bizarre story from Mariusz about a neighbor in his
+apartment building. People had complained about constant drilling
+noises, which lasted for weeks until the police were called. The man,
+who was so occupied with drilling, managed to drill hundreds of holes
+in his flat. The drilling noises ceased after the man was taken to a
+psychiatric ward. After some time, the neighbors stopped talking about
+the case but were reminded of it every time someone drilled a hole.
 
 ### 2.3 TV monster
 
@@ -428,7 +436,7 @@ The city proper, the most accessible macroscale area in the game.
 
 #### Biomes
 
-* "Blokowisko"
+##### "Blokowisko"
 
 Endless soviet era prefab apartment blocks distributed
 sparsely. Between them trees, playgrounds, parks, schools, medical
@@ -443,7 +451,7 @@ floors) show you the way and overwhelm you with their might, between
 them regularly placed long 3-4 floor buildings. The scale of each
 district helps you lose your way, especially at night.
 
-* "Postmodern Hell"
+##### "Postmodern Hell"
 
 In pursuit of more human values postmodern architecture rejected
 massive scale of modern urbanism and eventually forgot what being
@@ -463,7 +471,7 @@ narrowly fitted between the buildings. Walking through this maze makes
 you feel unwelcome and anxious, even though it's only the concrete
 speaking.
 
-* "Park"
+##### "Park"
 
 Some plants to distract you from the concrete. Parks are surrounded by
 a myserious, nearly magical atmosphere. As you walk between trees and
