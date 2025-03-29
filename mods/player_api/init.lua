@@ -33,3 +33,13 @@ minetest.register_on_joinplayer(function(player)
             vector.new(-10, 0, -5) --thirdperson_front
         )
 end)
+
+-- only works after mods have loaded
+-- replace hand wield_image with seba's arm
+core.register_on_mods_loaded(function()
+    local arm_scale = 3.5
+    core.override_item("",{
+        wield_image = "seba_arm.png",
+        wield_scale = {x=arm_scale/8,y=arm_scale/4,z=arm_scale},
+    })
+end)
