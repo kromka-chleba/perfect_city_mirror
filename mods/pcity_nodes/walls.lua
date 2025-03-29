@@ -63,18 +63,18 @@ minetest.register_node(
 )
 
 local roughcast_list = {
-    {name = "red", desc = "Red Roughcast",hsl={h=6,s=38,l=-45}},
+    {name = "red", desc = "Red Roughcast",hsl={h=6,s=36,l=-65}},
     {name = "yellow", desc = "Yellow Roughcast",hsl={h=38,s=60,l=-30}},
-    {name = "yellow_light", desc = "Light Yellow Roughcast",hsl={h=42,l=-22}},
-    {name = "green", desc = "Green Roughcast",hsl={h=115,l=-26}},
-    {name = "white", desc = "White Roughcast",hsl={h=-178,s=0,l=25}},
-    {name = "blue", desc = "Blue Roughcast", hsl={h=-172,l=-5}},
+    {name = "yellow_light", desc = "Light Yellow Roughcast",hsl={h=38,s=32,l=-16}},
+    {name = "green", desc = "Green Roughcast",hsl={h=135,s=18,l=-35}},
+    {name = "white", desc = "White Roughcast",hsl={h=-178,s=2,l=-4}},
+    {name = "blue", desc = "Blue Roughcast", hsl={h=-150,s=28,l=-9}},
 }
 
 for _, roughcast in pairs(roughcast_list) do
     local hsl = roughcast.hsl or {}
     hsl.h = hsl.h or 0
-    hsl.s = hsl.s or 24 -- this number used by blue, green, light yellow
+    hsl.s = hsl.s or 50
     local color = table.concat({hsl.h, hsl.s, hsl.l},":")
     minetest.register_node(
         mod_name..":roughcast_"..roughcast.name,
