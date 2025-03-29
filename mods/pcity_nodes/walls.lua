@@ -63,20 +63,25 @@ minetest.register_node(
 )
 
 local roughcast_list = {
-    {name = "red", desc = "Red Roughcast"},
-    {name = "yellow", desc = "Yellow Roughcast"},
-    {name = "yellow_light", desc = "Light Yellow Roughcast"},
-    {name = "green", desc = "Green Roughcast"},
-    {name = "white", desc = "White Roughcast"},
-    {name = "blue", desc = "White Roughcast"},
+    {name = "red", desc = "Red Roughcast",hsl={h=6,s=38,l=-45}},
+    {name = "yellow", desc = "Yellow Roughcast",hsl={h=38,s=60,l=-30}},
+    {name = "yellow_light", desc = "Light Yellow Roughcast",hsl={h=42,l=-22}},
+    {name = "green", desc = "Green Roughcast",hsl={h=115,l=-26}},
+    {name = "white", desc = "White Roughcast",hsl={h=-178,s=0,l=25}},
+    {name = "blue", desc = "Blue Roughcast", hsl={h=-172,l=-5}},
 }
 
 for _, roughcast in pairs(roughcast_list) do
+    local hsl = roughcast.hsl or {}
+    hsl.h = hsl.h or 0
+    hsl.s = hsl.s or 24 -- this number used by blue, green, light yellow
+    local color = table.concat({hsl.h, hsl.s, hsl.l},":")
     minetest.register_node(
         mod_name..":roughcast_"..roughcast.name,
         {
-            description = roughcast.name,
-            tiles = {{name = mod_name.."_roughcast_"..roughcast.name..".png",
+            description = roughcast.desc or roughcast.name,
+            -- modify the hue saturation lightness of base texture
+            tiles = {{name = mod_name.."_roughcast.png^[colorizehsl:"..color,
                       align_style = "world",
                       scale = 4}},
             groups = {snappy = 3, stone = 1},
