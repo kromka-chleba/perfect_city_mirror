@@ -39,7 +39,8 @@ end)
 core.register_on_mods_loaded(function()
     local arm_scale = 3.5
     core.override_item("",{
-        wield_image = "seba_arm.png",
+        -- combine gets a certain sector of the player's character and utilizes it for the hand
+        wield_image = "[combine:8x10:-80,-54=character.png^[transformFY",
         wield_scale = {x=arm_scale/8,y=arm_scale/4,z=arm_scale},
     })
 end)
