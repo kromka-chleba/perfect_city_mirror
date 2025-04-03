@@ -1,7 +1,7 @@
 --[[
     This is a part of "Perfect City".
     Copyright (C) 2023 Jan Wielkiewicz <tona_kosmicznego_smiecia@interia.pl>
-    Copyright (C) 2024 TubberPupper (TPH)
+    Copyright (C) 2025 TubberPupper (TPH)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -63,12 +63,12 @@ minetest.register_node(
 )
 
 local roughcast_list = {
-    {name = "red", desc = "Red Roughcast",hsl={h=6,s=36,l=-65}},
-    {name = "yellow", desc = "Yellow Roughcast",hsl={h=38,s=60,l=-30}},
-    {name = "yellow_light", desc = "Light Yellow Roughcast",hsl={h=38,s=32,l=-16}},
-    {name = "green", desc = "Green Roughcast",hsl={h=135,s=18,l=-35}},
-    {name = "white", desc = "White Roughcast",hsl={h=-178,s=2,l=-4}},
-    {name = "blue", desc = "Blue Roughcast", hsl={h=-150,s=28,l=-9}},
+    {name = "red", desc = "Red Roughcast", hsl={h=6, s=36, l=-65}},
+    {name = "yellow", desc = "Yellow Roughcast", hsl={h=38, s=60, l=-30}},
+    {name = "yellow_light", desc = "Light Yellow Roughcast", hsl={h=38, s=32, l=-16}},
+    {name = "green", desc = "Green Roughcast", hsl={h=135, s=18, l=-35}},
+    {name = "white", desc = "White Roughcast", hsl={h=-178, s=2, l=-4}},
+    {name = "blue", desc = "Blue Roughcast", hsl={h=-150, s=28, l=-9}},
 }
 
 for _, roughcast in pairs(roughcast_list) do
