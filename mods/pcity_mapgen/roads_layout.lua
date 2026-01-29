@@ -26,44 +26,125 @@ local _, materials_by_name = dofile(mod_path.."/canvas_ids.lua")
 local units = sizes.units
 local canvas_shapes = pcmg.canvas_shapes
 local canvas_brush = pcmg.canvas_brush
+local path_utils = pcmg.path_utils
+
+-- Get mapgen seed for deterministic random generation
+local mapgen_seed = tonumber(minetest.get_mapgen_setting("seed")) or 0
 
 -- Sizes of map division units
 local node = sizes.node
 local mapchunk = sizes.mapchunk
 local citychunk = sizes.citychunk
 
---[[
-    Road origins shouldn't be to close to each other so
-    setting a minimal distance from the start and end points
-    of the edge makes sense.
---]]
-local road_margin = 40
-if citychunk.in_mapchunks == 1 then
-    road_margin = 15
+-- Grid spacing for all road/street points (1 mapchunk = 80 nodes)
+local grid_spacing = 80
+
+-- Border connection point configuration
+local border_grid_spacing = grid_spacing
+local border_point_probability = 0.6
+local road_origin_margin = 80
+
+-- Set random seed based on mapgen seed and position
+local function set_position_seed(pos, salt)
+    salt = salt or 0
+    local seed = mapgen_seed + 
+                 pos.x * 73856093 + 
+                 pos.y * 19349663 + 
+                 pos.z * 83492791 + 
+                 salt
+    math.randomseed(seed)
 end
 
---[[
-    Road origin points are points where road generation starts.
-    Every citychunk has 4 origin points, 1 per edge.
-    Road origin points are generated randomly somewhere on
-    each edge, but can't get closer to citychunk corners
-    than 'road_margin'.
---]]
+local function set_citychunk_seed(citychunk_origin, salt)
+    set_position_seed(citychunk_origin, salt)
+end
 
--- Returns road origin points for the bottom (X) and left (Z) edges
--- of the citychunk.
+-- ============================================================
+-- ROAD ORIGIN GENERATION
+-- ============================================================
+
+-- Get all grid-aligned points along a citychunk border
+local function get_grid_points_on_border(citychunk_origin, border_edge)
+    local min_x = citychunk_origin.x
+    local max_x = citychunk_origin.x + citychunk.in_nodes - 1
+    local min_z = citychunk_origin.z
+    local max_z = citychunk_origin.z + citychunk.in_nodes - 1
+    local y = citychunk_origin.y
+    
+    local points = {}
+    
+    if border_edge == "x_min" or border_edge == "x_max" then
+        local x = (border_edge == "x_min") and min_x or max_x
+        local first_z = math.ceil(min_z / grid_spacing) * grid_spacing
+        local z = first_z
+        while z <= max_z do
+            if z > min_z and z < max_z then
+                table.insert(points, vector.new(x, y, z))
+            end
+            z = z + grid_spacing
+        end
+    else
+        local z = (border_edge == "z_min") and min_z or max_z
+        local first_x = math.ceil(min_x / grid_spacing) * grid_spacing
+        local x = first_x
+        while x <= max_x do
+            if x > min_x and x < max_x then
+                table.insert(points, vector.new(x, y, z))
+            end
+            x = x + grid_spacing
+        end
+    end
+    
+    return points
+end
+
+-- Returns a random grid-aligned road origin point for the given border edge
+local function get_road_origin_on_border(citychunk_origin, border_edge, salt)
+    local grid_points = get_grid_points_on_border(citychunk_origin, border_edge)
+    
+    if #grid_points == 0 then
+        local min_x = citychunk_origin.x
+        local max_x = citychunk_origin.x + citychunk.in_nodes - 1
+        local min_z = citychunk_origin.z
+        local max_z = citychunk_origin.z + citychunk.in_nodes - 1
+        local y = citychunk_origin.y
+        
+        if border_edge == "x_min" then
+            return vector.new(min_x, y, (min_z + max_z) / 2)
+        elseif border_edge == "x_max" then
+            return vector.new(max_x, y, (min_z + max_z) / 2)
+        elseif border_edge == "z_min" then
+            return vector.new((min_x + max_x) / 2, y, min_z)
+        else
+            return vector.new((min_x + max_x) / 2, y, max_z)
+        end
+    end
+    
+    local border_coord
+    if border_edge == "x_min" then
+        border_coord = citychunk_origin.x
+    elseif border_edge == "x_max" then
+        border_coord = citychunk_origin.x + citychunk.in_nodes - 1
+    elseif border_edge == "z_min" then
+        border_coord = citychunk_origin.z
+    else
+        border_coord = citychunk_origin.z + citychunk.in_nodes - 1
+    end
+    
+    local border_seed = mapgen_seed + border_coord * 73856093 + salt * 83492791
+    math.randomseed(border_seed)
+    
+    local index = math.random(1, #grid_points)
+    return grid_points[index]
+end
+
 local function halfchunk_ori(citychunk_coords)
     local origin = units.citychunk_to_node(citychunk_coords)
-    pcmg.set_randomseed(origin)
-    local random_x = math.random(0 + road_margin, citychunk.in_nodes - 1 - road_margin)
-    local x_edge_ori = origin + vector.new(random_x, 0, 0)
-    local random_z = math.random(0 + road_margin, citychunk.in_nodes - 1 - road_margin)
-    local z_edge_ori = origin + vector.new(0, 0, random_z)
-    math.randomseed(os.time())
+    local x_edge_ori = get_road_origin_on_border(origin, "z_min", 1)
+    local z_edge_ori = get_road_origin_on_border(origin, "x_min", 2)
     return x_edge_ori, z_edge_ori
 end
 
--- Returns all road origin points for the citychunk
 function pcmg.citychunk_road_origins(citychunk_origin)
     local citychunk_coords = pcmg.citychunk_coords(citychunk_origin)
     local up_coords = citychunk_coords + vector.new(0, 0, 1)
@@ -74,22 +155,13 @@ function pcmg.citychunk_road_origins(citychunk_origin)
     return {bottom, left, up, right}
 end
 
--- Takes a table of road origin points from which it picks 2 randomly
--- and puts the pair into a table. It repeats the process until
--- all origins are in pairs. If an odd number of origins is in the
--- table it ignores the last.
--- Example:
--- input: {p1, p2, p3, p4, p5}
--- output: {{p1, p3}, {p2, p4}} (p5 got skipped)
 local function connect_road_origins(citychunk_origin, road_origins)
     local points = {}
     for _, origin in pairs(road_origins) do
-        -- copy the table to avoid "fun" in other parts of the code
         table.insert(points, vector.new(origin))
     end
-    pcmg.set_randomseed(citychunk_origin)
+    set_citychunk_seed(citychunk_origin, 2)
     if #points % 2 ~= 0 then
-        -- remove one point if for some reason the number of points was odd
         table.remove(points)
     end
     local point_pairs = {}
@@ -102,11 +174,13 @@ local function connect_road_origins(citychunk_origin, road_origins)
         table.remove(points, p2_index)
         table.insert(point_pairs, {p1, p2})
     end
-    math.randomseed(os.time())
     return point_pairs
 end
 
--- Material IDs
+-- ============================================================
+-- MATERIALS AND SHAPES
+-- ============================================================
+
 local road_asphalt_id = materials_by_name["road_asphalt"]
 local road_pavement_id = materials_by_name["road_pavement"]
 local road_center_id = materials_by_name["road_center"]
@@ -124,105 +198,68 @@ local road_shape = canvas_shapes.combine_shapes(
 local midpoint_shape = pcmg.canvas_shapes.make_circle(1, road_midpoint_id)
 local origin_shape = pcmg.canvas_shapes.make_circle(1, road_origin_id)
 
--- for testing overgeneration
+-- ============================================================
+-- DRAWING UTILITIES
+-- ============================================================
+
 local function draw_points(megacanv, points)
-    for _, point in pairs(points) do
-        megacanv:set_all_cursors(point)
+    for _, pt in pairs(points) do
+        megacanv:set_all_cursors(pt)
         megacanv:draw_shape(origin_shape)
     end
 end
 
-local function draw_wobbly_road(megacanv, start, finish)
-    pcmg.set_randomseed(megacanv.origin)
-    megacanv:draw_wobbly(road_shape, start, finish)
-    math.randomseed(os.time())
-end
-
-local function draw_waved_road(megacanv, start, finish)
-    pcmg.set_randomseed(megacanv.origin)
-    local path = pcmg.path.new(start, finish)
-    path:make_wave(50, 30, 5)
-    megacanv:draw_path(road_shape, path, "straight")
-    math.randomseed(os.time())
-end
-
--- Draws random circles with asphalt and pavement
--- 'nr' is the number of random circles to draw in the citychunk.
--- Useful for testing.
-local function draw_random_dots(megacanv, nr)
-    local nr = nr or 100
-    pcmg.set_randomseed(megacanv.origin)
-    megacanv:draw_random(road_shape, nr)
-    math.randomseed(os.time())
-end
-
 local road_metastore = pcmg.metastore.new()
 
--- local function build_road(megapathpav, start, finish)
---     local guide_path = pcmg.path.new(start, finish)
---     guide_path:make_slanted(10)
---     local colliding
---     for _, p in guide_path.start:iterator() do
---         local collisions = megapathpav:colliding_points(p.pos, 30, true)
---         if next(collisions) then
---             colliding = collisions
---             guide_path:cut_off(p)
---         end
---     end
---     if colliding then
---         local _, col = next(colliding)
---         guide_path:shorten(4)
---         local extension =
---             pcmg.path.new(guide_path.finish.pos, col.pos)
---         extension:make_slanted(10)
---         guide_path:merge(extension)
---         local branch = col:branch(finish)
---         branch:make_slanted(10)
---         -- road_metastore:set(branch, "style", "wobbly")
---     end
---     return guide_path
--- end
 
-local function build_road(megapathpav, start, finish)
-    local guide_path = pcmg.path.new(start, finish)
+-- ============================================================
+-- ROAD BUILDING
+-- ============================================================
+
+-- Builds a simple road path between start and finish points.
+-- Note: Collision detection has been removed as part of simplification.
+-- The path is created using make_slanted(), which creates an L-shaped path
+-- with one horizontal segment and one vertical segment when start/finish
+-- are not axis-aligned, or a single straight segment when they are aligned.
+local function build_road(start, finish)
+    local start_point = pcmg.point.new(start)
+    local finish_point = pcmg.point.new(finish)
+    local guide_path = pcmg.path.new(start_point, finish_point)
     guide_path:make_slanted()
-    local current_point = guide_path.start
-    for nr, p in guide_path.start:iterator() do
-        local colliding =
-            megapathpav:colliding_segments(current_point.pos, p.pos, 1)
-        if next(colliding) then
-            guide_path:insert(colliding[1].intersections[1], nr)
-        end
-        current_point = p
-    end
     return guide_path
 end
 
+
+-- ============================================================
+-- MAIN GENERATION
+-- ============================================================
+
 local function road_generator(megacanv, pathpaver_cache)
     megacanv:set_metastore(road_metastore)
+    
+    set_citychunk_seed(megacanv.origin, 0)
+    
     local road_origins = pcmg.citychunk_road_origins(megacanv.origin)
     local connected_points = connect_road_origins(megacanv.origin, road_origins)
     local megapathpav = pcmg.megapathpaver.new(megacanv.origin, pathpaver_cache)
+    
+    local main_roads = {}
     for _, points in ipairs(connected_points) do
         local start = points[1]
         local finish = points[2]
-        local path = build_road(megapathpav, start, finish)
-        megapathpav:save_path(path)
+        local pth = build_road(start, finish)
+        megapathpav:save_path(pth)
+        table.insert(main_roads, pth)
         draw_points(megacanv, road_origins)
     end
-    for _, path in pairs(megapathpav.paths) do
-        -- for _, p in path.start:iterator() do
-        --     if math.random() > 0.5 then
-        --         road_metastore:set(p, "style", "wobbly")
-        --     end
-        -- end
-        megacanv:draw_path(road_shape, path, "straight")
-        megacanv:draw_path_points(midpoint_shape, path)
+    
+    for _, pth in pairs(megapathpav.paths) do
+        megacanv:draw_path(road_shape, pth, "straight")
+        megacanv:draw_path_points(midpoint_shape, pth)
     end
 end
 
 function pcmg.generate_roads(megacanv, pathpaver_cache)
     local t1 = minetest.get_us_time()
     megacanv:generate(road_generator, 1, pathpaver_cache)
-    minetest.log("error", string.format("Overgen time: %g ms", (minetest.get_us_time() - t1) / 1000))
 end

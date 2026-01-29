@@ -23,6 +23,7 @@ local vector = vector
 local pcmg = pcity_mapgen
 local cpml = pcity_cpml_proxy
 local sizes = dofile(mod_path.."/sizes.lua")
+local path_utils = pcmg.path_utils
 
 local pathpaver_margin = sizes.citychunk.overgen_margin
 local margin_vector = vector.new(1, 1, 1) * pathpaver_margin
@@ -33,14 +34,13 @@ local margin_max = sizes.citychunk.pos_max + margin_vector
     Pathpaver
     1. stores point data for a given citychunk
     2. stores path data for a given citychunk
-    3. helps check for colisions
+    3. helps check for collisions
 --]]
 
 pcmg.pathpaver = {}
 local pathpaver = pcmg.pathpaver
 pathpaver.__index = pathpaver
 
--- Rename to path store?
 function pathpaver.new(citychunk_origin)
     local p = {}
     p.origin = vector.copy(citychunk_origin)
@@ -75,10 +75,20 @@ function pathpaver:save_point(pnt)
     end
 end
 
+-- Saves a path and all its points in the pathpaver
+function pathpaver:save_path(pth)
+    self.paths[pth] = pth
+    local points = pth:all_points()
+    for _, p in ipairs(points) do
+        self:save_point(p)
+    end
+end
+
+-- Returns all points that belong to paths saved in this pathpaver
 function pathpaver:path_points()
     local all = {}
-    for _, path in pairs(self.paths) do
-        local points = path:all_points()
+    for _, pth in pairs(self.paths) do
+        local points = pth:all_points()
         for _, p in pairs(points) do
             all[p] = p
         end
@@ -86,47 +96,3 @@ function pathpaver:path_points()
     return all
 end
 
--- Checks if a position given by 'pos' is contained in the radius of
--- a point given by 'radius'. Returns all points that contain the
--- position within the radius. Returns false if no colliding points
--- were found for the position. When 'only_paths' is 'true', the
--- function will only search in points that belong to paths saved in
--- the current pathpaver and won't include overgenerated points from
--- neighboring citychunks. When 'only_paths' is 'false' (the default),
--- the function will check all points in the pathpaver.
-function pathpaver:colliding_points(pos, radius, only_paths)
-    local colliding = {}
-    local points = only_paths and self:path_points() or self.points
-    for _, point in pairs(points) do
-        local distance = vector.distance(pos, point.pos)
-        if distance <= radius then
-            table.insert(colliding, point)
-        end
-    end
-    return colliding
-end
-
--- Finds segments in the pathpaver that intersect with a segment
--- formed by 'pos1' and 'pos2' within the 'treshold'. It searches only
--- through the paths that belong to the current citychunk.
-function pathpaver:colliding_segments(pos1, pos2, treshold)
-    local treshold = treshold or 1 -- one node by default
-    local colliding = {}
-    local seg1 = {pos1, pos2}
-    for _, pth in pairs(self.paths) do
-        local current_point = pth.start
-        for _, p in pth.start:iterator() do
-            local seg2 = {current_point.pos, p.pos}
-            local intersections, distance =
-                cpml.intersect.segment_segment(seg1, seg2, treshold)
-            if intersections then
-                local i1, i2 = intersections[1], intersections[2]
-                table.insert(colliding, {segment = {current_point, p},
-                                         intersections = {i1, i2},
-                                         distance = distance})
-            end
-            current_point = p
-        end
-    end
-    return colliding
-end
