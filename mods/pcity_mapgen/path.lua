@@ -113,18 +113,18 @@ function point:unlink()
     self:unlink_from_next()
 end
 
--- Ensures that 'point' is a point instance. If 'point' is already
--- a point, it is returned as is. If 'point' is a vector, a new point
+-- Ensures that 'p' is a point instance. If 'p' is already
+-- a point, it is returned as is. If 'p' is a vector, a new point
 -- instance is created with that position and returned.
-local function ensure_point(point)
+local function ensure_point(p)
     local p
-    if vector.check(point) then
-        p = point.new(point)
+    if vector.check(p) then
+        p = point.new(p)
     end
-    if not point.check(point) then
-        error("Path: point '"..shallow_dump(point).."' is not a point.")
+    if not point.check(p) then
+        error("Path: p '"..shallow_dump(p).."' is not a point.")
     end
-    return p or point
+    return p
 end
 
 -- Attaches this point to any number of other points passed as
@@ -274,7 +274,7 @@ function point:remove_branch(pth)
     end
 end
 
-
+-- Removes the point from its path and unlinks and detaches it.
 function point:remove()
     if self.path then
         self.path:remove(self, true)
@@ -313,21 +313,21 @@ function path.new(start, finish)
 end
 
 -- Checks if an object is a path as created by path.new
-function path.check(p)
-    return getmetatable(p) == path
+function path.check(pth)
+    return getmetatable(pth) == path
 end
 
-function path:set_start(point)
-    point = ensure_point(point)
-    self.start = point
+function path:set_start(p)
+    p = ensure_point(p)
+    self.start = p
     self.start:set_path(self)
     self.start:unlink()
     point.link(self.start, self.finish)
 end
 
-function path:set_finish(point)
-    point = ensure_point(point)
-    self.finish = point
+function path:set_finish(p)
+    p = ensure_point(p)
+    self.finish = p
     self.finish:set_path(self)
     self.finish:unlink()
     point.link(self.start, self.finish)
@@ -361,14 +361,14 @@ end
 
 -- Checks if the point belongs to the path as either start,
 -- intermediate or finish point. Returns a boolean.
-function path:point_in_path(point)
-    return self.points[point] or
-        self.start == point or
-        self.finish == point
+function path:point_in_path(p)
+    return self.points[p] or
+        self.start == p or
+        self.finish == p
 end
 
 -- Checks if arguments passed to 'path:insert' are valid.
-local function check_insert_arguments(self, nr, point)
+local function check_insert_arguments(self, nr)
     if type(nr) ~= "number" then
         error("Path: nr '"..shallow_dump(nr).."' is not a number.")
     end
@@ -377,67 +377,67 @@ local function check_insert_arguments(self, nr, point)
     end
 end
 
--- Inserts 'point' into the path at position 'nr', which is the
+-- Inserts 'p' into the path at position 'nr', which is the
 -- ordinal number of the point in the sequence starting from the
 -- first intermediate point. So 'nr' = 1 will insert the point
 -- right after the start point. 'nr' = intermediate_nr + 1 will
 -- insert the point right before the finish point.
-function path:insert(nr, point)
-    check_insert_arguments(self, nr, point)
-    point = ensure_point(point)
-    point:set_path(self)
+function path:insert(nr, p)
+    check_insert_arguments(self, nr, p)
+    p = ensure_point(p)
+    p:set_path(self)
 end
 
 -- Checks if arguments passed to 'path:remove', 'path:remove_before'
 -- and 'path:remove_after' are valid.
-local function check_remove_arguments(self, point)
-    if not self.points[point] then
-        error("Path: point '"..shallow_dump(point).."' does not belong to the path .")
+local function check_remove_arguments(self, p)
+    if not self.points[p] then
+        error("Path: p '"..shallow_dump(p).."' does not belong to the path .")
     end
     if self.intermediate_nr <= 0 then
         error("Path: there are no intermediate points to remove.")
     end
 end
 
--- Removes 'point' from the path. 'point' must be an intermediate
+-- Removes 'p' from the path. 'p' must be an intermediate
 -- point that belongs to the path. If 'called_from_point' is true,
 -- the point's 'remove' method is not called (to avoid infinite recursion).
-function path:remove(point, called_from_point)
-    point = ensure_point(point)
-    check_remove_arguments(self, point)
-    point.link(point.previous, point.next)
+function path:remove(p, called_from_point)
+    p = ensure_point(p)
+    check_remove_arguments(self, p)
+    point.link(p.previous, p.next)
     if not called_from_point then
-        point:remove()
+        p:remove()
     end
     self.intermediate_nr = self.intermediate_nr - 1
 end
 
--- Removes the point before 'point' from the path. 'point' must be an
+-- Removes the point before 'p' from the path. 'p' must be an
 -- intermediate point (not the start point or the finish point).
-function path:remove_before(point)
-    point = ensure_point(point)
-    check_remove_arguments(self, point)
-    if point.previous == nil or
-        point.previous == self.start then
+function path:remove_before(p)
+    p = ensure_point(p)
+    check_remove_arguments(self, p)
+    if p.previous == nil or
+        p.previous == self.start then
         return
     end
-    local middle_point = point.previous
-    point.link(middle_point.previous, point)
+    local middle_point = p.previous
+    p.link(middle_point.previous, p)
     middle_point:unlink()
     self.intermediate_nr = self.intermediate_nr - 1
 end
 
--- Removes the point after 'point' from the path. 'point' must be an
+-- Removes the point after 'p' from the path. 'p' must be an
 -- intermediate point (not the start point or the finish point).
-function path:remove_after(point)
-    point = ensure_point(point)
-    check_remove_arguments(self, point)
-    if point.next == nil or
-        point.next == self.finish then
+function path:remove_after(p)
+    p = ensure_point(p)
+    check_remove_arguments(self, p)
+    if p.next == nil or
+        p.next == self.finish then
         return
     end
-    local middle_point = point.next
-    point.link(point, middle_point.next)
+    local middle_point = p.next
+    point.link(p, middle_point.next)
     middle_point:unlink()
     self.intermediate_nr = self.intermediate_nr - 1
 end
@@ -447,8 +447,8 @@ local function check_remove_at_arguments(self, nr)
     if type(nr) ~= "number" then
         error("Path: nr '"..shallow_dump(nr).."' is not a number.")
     end
-    local point = self:get_point(nr)
-    if not point then
+    local p = self:get_point(nr)
+    if not p then
         error("Path: no intermediate point at nr '"..shallow_dump(nr).."'.")
     end
 end
@@ -460,14 +460,14 @@ function path:remove_at(nr)
     self:remove(middle_point)
 end
 
--- Extends the path by adding 'point' at the end of the path.
--- 'point' becomes the new finish point.
-function path:extend(point)
-    point = ensure_point(point)
-    point:set_path(self)
-    self.finish:link(point)
+-- Extends the path by adding 'p' at the end of the path.
+-- 'p' becomes the new finish point.
+function path:extend(p)
+    p = ensure_point(p)
+    p:set_path(self)
+    self.finish:link(p)
     self.points[self.finish] = self.finish
-    self.finish = point
+    self.finish = p
     self.intermediate_nr = self.intermediate_nr + 1
 end
 
@@ -487,15 +487,15 @@ function path:shorten(nr)
 end
 
 -- Cuts off (removes from the path) all points that come after the
--- point specified by 'point'. Sets 'point' as the new finish.
-function path:cut_off(point)
-    point = ensure_point(point)
-    if self.finish == point then
+-- point specified by 'p'. Sets 'p' as the new finish.
+function path:cut_off(p)
+    p = ensure_point(p)
+    if self.finish == p then
         self:shorten()
         return
     end
     for _, p in self.finish:reverse_iterator() do
-        if p == point then
+        if p == p then
             break
         end
         self:shorten()
@@ -594,28 +594,28 @@ function path.merge(p1, p2)
     end
 end
 
--- Splits the path at 'point', which must belong to the path
+-- Splits the path at 'p', which must belong to the path
 -- and cannot be the start point. Returns a new path starting from
--- 'point' to the old finish point. The old path is shortened to
--- end at 'point'. 
-function path:split_at(point)
-    if not self:point_in_path(point) or
-        point == self.start then
+-- 'p' to the old finish point. The old path is shortened to
+-- end at 'p'. 
+function path:split_at(p)
+    if not self:point_in_path(p) or
+        p == self.start then
         return
     end
     local new_path = path.new(point.pos, self.finish)
     for _, bp in pairs(self.branching_points) do
-        if bp == point or
-            vector.equals(bp.pos, point.pos) or
-            point:reverse_iterator()(bp) then
+        if bp == p or
+            vector.equals(bp.pos, p.pos) or
+            p:reverse_iterator()(bp) then
             new_path.branching_points[bp] = bp
             self.branching_points[bp] = nil
         end
     end
-    local current_point = point
+    local current_point = p
     while current_point do
         local next_point = current_point.next
-        if current_point ~= point then
+        if current_point ~= p then
             current_point.path = new_path
             new_path.points[current_point] = current_point
             new_path.intermediate_nr = new_path.intermediate_nr + 1
@@ -624,8 +624,8 @@ function path:split_at(point)
         end
         current_point = next_point
     end
-    point:unlink_from_next()
-    self.finish = point
+    p:unlink_from_next()
+    self.finish = p
     return new_path
 end
 
@@ -692,4 +692,3 @@ local tests = pcmg.tests.path
 function tests.run_all()
     
 end
-
