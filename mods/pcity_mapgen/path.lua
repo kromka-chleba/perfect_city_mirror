@@ -36,8 +36,6 @@ local function check_point_new_arguments(pos)
     end
 end
 
-local private = setmetatable({}, {__mode = "k"})
-
 -- Creates a new instance of the Point class. Points store absolute
 -- world position, the previous and the next point in a sequence and
 -- the path (see the Path class below) they belong to. Points can be
@@ -58,6 +56,24 @@ end
 -- Checks if the object is a point.
 function point.check(p)
     return getmetatable(p) == point
+end
+
+-- Creates a copy of point 'p'. The copy has the same position,
+-- path, previous and next points, attached points and branches as
+-- 'p'.
+function point.copy(p)
+    check_point(p)
+    local new_p = point.new(p.pos)
+    new_p.path = p.path
+    new_p.previous = p.previous
+    new_p.next = p.next
+    for _, a in pairs(p.attached) do
+        new_p.attached[a] = a
+    end
+    for br, branch in pairs(p.branches) do
+        new_p.branches[br] = branch
+    end
+    return new_p
 end
 
 -- Check if points belong to the same path. '...' is any number of points.
@@ -247,12 +263,15 @@ function point:set_path(pth)
     pth.points[self] = self
 end
 
--- Creates a new branch path starting from this point to the 'finish'
--- point. The start point of the branch (path) is lineked to this point.
--- Returns the newly created branch path.
+-- Creates a new branch starting from this point and ending at
+-- 'finish' point. The branch is a new path instance. The start point
+-- of the branch is attached to this point. The branch is stored
+-- in this point's branches table. The point is marked as a
+-- branching point in the path's branching_points table. Returns
+-- the newly created branch (path).
 function point:branch(finish)
     self.path.branching_points[self] = self
-    local pth = path.new(self.pos, finish)
+    local pth = path.new(self, finish)
     self:attach(pth.start)
     self.branches[pth] = pth
     return pth
@@ -272,9 +291,10 @@ function point:unbranch(pth)
     end
 end
 
+-- Removes all branches from the point.
 function point:unbranch_all()
     for _, branch in pairs(self.branches) do
-        branch.start:unbranch(branch)
+        self:unbranch(branch)
     end
     self.branches = {}
 end
@@ -300,7 +320,8 @@ end
 -- (including start and finish) are stored in self.points. Paths
 -- support various operations for manipulating points such as
 -- inserting, removing, splitting, extending, shortening, subdividing,
--- unsubdividing, etc. 'start' and 'finish' are positions (vectors).
+-- unsubdividing, etc. 'start' and 'finish' are points (instances of
+-- the Point class).
 function path.new(start, finish)
     local pth = setmetatable({}, path)
     pth.points = setmetatable({}, {__mode = "kv"})
@@ -324,8 +345,7 @@ function path:set_start(p)
         self.points[self.start] = nil
     end
     self.start = p
-    self.start.path = self
-    self.points[self.start] = self.start
+    self.start:set_path(self)
     self.start:unlink()
     if self.intermediate_nr > 0 then
         point.link(self.start, self:get_point(1))
@@ -342,8 +362,7 @@ function path:set_finish(p)
         self.points[self.finish] = nil
     end
     self.finish = p
-    self.finish.path = self
-    self.points[self.finish] = self.finish
+    self.finish:set_path(self)
     self.finish:unlink()
     if self.intermediate_nr > 0 then
         point.link(self:get_point(self.intermediate_nr), self.finish)
@@ -421,8 +440,7 @@ end
 -- is added to the path's points table.
 function path:insert_between(p_prev, p_next, p)
     check_insert_between_arguments(self, p_prev, p_next, p)
-    p.path = self
-    self.points[p] = p
+    p:set_path(self)
     point.link(p_prev, p, p_next)
     self.intermediate_nr = self.intermediate_nr + 1
 end
@@ -531,12 +549,10 @@ function path:shorten()
     end
     local old_finish = self.finish
     local new_finish = self.finish.previous
-    self.points[old_finish] = nil
     old_finish:clear()
     self.intermediate_nr = self.intermediate_nr - 1
     self.finish = new_finish
-    self.finish.path = self
-    self.points[self.finish] = self.finish
+    self.finish:set_path(self)
     self.finish:unlink_from_next()
     return true
 end
@@ -663,8 +679,10 @@ end
 function path:split_at(p)
     check_point(p)
     check_split_at_arguments(self, p)
-    local new_path = path.new(point.new(vector.copy(p.pos)), self.finish)
-    
+    local new_path = path.new(point.copy(p), self.finish)
+    self:transfer_points_to(new_path, p.next, self.finish.previous)
+    self:set_finish(p)
+    return new_path
 end
 
 -- Creates a straight path from 'self.start' to 'self.finish'
@@ -692,7 +710,8 @@ function path:make_wave(segment_nr, amplitude, density)
         local distance_cofactor = math.sin(distance / total_distance * math.pi)
         local wave = math.sin(distance / total_distance * 2 * math.pi * density)
         local pos = current_pos + perpendicular * distance_cofactor * wave * amplitude
-        self:insert(pos)
+        local p = point.new(pos)
+        self:insert(p)
     end
 end
 
@@ -710,11 +729,12 @@ function path:make_slanted(segment_length)
     local abs = vector.abs(vec)
     if abs.x ~= 0 and abs.z ~= 0 then
         -- add a mid point only if start and finish are not aligned on x or z axes
-        local mid_point = self.start.pos +
+        local mid_point_pos = self.start.pos +
             vector.new(abs.z * sign.x, 0, abs.z * sign.z)
         if abs.x < abs.z then
-            mid_point = self.start.pos + vector.new(abs.x * sign.x, 0, abs.x * sign.z)
+            mid_point_pos = self.start.pos + vector.new(abs.x * sign.x, 0, abs.x * sign.z)
         end
+        local mid_point = point.new(mid_point_pos)
         self:insert(mid_point)
     end
     if segment_length then
