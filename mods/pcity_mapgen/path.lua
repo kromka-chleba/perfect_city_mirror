@@ -48,8 +48,12 @@ function point.new(pos)
     p.path = nil
     p.previous = nil
     p.next = nil
+    -- Weak table: attached points are kept alive by their own paths,
+    -- not by the attachment relationship itself.
     p.attached = setmetatable({}, {__mode = "kv"})
-    p.branches = {}
+    -- Weak table: branches (paths) are kept alive by their own points,
+    -- not by the branching point.
+    p.branches = setmetatable({}, {__mode = "kv"})
     return setmetatable(p, point)
 end
 
@@ -58,22 +62,19 @@ function point.check(p)
     return getmetatable(p) == point
 end
 
--- Creates a copy of point 'p'. The copy has the same position,
--- path, previous and next points, attached points and branches as
--- 'p'.
-function point.copy(p)
-    check_point(p)
-    local new_p = point.new(p.pos)
-    new_p.path = p.path
-    new_p.previous = p.previous
-    new_p.next = p.next
-    for _, a in pairs(p.attached) do
-        new_p.attached[a] = a
+-- Checks if 'p' is a point, otherwise throws an error.
+local function check_point(p)
+    if not point.check(p) then
+        error("Path: p '"..shallow_dump(p).."' is not a point.")
     end
-    for br, branch in pairs(p.branches) do
-        new_p.branches[br] = branch
-    end
-    return new_p
+end
+
+-- Creates a copy of point 'p' with the same position. The copy does
+-- not inherit path, previous/next links, attachments, or branches -
+-- it is a fresh, unlinked point. Use this when you need a new point
+-- at the same location (e.g., when splitting a path).
+function point:copy()
+    return point.new(self.pos)
 end
 
 -- Check if points belong to the same path. '...' is any number of points.
@@ -126,13 +127,6 @@ end
 function point:unlink()
     self:unlink_from_previous()
     self:unlink_from_next()
-end
-
--- Checks if 'p' is a point, otherwise throws an error.
-local function check_point(p)
-    if not point.check(p) then
-        error("Path: p '"..shallow_dump(p).."' is not a point.")
-    end
 end
 
 -- Attaches this point to any number of other points passed as
@@ -271,7 +265,7 @@ end
 -- the newly created branch (path).
 function point:branch(finish)
     self.path.branching_points[self] = self
-    local pth = path.new(self, finish)
+    local pth = path.new(self:copy(), finish)
     self:attach(pth.start)
     self.branches[pth] = pth
     return pth
@@ -286,7 +280,7 @@ end
 function point:unbranch(pth)
     self.branches[pth] = nil
     -- if there are no more branches, unmark this point
-    if next(self.branches) == nil then
+    if next(self.branches) == nil and self.path then
         self.path.branching_points[self] = nil
     end
 end
@@ -296,7 +290,7 @@ function point:unbranch_all()
     for _, branch in pairs(self.branches) do
         self:unbranch(branch)
     end
-    self.branches = {}
+    self.branches = setmetatable({}, {__mode = "kv"})
 end
 
 -- Clears the point by unlinking it from previous and next points,
@@ -324,8 +318,12 @@ end
 -- the Point class).
 function path.new(start, finish)
     local pth = setmetatable({}, path)
+    -- Weak table: points are kept alive by the linked list
+    -- (start -> next -> ... -> finish), not by this table.
     pth.points = setmetatable({}, {__mode = "kv"})
     pth.intermediate_nr = 0 -- nr of intermediate points (excludes start and finish)
+    -- Weak table: branching points are kept alive by the path's
+    -- linked list, not by this table.
     pth.branching_points = setmetatable({}, {__mode = "kv"})
     pth:set_start(start)
     pth:set_finish(finish)
@@ -679,7 +677,7 @@ end
 function path:split_at(p)
     check_point(p)
     check_split_at_arguments(self, p)
-    local new_path = path.new(point.copy(p), self.finish)
+    local new_path = path.new(p:copy(), self.finish)
     self:transfer_points_to(new_path, p.next, self.finish.previous)
     self:set_finish(p)
     return new_path
