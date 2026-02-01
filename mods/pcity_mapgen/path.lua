@@ -362,7 +362,6 @@ function path.new(start, finish)
     -- Weak table: points are kept alive by the linked list
     -- (start -> next -> ... -> finish), not by this table.
     pth.points = setmetatable({}, {__mode = "kv"})
-    pth.intermediate_nr = 0 -- nr of intermediate points (excludes start and finish)
     -- Weak table: branching points are kept alive by the path's
     -- linked list, not by this table.
     pth.branching_points = setmetatable({}, {__mode = "kv"})
@@ -376,6 +375,32 @@ function path.check(pth)
     return getmetatable(pth) == path
 end
 
+-- ============================================================
+-- INTERMEDIATE COUNT HELPERS
+-- ============================================================
+
+-- Counts intermediate points by traversing the linked list.
+-- Returns the number of intermediate points (excludes start and finish).
+function path:count_intermediate()
+    local count = 0
+    local current = self.start and self.start.next
+    while current and current ~= self.finish do
+        count = count + 1
+        current = current.next
+    end
+    return count
+end
+
+-- Checks if the path has any intermediate points.
+-- Returns true if there is at least one intermediate point.
+function path:has_intermediate()
+    return self.start and self.start.next and self.start.next ~= self.finish
+end
+
+-- ============================================================
+-- COMPARATORS AND SORTING
+-- ============================================================
+
 -- Comparator for paths. Compares by start, finish, intermediate
 -- points, then by ID. Deterministic across Lua environments.
 function path.comparator(pth1, pth2)
@@ -388,8 +413,10 @@ function path.comparator(pth1, pth2)
         return point.comparator(pth1.finish, pth2.finish)
     end
     -- Compare number of intermediate points
-    if pth1.intermediate_nr ~= pth2.intermediate_nr then
-        return pth1.intermediate_nr < pth2.intermediate_nr
+    local count1 = pth1:count_intermediate()
+    local count2 = pth2:count_intermediate()
+    if count1 ~= count2 then
+        return count1 < count2
     end
     -- Compare each intermediate point position
     local p1 = pth1.start.next
@@ -424,40 +451,6 @@ function path:branching_points_sorted()
         end
     end
     return result
-end
-
--- ============================================================
--- INTERMEDIATE COUNT HELPERS
--- ============================================================
-
--- Recomputes intermediate_nr by traversing the linked list.
--- Use this to recover from any potential desync situations.
-function path:recompute_intermediate_nr()
-    local count = 0
-    local current = self.start and self.start.next
-    while current and current ~= self.finish do
-        count = count + 1
-        current = current.next
-    end
-    self.intermediate_nr = count
-    return count
-end
-
--- Validates that intermediate_nr matches the actual linked list state.
--- Returns true if consistent, false otherwise.
--- Optionally repairs the count if 'repair' is true.
-function path:validate_intermediate_nr(repair)
-    local actual_count = 0
-    local current = self.start and self.start.next
-    while current and current ~= self.finish do
-        actual_count = actual_count + 1
-        current = current.next
-    end
-    local is_valid = (self.intermediate_nr == actual_count)
-    if not is_valid and repair then
-        self.intermediate_nr = actual_count
-    end
-    return is_valid, self.intermediate_nr, actual_count
 end
 
 -- ============================================================
@@ -517,19 +510,22 @@ end
 -- intermediate point (after start) and ending with the last (before
 -- finish). So 'nr' = 1 will give the first intermediate point in the
 -- path, etc. Returns 'nil' if no point is found at the position.
--- Returns 'nil' if 'nr' is lower than 1 or bigger than the number of
--- intermediate points. Note: start and finish are not considered
--- intermediate points.
+-- Returns 'nil' if 'nr' is lower than 1.
+-- Note: start and finish are not considered intermediate points.
 function path:get_point(nr)
-    if type(nr) ~= "number" or
-        nr <= 0 or nr > self.intermediate_nr then
-        return
+    if type(nr) ~= "number" or nr <= 0 then
+        return nil
     end
-    for i, p in self.start:iterator() do
+    local i = 0
+    local current = self.start and self.start.next
+    while current and current ~= self.finish do
+        i = i + 1
         if i == nr then
-            return p
+            return current
         end
+        current = current.next
     end
+    return nil
 end
 
 -- Returns all intermediate points between 'from' and 'to' (inclusive
@@ -556,9 +552,16 @@ end
 -- Returns 'nil' if there are no intermediate points.
 -- Note: start and finish are not considered intermediate points.
 function path:random_intermediate_point()
-    if self.intermediate_nr > 0 then
-        return self:get_point(math.random(1, self.intermediate_nr))
+    local intermediates = {}
+    local current = self.start and self.start.next
+    while current and current ~= self.finish do
+        table.insert(intermediates, current)
+        current = current.next
     end
+    if #intermediates > 0 then
+        return intermediates[math.random(1, #intermediates)]
+    end
+    return nil
 end
 
 -- Checks if the point belongs to the path (as start, intermediate,
@@ -591,16 +594,15 @@ function path:insert_between(p_prev, p_next, p)
     check_insert_between_arguments(self, p_prev, p_next, p)
     p:set_path(self)
     point.link(p_prev, p, p_next)
-    self.intermediate_nr = self.intermediate_nr + 1
 end
 
 -- Inserts intermediate point 'p' at ordinal position 'nr' in the path.
 -- 'nr' = 1 means inserting 'p' right after the start point.
--- 'nr' = intermediate_nr + 1 means inserting 'p' right before the
+-- 'nr' = count_intermediate() + 1 means inserting 'p' right before the
 -- finish point.
 function path:insert_at(nr, p)
     local p1 = self:get_point(nr - 1) or self.start
-    local p2 = self:get_point(nr) or self.finish
+    local p2 = p1.next or self.finish
     self:insert_between(p1, p2, p)
 end
 
@@ -616,7 +618,8 @@ end
 
 -- Inserts an intermediate point 'p' before the finish point.
 function path:insert(p)
-    self:insert_at(self.intermediate_nr + 1, p)
+    local last = self.finish.previous or self.start
+    self:insert_between(last, self.finish, p)
 end
 
 -- ============================================================
@@ -633,7 +636,7 @@ local function check_remove_arguments(self, p)
     if p == self.start or p == self.finish then
         error("Path: cannot remove start or finish point.")
     end
-    if self.intermediate_nr <= 0 then
+    if not self:has_intermediate() then
         error("Path: there are no intermediate points to remove.")
     end
 end
@@ -651,7 +654,6 @@ function path:remove(p)
         nxt.previous = prev
     end
     p:clear()
-    self.intermediate_nr = self.intermediate_nr - 1
 end
 
 -- Removes the intermediate point that comes before point 'p'.
@@ -670,7 +672,7 @@ function path:remove_next(p)
     self:remove(p.next)
 end
 
--- Checks if arguments passed to 'path:remove_at' are valid,
+-- Checks if arguments passed to 'path:remove_at' are valid.
 local function check_remove_at_arguments(self, nr)
     if type(nr) ~= "number" then
         error("Path: nr '"..shallow_dump(nr).."' is not a number.")
@@ -703,8 +705,6 @@ function path:extend(p)
     p:unlink()
     point.link(old_finish, p)
     self.finish = p
-    -- old_finish is now an intermediate point
-    self.intermediate_nr = self.intermediate_nr + 1
 end
 
 -- Shortens the path by removing the finish point and setting the
@@ -712,13 +712,12 @@ end
 -- intermediate points. Returns 'true' if the path was shortened,
 -- 'false' otherwise.
 function path:shorten()
-    if self.intermediate_nr <= 0 then
+    if not self:has_intermediate() then
         return false
     end
     local old_finish = self.finish
     local new_finish = old_finish.previous
     old_finish:clear()
-    self.intermediate_nr = self.intermediate_nr - 1
     self.finish = new_finish
     self.finish.next = nil  -- ensure new finish doesn't point to anything
     return true
@@ -809,12 +808,12 @@ end
 -- Unsubdivides the path by removing intermediate points that form an angle
 -- smaller than 'angle' (in radians) with their neighbors. Leaves other points untouched.
 function path:unsubdivide(angle)
-    if self.intermediate_nr <= 0 then
+    if not self:has_intermediate() then
         return
     end
     local prev = self.start
     local mid = prev.next
-    local nxt = mid.next
+    local nxt = mid and mid.next
     while (nxt) do
         local mid_prev = mid.pos - prev.pos
         local mid_nxt = nxt.pos - mid.pos
@@ -842,8 +841,8 @@ local function check_split_at_arguments(self, p)
     if p == self.start or p == self.finish then
         error("Path: cannot split path at start or finish point.")
     end
-    if self.intermediate_nr < 1 then
-        error("Path: cannot split path with less than one intermediate point.")
+    if not self:has_intermediate() then
+        error("Path: cannot split path with no intermediate points.")
     end
 end
 
@@ -883,15 +882,13 @@ end
 -- ============================================================
 
 -- Clears all intermediate points from the path, leaving only start
--- and finish. Properly updates intermediate_nr.
+-- and finish.
 function path:clear_intermediate()
-    while self.intermediate_nr > 0 do
+    while self:has_intermediate() do
         local p = self:get_point(1)
         if p then
             self:remove(p)
         else
-            -- Safety: if get_point returns nil but count > 0, recompute
-            self:recompute_intermediate_nr()
             break
         end
     end
