@@ -331,6 +331,7 @@ end
 -- removes the point from its path's points table.
 -- *Caution*: after calling this method, the point could be collected by
 -- the garbage collector if there are no other references to it.
+-- You're more likely to want to use 'path:remove' instead.
 function point:clear()
     self:unlink()
     self:detach_all()
@@ -425,6 +426,40 @@ function path:branching_points_sorted()
 end
 
 -- ============================================================
+-- INTERMEDIATE COUNT HELPERS
+-- ============================================================
+
+-- Recomputes intermediate_nr by traversing the linked list.
+-- Use this to recover from any potential desync situations.
+function path:recompute_intermediate_nr()
+    local count = 0
+    local current = self.start and self.start.next
+    while current and current ~= self.finish do
+        count = count + 1
+        current = current.next
+    end
+    self.intermediate_nr = count
+    return count
+end
+
+-- Validates that intermediate_nr matches the actual linked list state.
+-- Returns true if consistent, false otherwise.
+-- Optionally repairs the count if 'repair' is true.
+function path:validate_intermediate_nr(repair)
+    local actual_count = 0
+    local current = self.start and self.start.next
+    while current and current ~= self.finish do
+        actual_count = actual_count + 1
+        current = current.next
+    end
+    local is_valid = (self.intermediate_nr == actual_count)
+    if not is_valid and repair then
+        self.intermediate_nr = actual_count
+    end
+    return is_valid, self.intermediate_nr, actual_count
+end
+
+-- ============================================================
 -- START AND FINISH
 -- ============================================================
 
@@ -432,14 +467,19 @@ end
 -- to the path's points table.
 function path:set_start(p)
     check_point(p)
-    if self.start then
-        self.points[self.start] = nil
+    local old_start = self.start
+    local first_intermediate = old_start and old_start.next
+    -- Unlink and remove old start from points table
+    if old_start then
+        old_start:unlink()
+        self.points[old_start] = nil
     end
     self.start = p
     self.start:set_path(self)
     self.start:unlink()
-    if self.intermediate_nr > 0 then
-        point.link(self.start, self:get_point(1))
+    -- Link new start to existing chain
+    if first_intermediate and first_intermediate ~= self.finish then
+        point.link(self.start, first_intermediate)
     elseif self.finish then
         point.link(self.start, self.finish)
     end
@@ -449,14 +489,19 @@ end
 -- to the path's points table.
 function path:set_finish(p)
     check_point(p)
-    if self.finish then
-        self.points[self.finish] = nil
+    local old_finish = self.finish
+    local last_intermediate = old_finish and old_finish.previous
+    -- Unlink and remove old finish from points table
+    if old_finish then
+        old_finish:unlink()
+        self.points[old_finish] = nil
     end
     self.finish = p
     self.finish:set_path(self)
     self.finish:unlink()
-    if self.intermediate_nr > 0 then
-        point.link(self:get_point(self.intermediate_nr), self.finish)
+    -- Link new finish to existing chain
+    if last_intermediate and last_intermediate ~= self.start then
+        point.link(last_intermediate, self.finish)
     elseif self.start then
         point.link(self.start, self.finish)
     end
@@ -532,6 +577,10 @@ local function check_insert_between_arguments(self, p_prev, p_next, p)
     check_point(p_prev)
     check_point(p_next)
     check_same_path({self.start, p_prev, p_next, self.finish})
+    -- Verify that p_prev and p_next are actually adjacent
+    if p_prev.next ~= p_next then
+        error("Path: p_prev and p_next are not adjacent points.")
+    end
 end
 
 -- Inserts intermediate point 'p' between points 'p_prev' and 'p_next'.
@@ -593,7 +642,13 @@ end
 function path:remove(p)
     check_point(p)
     check_remove_arguments(self, p)
-    point.link(p.previous, p.next)
+    local prev = p.previous
+    local nxt = p.next
+    -- Link neighbors before clearing to maintain chain integrity
+    if prev and nxt then
+        prev.next = nxt
+        nxt.previous = prev
+    end
     p:clear()
     self.intermediate_nr = self.intermediate_nr - 1
 end
@@ -642,8 +697,13 @@ end
 function path:extend(p)
     check_point(p)
     local old_finish = self.finish
-    self:set_finish(p)
-    self:insert_before(self.finish, old_finish)
+    -- Set up new finish
+    p:set_path(self)
+    p:unlink()
+    point.link(old_finish, p)
+    self.finish = p
+    -- old_finish is now an intermediate point
+    self.intermediate_nr = self.intermediate_nr + 1
 end
 
 -- Shortens the path by removing the finish point and setting the
@@ -655,12 +715,11 @@ function path:shorten()
         return false
     end
     local old_finish = self.finish
-    local new_finish = self.finish.previous
+    local new_finish = old_finish.previous
     old_finish:clear()
     self.intermediate_nr = self.intermediate_nr - 1
     self.finish = new_finish
-    self.finish:set_path(self)
-    self.finish:unlink_from_next()
+    self.finish.next = nil  -- ensure new finish doesn't point to anything
     return true
 end
 
@@ -669,7 +728,9 @@ end
 -- as possible.
 function path:shorten_by(nr)
     for i = 1, nr do
-        self:shorten()
+        if not self:shorten() then
+            break
+        end
     end
 end
 
@@ -758,11 +819,14 @@ function path:unsubdivide(angle)
         local mid_nxt = nxt.pos - mid.pos
         if math.abs(vector.angle(mid_prev, mid_nxt)) < angle then
             self:remove(mid)
+            -- After removal, continue from the same prev point
+            mid = prev.next
+            nxt = mid and mid.next
         else
             prev = mid
+            mid = prev.next
+            nxt = mid and mid.next
         end
-        mid = prev and prev.next
-        nxt = mid and mid.next
     end
 end
 
@@ -802,10 +866,35 @@ end
 function path:split_at(p)
     check_point(p)
     check_split_at_arguments(self, p)
-    local new_path = path.new(p:copy(), self.finish)
-    self:transfer_points_to(new_path, p.next, self.finish.previous)
+    -- Create new path with duplicated point 'p'
+    local p_copy = p:copy()
+    local new_path = path.new(p_copy, self.finish)
+    -- Transfer points from 'p.next' to 'self.finish' to the new path
+    if p.next and p.next ~= self.finish then
+        self:transfer_points_to(new_path, p.next, self.finish.previous)
+    end
+    -- Update finish of the original path to 'p'
     self:set_finish(p)
     return new_path
+end
+
+-- ============================================================
+-- CLEAR INTERMEDIATE
+-- ============================================================
+
+-- Clears all intermediate points from the path, leaving only start
+-- and finish. Properly updates intermediate_nr.
+function path:clear_intermediate()
+    while self.intermediate_nr > 0 do
+        local p = self:get_point(1)
+        if p then
+            self:remove(p)
+        else
+            -- Safety: if get_point returns nil but count > 0, recompute
+            self:recompute_intermediate_nr()
+            break
+        end
+    end
 end
 
 -- ============================================================
@@ -877,5 +966,97 @@ pcmg.tests.path = {}
 local tests = pcmg.tests.path
 
 function tests.run_all()
+    tests.test_intermediate_nr_consistency()
+    tests.test_split_preserves_count()
+    tests.test_extend_shorten_count()
+    tests.test_unsubdivide_count()
+end
+
+-- Test that intermediate_nr stays consistent through various operations
+function tests.test_intermediate_nr_consistency()
+    local p1 = point.new(vector.new(0, 0, 0))
+    local p2 = point.new(vector.new(10, 0, 0))
+    local pth = path.new(p1, p2)
     
+    assert(pth.intermediate_nr == 0, "Initial intermediate_nr should be 0")
+    
+    -- Insert some points
+    pth:insert(point.new(vector.new(2, 0, 0)))
+    pth:insert(point.new(vector.new(4, 0, 0)))
+    pth:insert(point.new(vector.new(6, 0, 0)))
+    
+    assert(pth.intermediate_nr == 3, "After 3 inserts, intermediate_nr should be 3")
+    
+    local valid, cached, actual = pth:validate_intermediate_nr(false)
+    assert(valid, "intermediate_nr should match actual count")
+    
+    -- Remove a point
+    pth:remove_at(2)
+    assert(pth.intermediate_nr == 2, "After removal, intermediate_nr should be 2")
+    
+    valid, cached, actual = pth:validate_intermediate_nr(false)
+    assert(valid, "intermediate_nr should still match after removal")
+end
+
+-- Test that split_at preserves correct counts
+function tests.test_split_preserves_count()
+    local p1 = point.new(vector.new(0, 0, 0))
+    local p2 = point.new(vector.new(10, 0, 0))
+    local pth = path.new(p1, p2)
+    
+    pth:insert(point.new(vector.new(2, 0, 0)))
+    pth:insert(point.new(vector.new(4, 0, 0)))
+    pth:insert(point.new(vector.new(6, 0, 0)))
+    pth:insert(point.new(vector.new(8, 0, 0)))
+    
+    local split_point = pth:get_point(2) -- point at (4,0,0)
+    local new_path = pth:split_at(split_point)
+    
+    local valid1, cached1, actual1 = pth:validate_intermediate_nr(false)
+    local valid2, cached2, actual2 = new_path:validate_intermediate_nr(false)
+    
+    assert(valid1, "Original path intermediate_nr should be valid after split")
+    assert(valid2, "New path intermediate_nr should be valid after split")
+end
+
+-- Test extend and shorten maintain count
+function tests.test_extend_shorten_count()
+    local p1 = point.new(vector.new(0, 0, 0))
+    local p2 = point.new(vector.new(10, 0, 0))
+    local pth = path.new(p1, p2)
+    
+    assert(pth.intermediate_nr == 0, "Initial count should be 0")
+    
+    pth:extend(point.new(vector.new(20, 0, 0)))
+    assert(pth.intermediate_nr == 1, "After extend, old finish becomes intermediate")
+    
+    local valid = pth:validate_intermediate_nr(false)
+    assert(valid, "Count should be valid after extend")
+    
+    pth:shorten()
+    assert(pth.intermediate_nr == 0, "After shorten, count should be 0")
+    
+    valid = pth:validate_intermediate_nr(false)
+    assert(valid, "Count should be valid after shorten")
+end
+
+-- Test unsubdivide maintains count
+function tests.test_unsubdivide_count()
+    local p1 = point.new(vector.new(0, 0, 0))
+    local p2 = point.new(vector.new(10, 0, 0))
+    local pth = path.new(p1, p2)
+    
+    -- Create a straight line with multiple points
+    pth:insert(point.new(vector.new(2, 0, 0)))
+    pth:insert(point.new(vector.new(4, 0, 0)))
+    pth:insert(point.new(vector.new(6, 0, 0)))
+    pth:insert(point.new(vector.new(8, 0, 0)))
+    
+    assert(pth.intermediate_nr == 4, "Should have 4 intermediate points")
+    
+    -- Unsubdivide with a small angle (should remove collinear points)
+    pth:unsubdivide(0.1)
+    
+    local valid = pth:validate_intermediate_nr(false)
+    assert(valid, "Count should be valid after unsubdivide")
 end
