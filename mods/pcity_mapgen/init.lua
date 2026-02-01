@@ -19,6 +19,10 @@
 -- This mod name and path
 local mod_name = minetest.get_current_modname()
 local mod_path = minetest.get_modpath(mod_name)
+
+-- Create global table for mapgen
+pcity_mapgen = {}
+
 -- Cirno's Perfect Math Library
 local CPML_mod_path = minetest.get_modpath("pcity_cpml")
 
@@ -34,5 +38,6 @@ if minetest.settings:get("pcity_enable_hills") == "true" then
 end
 
 dofile(mod_path.."/biomes.lua")
+dofile(mod_path.."/tests/init.lua")
 minetest.register_mapgen_script(CPML_mod_path.."/init.lua")
 minetest.register_mapgen_script(mod_path.."/mapgen.lua")
