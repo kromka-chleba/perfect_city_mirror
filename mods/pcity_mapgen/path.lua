@@ -29,6 +29,14 @@ path.__index = path
 local point = {}
 point.__index = point
 
+-- Counter for generating unique point IDs. Ensures deterministic
+-- ordering for points at the same position, as long as points are
+-- created in the same order across environments.
+local point_id_counter = 0
+
+-- Counter for generating unique path IDs.
+local path_id_counter = 0
+
 -- Validates arguments passed to 'point.new'.
 local function check_point_new_arguments(pos)
     if not vector.check(pos) then
@@ -44,6 +52,8 @@ end
 function point.new(pos)
     check_point_new_arguments(pos)
     local p = {}
+    point_id_counter = point_id_counter + 1
+    p.id = point_id_counter
     p.pos = vector.copy(pos)
     p.path = nil
     p.previous = nil
@@ -173,40 +183,59 @@ function point:set_position(pos)
     end
 end
 
--- Comparator function for vectors. Compares vectors by their x, y, z
--- coordinates in that order. Returns true if v1 has more negative
--- coordinates than v2.
+-- ============================================================
+-- COMPARATORS
+-- ============================================================
+
+-- Comparator for vectors. Compares by x, y, z in order.
+-- Returns false for equal vectors (strict weak ordering).
 function vector.comparator(v1, v2)
-    if v1.x ~= v2.x then
-        return v1.x < v2.x
-    end
-    if v1.y ~= v2.y then
-        return v1.y < v2.y
-    end
-    if v1.z ~= v2.z then
-        return v1.z < v2.z
-    end
-    return true
+    if v1.x ~= v2.x then return v1.x < v2.x end
+    if v1.y ~= v2.y then return v1.y < v2.y end
+    if v1.z ~= v2.z then return v1.z < v2.z end
+    return false
 end
 
--- Comparator function for points. Compares points by ALL their
--- fields: position (using vector.comparator), path (by reference),
--- previous point (by reference), next point (by reference).
+function point.equals(p1, p2)
+    return vector.equals(p1.pos, p2.pos) and p1.id == p2.id
+end
+
+-- Comparator for points. Compares by position, then by ID.
+-- Deterministic across Lua environments.
 function point.comparator(p1, p2)
     if not vector.equals(p1.pos, p2.pos) then
         return vector.comparator(p1.pos, p2.pos)
     end
-    if p1.path ~= p2.path then
-        return tostring(p1.path) < tostring(p2.path)
-    end
-    if p1.previous ~= p2.previous then
-        return tostring(p1.previous) < tostring(p2.previous)
-    end
-    if p1.next ~= p2.next then
-        return tostring(p1.next) < tostring(p2.next)
-    end
-    return true
+    return p1.id < p2.id
 end
+
+-- ============================================================
+-- SORTING HELPERS
+-- ============================================================
+
+-- Returns a sorted copy of a table of points.
+function point.sort(points)
+    local sorted = {}
+    for _, p in pairs(points) do
+        table.insert(sorted, p)
+    end
+    table.sort(sorted, point.comparator)
+    return sorted
+end
+
+-- Returns attached points in deterministic order.
+function point:attached_sorted()
+    return point.sort(self.attached)
+end
+
+-- Returns branches in deterministic order.
+function point:branches_sorted()
+    return path.sort(self.branches)
+end
+
+-- ============================================================
+-- ITERATORS
+-- ============================================================
 
 -- Returns an iterator function for a point. The iterator function
 -- lets you traverse the linked list of points and returns two values:
@@ -242,6 +271,10 @@ function point:reverse_iterator()
         end
     end
 end
+
+-- ============================================================
+-- PATH ASSIGNMENT AND BRANCHING
+-- ============================================================
 
 -- Sets 'pth' as the path for the point. Removes the point from the
 -- old path's points table and adds it to the new path's points table.
@@ -308,6 +341,10 @@ function point:clear()
     self.path = nil
 end
 
+-- ============================================================
+-- PATH CLASS
+-- ============================================================
+
 -- Creates a new instance of the Path class. Paths consist of a start
 -- point, a finish point and any number of intermediate points in
 -- between. Points are instances of the Point class. All points
@@ -318,6 +355,8 @@ end
 -- the Point class).
 function path.new(start, finish)
     local pth = setmetatable({}, path)
+    path_id_counter = path_id_counter + 1
+    pth.id = path_id_counter
     -- Weak table: points are kept alive by the linked list
     -- (start -> next -> ... -> finish), not by this table.
     pth.points = setmetatable({}, {__mode = "kv"})
@@ -334,6 +373,60 @@ end
 function path.check(pth)
     return getmetatable(pth) == path
 end
+
+-- Comparator for paths. Compares by start, finish, intermediate
+-- points, then by ID. Deterministic across Lua environments.
+function path.comparator(pth1, pth2)
+    -- Compare start points
+    if not point.equals(pth1.start, pth2.start) then
+        return point.comparator(pth1.start, pth2.start)
+    end
+    -- Compare finish points
+    if not point.equals(pth1.finish, pth2.finish) then
+        return point.comparator(pth1.finish, pth2.finish)
+    end
+    -- Compare number of intermediate points
+    if pth1.intermediate_nr ~= pth2.intermediate_nr then
+        return pth1.intermediate_nr < pth2.intermediate_nr
+    end
+    -- Compare each intermediate point position
+    local p1 = pth1.start.next
+    local p2 = pth2.start.next
+    while p1 and p1 ~= pth1.finish and p2 and p2 ~= pth2.finish do
+        if not point.equals(p1, p2) then
+            return point.comparator(p1, p2)
+        end
+        p1 = p1.next
+        p2 = p2.next
+    end
+    -- Use ID as final tiebreaker
+    return pth1.id < pth2.id
+end
+
+-- Returns a sorted copy of a table of paths.
+function path.sort(paths)
+    local sorted = {}
+    for _, pth in pairs(paths) do
+        table.insert(sorted, pth)
+    end
+    table.sort(sorted, path.comparator)
+    return sorted
+end
+
+-- Returns branching points in deterministic order (path order).
+function path:branching_points_sorted()
+    local result = {}
+    for _, p in ipairs(self:all_points()) do
+        if self.branching_points[p] then
+            table.insert(result, p)
+        end
+    end
+    return result
+end
+
+-- ============================================================
+-- START AND FINISH
+-- ============================================================
 
 -- Sets the start point of the path to 'p'. The start point is added
 -- to the path's points table.
@@ -368,6 +461,10 @@ function path:set_finish(p)
         point.link(self.start, self.finish)
     end
 end
+
+-- ============================================================
+-- POINT RETRIEVAL
+-- ============================================================
 
 -- Returns an intermediate point given by 'nr' that is the ordinal
 -- number of the point in the sequence starting from the first
@@ -425,6 +522,10 @@ function path:point_in_path(p)
     return self.points[p] ~= nil
 end
 
+-- ============================================================
+-- INSERTION
+-- ============================================================
+
 -- Checks if arguments passed to 'path:insert' are valid.
 local function check_insert_between_arguments(self, p_prev, p_next, p)
     check_point(p)
@@ -467,6 +568,10 @@ end
 function path:insert(p)
     self:insert_at(self.intermediate_nr + 1, p)
 end
+
+-- ============================================================
+-- REMOVAL
+-- ============================================================
 
 -- Checks if arguments passed to 'path:remove', 'path:remove_before'
 -- and 'path:remove_after' are valid. Only intermediate points can be
@@ -527,6 +632,10 @@ function path:remove_at(nr)
     self:remove(p)
 end
 
+-- ============================================================
+-- EXTEND AND SHORTEN
+-- ============================================================
+
 -- Extends the path by adding 'p' at the end of the path.
 -- 'p' becomes the new finish point, and the old finish becomes
 -- an intermediate point.
@@ -576,6 +685,10 @@ function path:cut_off(stop_point)
     end
 end
 
+-- ============================================================
+-- ALL POINTS AND POSITIONS
+-- ============================================================
+
 -- Returns all points of the path including start,
 -- intermediate points and finish (in order).
 function path:all_points()
@@ -597,6 +710,10 @@ function path:all_positions()
     return positions
 end
 
+-- ============================================================
+-- LENGTH AND GEOMETRY
+-- ============================================================
+
 -- Returns the length of the path by summing lengths of all segments.
 function path:length()
     local points = self:all_points()
@@ -607,6 +724,10 @@ function path:length()
     end
     return length
 end
+
+-- ============================================================
+-- SUBDIVIDE AND UNSUBDIVIDE
+-- ============================================================
 
 -- Subdivides path into segments with max length specified by
 -- 'segment_length', leaves segments shorter than that untouched.
@@ -645,6 +766,10 @@ function path:unsubdivide(angle)
     end
 end
 
+-- ============================================================
+-- SPLIT AND TRANSFER
+-- ============================================================
+
 -- Checks if arguments passed to 'path:split_at' are valid.
 local function check_split_at_arguments(self, p)
     check_same_path({self.start, p, self.finish})
@@ -682,6 +807,10 @@ function path:split_at(p)
     self:set_finish(p)
     return new_path
 end
+
+-- ============================================================
+-- PATH SHAPE GENERATORS
+-- ============================================================
 
 -- Creates a straight path from 'self.start' to 'self.finish'
 -- When 'segment_length' is given, the path will be subdivided
@@ -740,7 +869,9 @@ function path:make_slanted(segment_length)
     end
 end
 
--- Unit tests
+-- ============================================================
+-- UNIT TESTS
+-- ============================================================
 
 pcmg.tests.path = {}
 local tests = pcmg.tests.path
