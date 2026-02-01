@@ -233,14 +233,17 @@ function point:reverse_iterator()
     end
 end
 
--- Sets 'pth' as the path for the point.
+-- Sets 'pth' as the path for the point. Removes the point from the
+-- old path's points table and adds it to the new path's points table.
 function point:set_path(pth)
     if not path.check(pth) then
         error("Path: pth '"..shallow_dump(pth).."' is not a path.")
     end
     local old_path = self.path
     self.path = pth
-    old_path.points[self] = nil
+    if old_path then
+        old_path.points[self] = nil
+    end
     pth.points[self] = self
 end
 
@@ -278,31 +281,33 @@ end
 
 -- Clears the point by unlinking it from previous and next points,
 -- detaching all attached points and unbranching all branches. Also
--- removes the point from its path.
+-- removes the point from its path's points table.
 -- *Caution*: after calling this method, the point could be collected by
 -- the garbage collector if there are no other references to it.
 function point:clear()
     self:unlink()
     self:detach_all()
     self:unbranch_all()
+    if self.path then
+        self.path.points[self] = nil
+    end
     self.path = nil
 end
 
 -- Creates a new instance of the Path class. Paths consist of a start
 -- point, a finish point and any number of intermediate points in
--- between. Points are instances of the Point class.  Paths support
--- various operations for manipulating points such as inserting,
--- removing, splitting, extending, shortening, subdividing,
--- unsubdividing, etc. 'start' and 'finish' are points.
+-- between. Points are instances of the Point class. All points
+-- (including start and finish) are stored in self.points. Paths
+-- support various operations for manipulating points such as
+-- inserting, removing, splitting, extending, shortening, subdividing,
+-- unsubdividing, etc. 'start' and 'finish' are positions (vectors).
 function path.new(start, finish)
     local pth = setmetatable({}, path)
+    pth.points = setmetatable({}, {__mode = "kv"})
+    pth.intermediate_nr = 0 -- nr of intermediate points (excludes start and finish)
+    pth.branching_points = setmetatable({}, {__mode = "kv"})
     pth:set_start(start)
     pth:set_finish(finish)
-    pth.points = setmetatable({}, {__mode = "kv"})
-    pth.points[start] = start
-    pth.points[finish] = finish
-    pth.intermediate_nr = 0 -- nr of intermediate points
-    pth.branching_points = setmetatable({}, {__mode = "kv"})
     return pth
 end
 
@@ -311,38 +316,50 @@ function path.check(pth)
     return getmetatable(pth) == path
 end
 
--- Sets the start point of the path to 'p'.
+-- Sets the start point of the path to 'p'. The start point is added
+-- to the path's points table.
 function path:set_start(p)
     check_point(p)
+    if self.start then
+        self.points[self.start] = nil
+    end
     self.start = p
-    self.start:set_path(self)
+    self.start.path = self
+    self.points[self.start] = self.start
     self.start:unlink()
-    if next(self.points) ~= nil then
+    if self.intermediate_nr > 0 then
         point.link(self.start, self:get_point(1))
-    else
+    elseif self.finish then
         point.link(self.start, self.finish)
     end
 end
 
--- Sets the finish point of the path to 'p'.
+-- Sets the finish point of the path to 'p'. The finish point is added
+-- to the path's points table.
 function path:set_finish(p)
     check_point(p)
+    if self.finish then
+        self.points[self.finish] = nil
+    end
     self.finish = p
-    self.finish:set_path(self)
+    self.finish.path = self
+    self.points[self.finish] = self.finish
     self.finish:unlink()
-    if next(self.points) ~= nil then
+    if self.intermediate_nr > 0 then
         point.link(self:get_point(self.intermediate_nr), self.finish)
-    else
+    elseif self.start then
         point.link(self.start, self.finish)
     end
 end
 
 -- Returns an intermediate point given by 'nr' that is the ordinal
--- number of the point in the sequence starting the first intermediate
--- point and ending with the last. So 'nr' = 1 will give the first
--- intermediate point in the path, etc. Returns 'nil' if no point is
--- found at the position.  Returns 'nil' if 'nr' is lower than 1 or
--- bigger than the number of intermediate points.
+-- number of the point in the sequence starting from the first
+-- intermediate point (after start) and ending with the last (before
+-- finish). So 'nr' = 1 will give the first intermediate point in the
+-- path, etc. Returns 'nil' if no point is found at the position.
+-- Returns 'nil' if 'nr' is lower than 1 or bigger than the number of
+-- intermediate points. Note: start and finish are not considered
+-- intermediate points.
 function path:get_point(nr)
     if type(nr) ~= "number" or
         nr <= 0 or nr > self.intermediate_nr then
@@ -357,7 +374,8 @@ end
 
 -- Returns all intermediate points between 'from' and 'to' (inclusive
 -- if intermediate, exclusive if start/finish), which are points
--- belonging to the path.
+-- belonging to the path. Note: start and finish points are never
+-- included in the returned list.
 function path:get_points(from, to)
     check_point(from)
     check_point(to)
@@ -376,18 +394,18 @@ end
 
 -- Picks a random intermediate point in the path and returns it.
 -- Returns 'nil' if there are no intermediate points.
+-- Note: start and finish are not considered intermediate points.
 function path:random_intermediate_point()
     if self.intermediate_nr > 0 then
         return self:get_point(math.random(1, self.intermediate_nr))
     end
 end
 
--- Checks if the point belongs to the path as either start,
--- intermediate or finish point. Returns a boolean.
+-- Checks if the point belongs to the path (as start, intermediate,
+-- or finish point). All points are stored in self.points, so this
+-- simply checks if the point exists in that table.
 function path:point_in_path(p)
-    return self.points[p] or
-        self.start == p or
-        self.finish == p
+    return self.points[p] ~= nil
 end
 
 -- Checks if arguments passed to 'path:insert' are valid.
@@ -398,19 +416,21 @@ local function check_insert_between_arguments(self, p_prev, p_next, p)
     check_same_path({self.start, p_prev, p_next, self.finish})
 end
 
--- Inserts point 'p' between points 'p_prev' and 'p_next'.
--- 'p_prev' and 'p_next' need to belong to the path.
+-- Inserts intermediate point 'p' between points 'p_prev' and 'p_next'.
+-- 'p_prev' and 'p_next' need to belong to the path. The inserted point
+-- is added to the path's points table.
 function path:insert_between(p_prev, p_next, p)
     check_insert_between_arguments(self, p_prev, p_next, p)
-    p:set_path(self)
-    point.link(p_prev, p, p_next)
+    p.path = self
     self.points[p] = p
+    point.link(p_prev, p, p_next)
     self.intermediate_nr = self.intermediate_nr + 1
 end
 
--- Inserts point 'p' at ordinal position 'nr' in the path. 'nr' = 1
--- means inserting 'p' right after the start point. 'nr' = intermediate_nr + 1
--- means inserting 'p' right before the finish point.
+-- Inserts intermediate point 'p' at ordinal position 'nr' in the path.
+-- 'nr' = 1 means inserting 'p' right after the start point.
+-- 'nr' = intermediate_nr + 1 means inserting 'p' right before the
+-- finish point.
 function path:insert_at(nr, p)
     local p1 = self:get_point(nr - 1) or self.start
     local p2 = self:get_point(nr) or self.finish
@@ -433,37 +453,43 @@ function path:insert(p)
 end
 
 -- Checks if arguments passed to 'path:remove', 'path:remove_before'
--- and 'path:remove_after' are valid.
+-- and 'path:remove_after' are valid. Only intermediate points can be
+-- removed (not start or finish).
 local function check_remove_arguments(self, p)
     if not self.points[p] then
-        error("Path: p '"..shallow_dump(p).."' does not belong to the path .")
+        error("Path: p '"..shallow_dump(p).."' does not belong to the path.")
+    end
+    if p == self.start or p == self.finish then
+        error("Path: cannot remove start or finish point.")
     end
     if self.intermediate_nr <= 0 then
         error("Path: there are no intermediate points to remove.")
     end
 end
 
--- Removes intermediate point 'p' from the path.
+-- Removes intermediate point 'p' from the path. Cannot remove start
+-- or finish points.
 function path:remove(p)
     check_point(p)
     check_remove_arguments(self, p)
     point.link(p.previous, p.next)
     p:clear()
-    self.points[p] = nil
     self.intermediate_nr = self.intermediate_nr - 1
 end
 
 -- Removes the intermediate point that comes before point 'p'.
+-- Cannot remove start or finish points.
 function path:remove_previous(p)
     check_point(p)
-    check_remove_arguments(self, p)
+    check_remove_arguments(self, p.previous)
     self:remove(p.previous)
 end
 
 -- Removes the intermediate point that comes after point 'p'.
+-- Cannot remove start or finish points.
 function path:remove_next(p)
     check_point(p)
-    check_remove_arguments(self, p)
+    check_remove_arguments(self, p.next)
     self:remove(p.next)
 end
 
@@ -486,7 +512,8 @@ function path:remove_at(nr)
 end
 
 -- Extends the path by adding 'p' at the end of the path.
--- 'p' becomes the new finish point.
+-- 'p' becomes the new finish point, and the old finish becomes
+-- an intermediate point.
 function path:extend(p)
     check_point(p)
     local old_finish = self.finish
@@ -502,8 +529,15 @@ function path:shorten()
     if self.intermediate_nr <= 0 then
         return false
     end
+    local old_finish = self.finish
     local new_finish = self.finish.previous
-    self:set_finish(new_finish)
+    self.points[old_finish] = nil
+    old_finish:clear()
+    self.intermediate_nr = self.intermediate_nr - 1
+    self.finish = new_finish
+    self.finish.path = self
+    self.points[self.finish] = self.finish
+    self.finish:unlink_from_next()
     return true
 end
 
@@ -605,15 +639,14 @@ local function check_split_at_arguments(self, p)
         error("Path: cannot split path at start or finish point.")
     end
     if self.intermediate_nr < 1 then
-        error("Path: cannot split path with less than two intermediate points.")
+        error("Path: cannot split path with less than one intermediate point.")
     end
 end
 
--- TODO: add start and finish to pth.points to make moving points between paths easier.
-
--- Transfers all points between 'first' and 'last' (inclusive)
--- from 'self' path to 'pth' path. 'first' and 'last' need to
--- belong to this path.
+-- Transfers all intermediate points between 'first' and 'last'
+-- (inclusive) from 'self' path to 'pth' path. 'first' and 'last'
+-- need to belong to this path. Only intermediate points are
+-- transferred (not start or finish).
 function path:transfer_points_to(pth, first, last)
     local points = self:get_points(first, last)
     for _, p in ipairs(points) do
@@ -626,7 +659,7 @@ end
 -- intermediate point. 'p' gets duplicated so that it becomes the
 -- finish point of the first path and the start point of the second
 -- path. The path needs to have at least 1 intermediate point for the
--- split to be possible.  Returns the newly created second path.
+-- split to be possible. Returns the newly created second path.
 function path:split_at(p)
     check_point(p)
     check_split_at_arguments(self, p)
