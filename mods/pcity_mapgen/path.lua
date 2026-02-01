@@ -238,7 +238,10 @@ function point:set_path(pth)
     if not path.check(pth) then
         error("Path: pth '"..shallow_dump(pth).."' is not a path.")
     end
+    local old_path = self.path
     self.path = pth
+    old_path.points[self] = nil
+    pth.points[self] = self
 end
 
 -- Creates a new branch path starting from this point to the 'finish'
@@ -285,32 +288,19 @@ function point:clear()
     self.path = nil
 end
 
--- Ensures that 'p' is a point, if not creates a new point
--- from 'p' assuming it is a vector position.
-local function ensure_point(p)
-    if vector.check(p) then
-        p = point.new(p)
-    end
-    if not point.check(p) then
-        error("Path: p '"..shallow_dump(p).."' is not a point or a vector.")
-    end
-    return p
-end
-
 -- Creates a new instance of the Path class. Paths consist of a start
 -- point, a finish point and any number of intermediate points in
 -- between. Points are instances of the Point class.  Paths support
 -- various operations for manipulating points such as inserting,
 -- removing, splitting, extending, shortening, subdividing,
--- unsubdividing, etc. 'start' and 'finish' can be either point
--- instances or vector positions.
+-- unsubdividing, etc. 'start' and 'finish' are points.
 function path.new(start, finish)
-    start = ensure_point(start)
-    finish = ensure_point(finish)
     local pth = setmetatable({}, path)
     pth:set_start(start)
     pth:set_finish(finish)
     pth.points = setmetatable({}, {__mode = "kv"})
+    pth.points[start] = start
+    pth.points[finish] = finish
     pth.intermediate_nr = 0 -- nr of intermediate points
     pth.branching_points = setmetatable({}, {__mode = "kv"})
     return pth
@@ -365,15 +355,16 @@ function path:get_point(nr)
     end
 end
 
--- Returns all points between 'from' and 'to' (inclusive) which are
--- points belonging to the path.
+-- Returns all intermediate points between 'from' and 'to' (inclusive
+-- if intermediate, exclusive if start/finish), which are points
+-- belonging to the path.
 function path:get_points(from, to)
     check_point(from)
     check_point(to)
     check_same_path({self.start, from, to, self.finish})
     local points = {}
-    local current_point = from
-    while current_point do
+    local current_point = from ~= self.start and from or from.next
+    while current_point and current_point ~= self.finish do
         table.insert(points, current_point)
         if current_point == to then
             break
@@ -400,18 +391,17 @@ function path:point_in_path(p)
 end
 
 -- Checks if arguments passed to 'path:insert' are valid.
-local function check_insert_arguments(self, nr)
-    if type(nr) ~= "number" then
-        error("Path: nr '"..shallow_dump(nr).."' is not a number.")
-    end
-    if nr < 1 or nr > self.intermediate_nr + 1 then
-        error("Path: nr '"..shallow_dump(nr).."' is out of range.")
-    end
+local function check_insert_between_arguments(self, p_prev, p_next, p)
+    check_point(p)
+    check_point(p_prev)
+    check_point(p_next)
+    check_same_path({self.start, p_prev, p_next, self.finish})
 end
 
 -- Inserts point 'p' between points 'p_prev' and 'p_next'.
+-- 'p_prev' and 'p_next' need to belong to the path.
 function path:insert_between(p_prev, p_next, p)
-    check_point(p)
+    check_insert_between_arguments(self, p_prev, p_next, p)
     p:set_path(self)
     point.link(p_prev, p, p_next)
     self.points[p] = p
@@ -427,10 +417,19 @@ function path:insert_at(nr, p)
     self:insert_between(p1, p2, p)
 end
 
+-- Inserts an intermediate point 'p' before point 'target'.
+function path:insert_before(target, p)
+    self:insert_between(target.previous, target, p)
+end
+
+-- Inserts an intermediate point 'p' after point 'target'.
+function path:insert_after(target, p)
+    self:insert_between(target, target.next, p)
+end
+
 -- Inserts an intermediate point 'p' before the finish point.
 function path:insert(p)
-    check_point(p)
-    self:insert(self.intermediate_nr + 1, p)
+    self:insert_at(self.intermediate_nr + 1, p)
 end
 
 -- Checks if arguments passed to 'path:remove', 'path:remove_before'
@@ -454,12 +453,14 @@ function path:remove(p)
     self.intermediate_nr = self.intermediate_nr - 1
 end
 
+-- Removes the intermediate point that comes before point 'p'.
 function path:remove_previous(p)
     check_point(p)
     check_remove_arguments(self, p)
     self:remove(p.previous)
 end
 
+-- Removes the intermediate point that comes after point 'p'.
 function path:remove_next(p)
     check_point(p)
     check_remove_arguments(self, p)
@@ -488,10 +489,9 @@ end
 -- 'p' becomes the new finish point.
 function path:extend(p)
     check_point(p)
-    p:set_path(self)
     local old_finish = self.finish
     self:set_finish(p)
-    self:insert(old_finish)
+    self:insert_before(self.finish, old_finish)
 end
 
 -- Shortens the path by removing the finish point and setting the
@@ -563,17 +563,15 @@ end
 -- Subdivides path into segments with max length specified by
 -- 'segment_length', leaves segments shorter than that untouched.
 function path:subdivide(segment_length)
-    local i = 1
     local current_point = self.start
     while (current_point.next) do
         local v = current_point.next.pos - current_point.pos
         if vector.length(v) > segment_length then
             local new_segment = vector.normalize(v) * segment_length
-            local current_pos = current_point.pos + new_segment
-            self:insert(current_pos, i)
+            local new_point = point.new(current_point.pos + new_segment)
+            self:insert_after(current_point, new_point)
         end
         current_point = current_point.next
-        i = i + 1
     end
 end
 
@@ -599,6 +597,7 @@ function path:unsubdivide(angle)
     end
 end
 
+-- Checks if arguments passed to 'path:split_at' are valid.
 local function check_split_at_arguments(self, p)
     check_same_path({self.start, p, self.finish})
     -- check if 'p' is an intermediate point
@@ -609,6 +608,8 @@ local function check_split_at_arguments(self, p)
         error("Path: cannot split path with less than two intermediate points.")
     end
 end
+
+-- TODO: add start and finish to pth.points to make moving points between paths easier.
 
 -- Transfers all points between 'first' and 'last' (inclusive)
 -- from 'self' path to 'pth' path. 'first' and 'last' need to
@@ -629,8 +630,8 @@ end
 function path:split_at(p)
     check_point(p)
     check_split_at_arguments(self, p)
-    local new_path = path.new(p.pos, self.finish.pos)
-    self:transfer_points_to(new_path, p.next, self.finish)
+    local new_path = path.new(point.new(vector.copy(p.pos)), self.finish)
+    
 end
 
 -- Creates a straight path from 'self.start' to 'self.finish'
