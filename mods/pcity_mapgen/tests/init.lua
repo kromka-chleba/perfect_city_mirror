@@ -26,5 +26,6 @@ local tests = pcmg.tests.path
 
 -- run unit tests if enabled in settings
 if core.settings:get_bool("pcity_run_tests") then
+    dofile(mod_path.."/tests/tests_point.lua")
     dofile(mod_path.."/tests/tests_path.lua")
 end
