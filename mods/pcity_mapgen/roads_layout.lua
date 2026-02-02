@@ -26,6 +26,7 @@ local _, materials_by_name = dofile(mod_path.."/canvas_ids.lua")
 local units = sizes.units
 local canvas_shapes = pcmg.canvas_shapes
 local canvas_brush = pcmg.canvas_brush
+local path_utils = pcmg.path_utils
 
 -- Get mapgen seed for deterministic random generation
 local mapgen_seed = tonumber(minetest.get_mapgen_setting("seed")) or 0
@@ -615,7 +616,7 @@ local function street_too_close_to_existing(start_pos, end_pos, direction, all_p
         local existing_segments = existing:all_segments()
         
         for _, seg in ipairs(existing_segments) do
-            if pcmg.path.direction_parallel_to_segment(direction, seg.start_pos, seg.end_pos) then
+            if path_utils.direction_parallel_to_segment(direction, seg.start_pos, seg.end_pos) then
                 for i = 0, num_samples do
                     local t = i / num_samples
                     local sample = vector.new(
@@ -624,7 +625,7 @@ local function street_too_close_to_existing(start_pos, end_pos, direction, all_p
                         start_pos.z + t * (end_pos.z - start_pos.z)
                     )
                     
-                    local dist = pcmg.path.point_to_segment_distance(sample, seg.start_pos, seg.end_pos)
+                    local dist = path_utils.point_to_segment_distance(sample, seg.start_pos, seg.end_pos)
                     
                     if dist < min_spacing then
                         return true
@@ -659,7 +660,7 @@ local function has_overlap(street, all_paths, parent_path, config)
         
         for _, ss in ipairs(street_segs) do
             for _, es in ipairs(existing_segs) do
-                if pcmg.path.segments_are_parallel(ss.start_pos, ss.end_pos, es.start_pos, es.end_pos) then
+                if path_utils.segments_are_parallel(ss.start_pos, ss.end_pos, es.start_pos, es.end_pos) then
                     for i = 0, 5 do
                         local t = i / 5
                         local sample = vector.new(
@@ -668,7 +669,7 @@ local function has_overlap(street, all_paths, parent_path, config)
                             ss.start_pos.z + t * (ss.end_pos.z - ss.start_pos.z)
                         )
                         
-                        local intersection = pcmg.path.segment_intersects(
+                        local intersection = path_utils.segment_intersects(
                             sample, sample, es.start_pos, es.end_pos, config.parallel_overlap_margin
                         )
                         if intersection then
@@ -704,7 +705,7 @@ local function find_merge_target(end_pos, direction, all_paths, parent_path, con
         
         local segments = existing:all_segments()
         for _, seg in ipairs(segments) do
-            local int_pos = pcmg.path.calculate_segment_intersection(
+            local int_pos = path_utils.calculate_segment_intersection(
                 end_pos, search_end,
                 seg.start_pos, seg.end_pos
             )
@@ -715,7 +716,7 @@ local function find_merge_target(end_pos, direction, all_paths, parent_path, con
                     local dist = vector.distance(end_pos, int_pos)
                     
                     if dist >= config.min_merge_distance and dist < best_dist then
-                        if not pcmg.path.segments_are_parallel(end_pos, search_end, seg.start_pos, seg.end_pos) then
+                        if not path_utils.segments_are_parallel(end_pos, search_end, seg.start_pos, seg.end_pos) then
                             best_path = existing
                             best_pos = int_pos
                             best_dist = dist

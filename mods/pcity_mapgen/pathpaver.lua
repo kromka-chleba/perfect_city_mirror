@@ -23,6 +23,7 @@ local vector = vector
 local pcmg = pcity_mapgen
 local cpml = pcity_cpml_proxy
 local sizes = dofile(mod_path.."/sizes.lua")
+local path_utils = pcmg.path_utils
 
 local pathpaver_margin = sizes.citychunk.overgen_margin
 local margin_vector = vector.new(1, 1, 1) * pathpaver_margin
@@ -228,7 +229,7 @@ function pathpaver:segment_too_close_to_parallel(start_pos, end_pos, direction, 
             
             for _, seg in ipairs(existing_segments) do
                 -- Check if direction is parallel to this segment
-                if pcmg.path.direction_parallel_to_segment(direction, seg.start_pos, seg.end_pos) then
+                if path_utils.direction_parallel_to_segment(direction, seg.start_pos, seg.end_pos) then
                     -- Sample points along the proposed segment
                     for i = 0, num_samples do
                         local t = i / num_samples
@@ -238,7 +239,7 @@ function pathpaver:segment_too_close_to_parallel(start_pos, end_pos, direction, 
                             start_pos.z + t * (end_pos.z - start_pos.z)
                         )
                         
-                        local dist = pcmg.path.point_to_segment_distance(sample, seg.start_pos, seg.end_pos)
+                        local dist = path_utils.point_to_segment_distance(sample, seg.start_pos, seg.end_pos)
                         
                         if dist < min_spacing then
                             return true
@@ -266,7 +267,7 @@ function pathpaver:check_parallel_overlap(seg_start, seg_end, margin, skip_paths
             local existing_segments = existing:all_segments()
             
             for _, es in ipairs(existing_segments) do
-                if pcmg.path.segments_are_parallel(seg_start, seg_end, es.start_pos, es.end_pos) then
+                if path_utils.segments_are_parallel(seg_start, seg_end, es.start_pos, es.end_pos) then
                     -- Check for overlap by sampling
                     for i = 0, 5 do
                         local t = i / 5
@@ -276,7 +277,7 @@ function pathpaver:check_parallel_overlap(seg_start, seg_end, margin, skip_paths
                             seg_start.z + t * (seg_end.z - seg_start.z)
                         )
                         
-                        local intersection = pcmg.path.segment_intersects(
+                        local intersection = path_utils.segment_intersects(
                             sample, sample, es.start_pos, es.end_pos, margin
                         )
                         if intersection then
@@ -310,7 +311,7 @@ function pathpaver:find_merge_target(end_pos, direction, search_radius, min_dist
         if not skip_lookup[existing] then
             local segments = existing:all_segments()
             for _, seg in ipairs(segments) do
-                local int_pos = pcmg.path.calculate_segment_intersection(
+                local int_pos = path_utils.calculate_segment_intersection(
                     end_pos, search_end,
                     seg.start_pos, seg.end_pos
                 )
@@ -319,7 +320,7 @@ function pathpaver:find_merge_target(end_pos, direction, search_radius, min_dist
                     local dist = vector.distance(end_pos, int_pos)
                     
                     if dist >= min_distance and dist < best_dist then
-                        if not pcmg.path.segments_are_parallel(end_pos, search_end, seg.start_pos, seg.end_pos) then
+                        if not path_utils.segments_are_parallel(end_pos, search_end, seg.start_pos, seg.end_pos) then
                             best_path = existing
                             best_pos = int_pos
                             best_dist = dist

@@ -20,10 +20,9 @@ local mod_name = core.get_current_modname()
 local mod_path = core.get_modpath("pcity_mapgen")
 local math = math
 local vector = vector
-dofile(mod_path.."/path.lua")
 local pcmg = pcity_mapgen
-local point = pcmg.point
-local path = pcmg.path
+local point = pcmg.point or dofile(mod_path.."/point.lua")
+local path = pcmg.path or dofile(mod_path.."/path.lua")
 
 -- ============================================================
 -- UNIT TESTS

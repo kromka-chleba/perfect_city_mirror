@@ -1,6 +1,6 @@
 --[[
     This is a part of "Perfect City".
-    Copyright (C) 2024 Jan Wielkiewicz <tona_kosmicznego_smiecia@interia.pl>
+    Copyright (C) 2024-2026 Jan Wielkiewicz <tona_kosmicznego_smiecia@interia.pl>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,325 +22,21 @@ local math = math
 local vector = vector
 local pcmg = pcity_mapgen
 
-pcmg.path = {}
+pcmg.path = pcmg.path or {}
 local path = pcmg.path
 path.__index = path
 
-pcmg.point = {}
-local point = pcmg.point
-point.__index = point
-
--- Counter for generating unique point IDs. Ensures deterministic
--- ordering for points at the same position, as long as points are
--- created in the same order across environments.
-local point_id_counter = 0
+local point = pcmg.point or dofile(mod_path.."/point.lua")
+local path_utils = pcmg.path_utils or dofile(mod_path.."/path_utils.lua")
 
 -- Counter for generating unique path IDs.
 local path_id_counter = 0
-
--- Validates arguments passed to 'point.new'.
-local function check_point_new_arguments(pos)
-    if not vector.check(pos) then
-        error("Path: pos '"..shallow_dump(pos).."' is not a vector.")
-    end
-end
-
--- Creates a new instance of the Point class. Points store absolute
--- world position, the previous and the next point in a sequence and
--- the path (see the Path class below) they belong to. Points can be
--- linked to create linked lists which should be helpful for
--- road/street generation algorithms.
-function point.new(pos)
-    check_point_new_arguments(pos)
-    local p = {}
-    point_id_counter = point_id_counter + 1
-    p.id = point_id_counter
-    p.pos = vector.copy(pos)
-    p.path = nil
-    p.previous = nil
-    p.next = nil
-    -- Weak table: attached points are kept alive by their own paths,
-    -- not by the attachment relationship itself.
-    p.attached = setmetatable({}, {__mode = "kv"})
-    -- Weak table: branches (paths) are kept alive by their own points,
-    -- not by the branching point.
-    p.branches = setmetatable({}, {__mode = "kv"})
-    return setmetatable(p, point)
-end
-
--- Checks if the object is a point.
-function point.check(p)
-    return getmetatable(p) == point
-end
 
 -- Checks if 'p' is a point, otherwise throws an error.
 local function check_point(p)
     if not point.check(p) then
         error("Path: p '"..shallow_dump(p).."' is not a point.")
     end
-end
-
--- Creates a copy of point 'p' with the same position. The copy does
--- not inherit path, previous/next links, attachments, or branches -
--- it is a fresh, unlinked point. Use this when you need a new point
--- at the same location (e.g., when splitting a path).
-function point:copy()
-    return point.new(self.pos)
-end
-
--- Check if points belong to the same path. '...' is any number of points.
-function point.same_path(...)
-    local points = {...}
-    local first_path = points[1].path
-    for _, p in ipairs(points) do
-        if p.path ~= first_path then
-            return false
-        end
-    end
-    return true
-end
-
--- Asserts that all points belong to the same path, otherwise throws an error.
-local function check_same_path(points)
-    if not point.same_path(unpack(points)) then
-        error("Path: Cannot link points that belong to different paths.")
-    end
-end
-
--- Links points in order, accepts any number of points. '...' is any number of points.
--- Only points belonging to the same path can be linked.
-function point.link(...)
-    local points = {...}
-    check_same_path(points)
-    for i = 1, #points - 1 do
-        points[i].next = points[i + 1]
-        points[i + 1].previous = points[i]
-    end
-end
-
--- Unlinks the current point from the previous point.
-function point:unlink_from_previous()
-    if self.previous and self.previous.next == self then
-        self.previous.next = nil
-    end
-    self.previous = nil
-end
-
--- Unlinks the current point from the next point.
-function point:unlink_from_next()
-    if self.next and self.next.previous == self then
-        self.next.previous = nil
-    end
-    self.next = nil
-end
-
--- Unlinks the point from both the previous and the next point.
-function point:unlink()
-    self:unlink_from_previous()
-    self:unlink_from_next()
-end
-
--- Attaches this point to any number of other points passed as
--- arguments. '...' is any number of points. Attached points share
--- the same position as this point. When the position of this point
--- changes, the positions of all attached points change as well.
-function point:attach(...)
-    local points = {...}
-    for _, p in ipairs(points) do
-        check_point(p)
-        p.pos = self.pos
-        self.attached[p] = p
-        p.attached[self] = self
-    end
-end
-
--- Detaches this point from any number of other points passed as
--- arguments. '...' is any number of points.
-function point:detach(...)
-    local points = {...}
-    for _, p in ipairs(points) do
-        check_point(p)
-        p.attached[self] = nil -- detach 'self' from points attached to it
-        self.attached[p] = nil -- detach 'p' from 'self'
-    end
-end
-
--- Detaches this point from all points it is attached to.
-function point:detach_all()
-    for _, p in pairs(self.attached) do
-        p.attached[self] = nil
-    end
-    self.attached = setmetatable({}, {__mode = "kv"})
-end
-
--- Sets position of the given point and all attached points to 'pos'.
-function point:set_position(pos)
-    if not vector.check(pos) then
-        error("Path: pos '"..shallow_dump(pos).."' is not a vector.")
-    end
-    self.pos = pos
-    for _, a in pairs(self.attached) do
-        a.pos = pos
-    end
-end
-
--- ============================================================
--- COMPARATORS
--- ============================================================
-
--- Comparator for vectors. Compares by x, y, z in order.
--- Returns false for equal vectors (strict weak ordering).
-function vector.comparator(v1, v2)
-    if v1.x ~= v2.x then return v1.x < v2.x end
-    if v1.y ~= v2.y then return v1.y < v2.y end
-    if v1.z ~= v2.z then return v1.z < v2.z end
-    return false
-end
-
-function point.equals(p1, p2)
-    return vector.equals(p1.pos, p2.pos) and p1.id == p2.id
-end
-
--- Comparator for points. Compares by position, then by ID.
--- Deterministic across Lua environments.
-function point.comparator(p1, p2)
-    if not vector.equals(p1.pos, p2.pos) then
-        return vector.comparator(p1.pos, p2.pos)
-    end
-    return p1.id < p2.id
-end
-
--- ============================================================
--- SORTING HELPERS
--- ============================================================
-
--- Returns a sorted copy of a table of points.
-function point.sort(points)
-    local sorted = {}
-    for _, p in pairs(points) do
-        table.insert(sorted, p)
-    end
-    table.sort(sorted, point.comparator)
-    return sorted
-end
-
--- Returns attached points in deterministic order.
-function point:attached_sorted()
-    return point.sort(self.attached)
-end
-
--- Returns branches in deterministic order.
-function point:branches_sorted()
-    return path.sort(self.branches)
-end
-
--- ============================================================
--- ITERATORS
--- ============================================================
-
--- Returns an iterator function for a point. The iterator function
--- lets you traverse the linked list of points and returns two values:
--- 'i' - the ordinal number of the next point starting from the
--- current point (so the number of points between the point the
--- iterator was created for) and 'current_point' - the next point in
--- the sequence (linked list/path). Use just like 'ipairs'.
--- Example usage: for i, p in my_point:iterator() do ... end
-function point:iterator()
-    local i = 0
-    local current_point = self
-    return function ()
-        current_point = current_point.next
-        i = i + 1
-        if current_point then
-            return i, current_point
-        end
-    end
-end
-
--- Works just like 'point:iterator()', but instead it iterates in
--- reverse order - lets you traverse the path from a given point to
--- the start point.
--- Example: for i, p in my_point:reverse_iterator() do ... end
-function point:reverse_iterator()
-    local i = 0
-    local current_point = self
-    return function ()
-        current_point = current_point.previous
-        i = i + 1
-        if current_point then
-            return i, current_point
-        end
-    end
-end
-
--- ============================================================
--- PATH ASSIGNMENT AND BRANCHING
--- ============================================================
-
--- Sets 'pth' as the path for the point. Removes the point from the
--- old path's points table and adds it to the new path's points table.
-function point:set_path(pth)
-    if not path.check(pth) then
-        error("Path: pth '"..shallow_dump(pth).."' is not a path.")
-    end
-    local old_path = self.path
-    self.path = pth
-    if old_path then
-        old_path.points[self] = nil
-    end
-    pth.points[self] = self
-end
-
--- Creates a new branch starting from this point and ending at
--- 'finish' point. The branch is a new path instance. The start point
--- of the branch is attached to this point. The branch is stored
--- in this point's branches table. The point is marked as a
--- branching point in the path's branching_points table. Returns
--- the newly created branch (path).
-function point:branch(finish)
-    self.path.branching_points[self] = self
-    local pth = path.new(self:copy(), finish)
-    self:attach(pth.start)
-    self.branches[pth] = pth
-    return pth
-end
-
--- Checks if the point has any branches.
-function point:has_branches()
-    return next(self.branches) ~= nil
-end
-
--- Removes the branch 'pth' from the point.
-function point:unbranch(pth)
-    self.branches[pth] = nil
-    -- if there are no more branches, unmark this point
-    if next(self.branches) == nil and self.path then
-        self.path.branching_points[self] = nil
-    end
-end
-
--- Removes all branches from the point.
-function point:unbranch_all()
-    for _, branch in pairs(self.branches) do
-        self:unbranch(branch)
-    end
-    self.branches = setmetatable({}, {__mode = "kv"})
-end
-
--- Clears the point by unlinking it from previous and next points,
--- detaching all attached points and unbranching all branches. Also
--- removes the point from its path's points table.
--- *Caution*: after calling this method, the point could be collected by
--- the garbage collector if there are no other references to it.
--- You're more likely to want to use 'path:remove' instead.
-function point:clear()
-    self:unlink()
-    self:detach_all()
-    self:unbranch_all()
-    if self.path then
-        self.path.points[self] = nil
-    end
-    self.path = nil
 end
 
 -- ============================================================
@@ -789,269 +485,7 @@ end
 -- ============================================================
 -- 2D GEOMETRY UTILITIES (STATIC FUNCTIONS)
 -- ============================================================
-
--- Calculate the 2D angle between two direction vectors (in XZ plane)
-function path.angle_between_2d(dir1, dir2)
-    local dot = dir1.x * dir2.x + dir1.z * dir2.z
-    local len1 = math.sqrt(dir1.x * dir1.x + dir1.z * dir1.z)
-    local len2 = math.sqrt(dir2.x * dir2.x + dir2.z * dir2.z)
-    if len1 < 1e-6 or len2 < 1e-6 then
-        return 0
-    end
-    local cos_angle = math.max(-1, math.min(1, dot / (len1 * len2)))
-    return math.acos(cos_angle)
-end
-
--- Check if two segments are parallel (within a threshold angle)
--- Returns true if angle between segments is less than threshold or greater than pi - threshold
-function path.segments_are_parallel(seg1_start, seg1_end, seg2_start, seg2_end, threshold)
-    threshold = threshold or (math.pi / 6)
-    
-    local dir1 = vector.direction(seg1_start, seg1_end)
-    local dir2 = vector.direction(seg2_start, seg2_end)
-    
-    local angle = path.angle_between_2d(dir1, dir2)
-    
-    return angle < threshold or angle > (math.pi - threshold)
-end
-
--- Check if a direction is parallel to a segment
-function path.direction_parallel_to_segment(direction, seg_start, seg_end, threshold)
-    threshold = threshold or (math.pi / 6)
-    local seg_dir = vector.direction(seg_start, seg_end)
-    local angle = path.angle_between_2d(direction, seg_dir)
-    return angle < threshold or angle > (math.pi - threshold)
-end
-
--- Calculate the shortest distance from a point to a line segment (in 2D, XZ plane)
--- Returns the distance and the closest point on the segment
-function path.point_to_segment_distance(pos, seg_start, seg_end)
-    local seg_dir = vector.subtract(seg_end, seg_start)
-    local seg_len_sq = seg_dir.x * seg_dir.x + seg_dir.z * seg_dir.z
-    
-    if seg_len_sq < 1e-6 then
-        return vector.distance(pos, seg_start), seg_start
-    end
-    
-    local to_pos = vector.subtract(pos, seg_start)
-    local t = (to_pos.x * seg_dir.x + to_pos.z * seg_dir.z) / seg_len_sq
-    t = math.max(0, math.min(1, t))
-    
-    local closest = vector.new(
-        seg_start.x + t * seg_dir.x,
-        seg_start.y + t * seg_dir.y,
-        seg_start.z + t * seg_dir.z
-    )
-    
-    return vector.distance(pos, closest), closest
-end
-
--- Calculate the intersection point between two line segments
--- Returns the intersection point, t1 (parameter along seg1), t2 (parameter along seg2)
--- or nil if segments don't intersect
-function path.calculate_segment_intersection(seg1_start, seg1_end, seg2_start, seg2_end)
-    local d1x = seg1_end.x - seg1_start.x
-    local d1z = seg1_end.z - seg1_start.z
-    local d2x = seg2_end.x - seg2_start.x
-    local d2z = seg2_end.z - seg2_start.z
-    
-    local cross = d1x * d2z - d1z * d2x
-    
-    -- Check if segments are parallel
-    if math.abs(cross) < 1e-6 then
-        return nil
-    end
-    
-    local dx = seg2_start.x - seg1_start.x
-    local dz = seg2_start.z - seg1_start.z
-    
-    local t1 = (dx * d2z - dz * d2x) / cross
-    local t2 = (dx * d1z - dz * d1x) / cross
-    
-    -- Check if intersection is within both segments
-    if t1 < 0.01 or t1 > 0.99 or t2 < 0.01 or t2 > 0.99 then
-        return nil
-    end
-    
-    -- Calculate intersection point
-    local ix = seg1_start.x + t1 * d1x
-    local iz = seg1_start.z + t1 * d1z
-    local iy = (seg1_start.y + seg2_start.y) / 2  -- Average Y
-    
-    return vector.new(ix, iy, iz), t1, t2
-end
-
--- ============================================================
--- SEGMENT AND PATH INTERSECTION (EXISTING FUNCTIONS)
--- ============================================================
-
--- Calculates the shortest distance between two line segments in 2D (XZ plane).
--- Segment 1: from a1 to a2
--- Segment 2: from b1 to b2
--- Returns the shortest distance and the closest points on each segment.
-local function segment_distance_2d(a1, a2, b1, b2)
-    -- Project to XZ plane
-    local ax1, az1 = a1.x, a1.z
-    local ax2, az2 = a2.x, a2.z
-    local bx1, bz1 = b1.x, b1.z
-    local bx2, bz2 = b2.x, b2.z
-    
-    -- Direction vectors
-    local dax, daz = ax2 - ax1, az2 - az1
-    local dbx, dbz = bx2 - bx1, bz2 - bz1
-    
-    -- Vector from a1 to b1
-    local dx, dz = bx1 - ax1, bz1 - az1
-    
-    -- Squared lengths
-    local len_a_sq = dax * dax + daz * daz
-    local len_b_sq = dbx * dbx + dbz * dbz
-    
-    -- Handle degenerate cases (zero-length segments)
-    if len_a_sq < 1e-10 and len_b_sq < 1e-10 then
-        -- Both segments are points
-        local dist = math.sqrt(dx * dx + dz * dz)
-        return dist, a1, b1
-    end
-    
-    if len_a_sq < 1e-10 then
-        -- Segment A is a point, find closest point on B
-        local t = math.max(0, math.min(1, (dx * dbx + dz * dbz) / len_b_sq))
-        local closest_b = vector.new(bx1 + t * dbx, (b1.y + b2.y) / 2, bz1 + t * dbz)
-        local dist = math.sqrt((ax1 - closest_b.x)^2 + (az1 - closest_b.z)^2)
-        return dist, a1, closest_b
-    end
-    
-    if len_b_sq < 1e-10 then
-        -- Segment B is a point, find closest point on A
-        local t = math.max(0, math.min(1, (-dx * dax - dz * daz) / len_a_sq))
-        local closest_a = vector.new(ax1 + t * dax, (a1.y + a2.y) / 2, az1 + t * daz)
-        local dist = math.sqrt((closest_a.x - bx1)^2 + (closest_a.z - bz1)^2)
-        return dist, closest_a, b1
-    end
-    
-    -- Cross product for parallel check
-    local cross = dax * dbz - daz * dbx
-    
-    -- Dot products
-    local dot_aa = len_a_sq
-    local dot_bb = len_b_sq
-    local dot_ab = dax * dbx + daz * dbz
-    local dot_ad = dax * dx + daz * dz
-    local dot_bd = dbx * dx + dbz * dz
-    
-    local s, t
-    local denom = dot_aa * dot_bb - dot_ab * dot_ab
-    
-    if math.abs(denom) < 1e-10 then
-        -- Segments are parallel
-        s = 0
-        t = dot_bd / dot_bb
-    else
-        s = (dot_ab * dot_bd - dot_bb * dot_ad) / denom
-        t = (dot_aa * dot_bd - dot_ab * dot_ad) / denom
-    end
-    
-    -- Clamp parameters to [0, 1]
-    if s < 0 then
-        s = 0
-        t = dot_bd / dot_bb
-    elseif s > 1 then
-        s = 1
-        t = (dot_ab + dot_bd) / dot_bb
-    end
-    
-    if t < 0 then
-        t = 0
-        s = -dot_ad / dot_aa
-        s = math.max(0, math.min(1, s))
-    elseif t > 1 then
-        t = 1
-        s = (dot_ab - dot_ad) / dot_aa
-        s = math.max(0, math.min(1, s))
-    end
-    
-    -- Calculate closest points
-    local closest_a = vector.new(
-        ax1 + s * dax,
-        a1.y + s * (a2.y - a1.y),
-        az1 + s * daz
-    )
-    local closest_b = vector.new(
-        bx1 + t * dbx,
-        b1.y + t * (b2.y - b1.y),
-        bz1 + t * dbz
-    )
-    
-    -- Calculate distance
-    local dist = math.sqrt(
-        (closest_a.x - closest_b.x)^2 + 
-        (closest_a.z - closest_b.z)^2
-    )
-    
-    return dist, closest_a, closest_b
-end
-
--- Calculates the shortest distance from a point to a line segment in 2D (XZ plane).
--- Returns the distance and the closest point on the segment.
-local function point_to_segment_distance_2d(p, seg_start, seg_end)
-    local px, pz = p.x, p.z
-    local ax, az = seg_start.x, seg_start.z
-    local bx, bz = seg_end.x, seg_end.z
-    
-    local dx, dz = bx - ax, bz - az
-    local len_sq = dx * dx + dz * dz
-    
-    if len_sq < 1e-10 then
-        -- Segment is a point
-        local dist = math.sqrt((px - ax)^2 + (pz - az)^2)
-        return dist, seg_start
-    end
-    
-    -- Project point onto line, clamped to segment
-    local t = ((px - ax) * dx + (pz - az) * dz) / len_sq
-    t = math.max(0, math.min(1, t))
-    
-    local closest = vector.new(
-        ax + t * dx,
-        seg_start.y + t * (seg_end.y - seg_start.y),
-        az + t * dz
-    )
-    
-    local dist = math.sqrt((px - closest.x)^2 + (pz - closest.z)^2)
-    return dist, closest
-end
-
--- Checks if two segments intersect or come within 'margin' distance of each other.
--- Returns intersection info table or nil if no intersection within margin.
--- The returned table contains:
---   - intersects: boolean, true if segments actually cross
---   - distance: number, shortest distance between segments
---   - point_a: vector, closest point on segment A
---   - point_b: vector, closest point on segment B
---   - midpoint: vector, midpoint between closest points
-function path.segment_intersects(a1, a2, b1, b2, margin)
-    margin = margin or 0
-    
-    local dist, closest_a, closest_b = segment_distance_2d(a1, a2, b1, b2)
-    
-    if dist <= margin then
-        local midpoint = vector.new(
-            (closest_a.x + closest_b.x) / 2,
-            (closest_a.y + closest_b.y) / 2,
-            (closest_a.z + closest_b.z) / 2
-        )
-        return {
-            intersects = dist < 1e-6,
-            distance = dist,
-            point_a = closest_a,
-            point_b = closest_b,
-            midpoint = midpoint
-        }
-    end
-    
-    return nil
-end
+-- Moved to path_utils.lua (pcmg.path_utils)
 
 -- Returns all segments of the path as a list of {start_pos, end_pos} pairs.
 function path:all_segments()
@@ -1068,6 +502,10 @@ function path:all_segments()
     return segments
 end
 
+-- ============================================================
+-- SEGMENT AND PATH INTERSECTION (EXISTING FUNCTIONS)
+-- ============================================================
+
 -- Checks if a segment intersects with any segment of this path.
 -- Returns a list of intersection info tables (see segment_intersects).
 -- Each result also includes:
@@ -1077,9 +515,9 @@ function path:intersects_segment(seg_start, seg_end, margin)
     margin = margin or 0
     local results = {}
     local segments = self:all_segments()
-    
+
     for i, seg in ipairs(segments) do
-        local intersection = path.segment_intersects(
+        local intersection = path_utils.segment_intersects(
             seg_start, seg_end,
             seg.start_pos, seg.end_pos,
             margin
@@ -1090,7 +528,7 @@ function path:intersects_segment(seg_start, seg_end, margin)
             table.insert(results, intersection)
         end
     end
-    
+
     return results
 end
 
@@ -1107,10 +545,10 @@ function path:intersects_path(other_path, margin)
     local results = {}
     local self_segments = self:all_segments()
     local other_segments = other_path:all_segments()
-    
+
     for i, self_seg in ipairs(self_segments) do
         for j, other_seg in ipairs(other_segments) do
-            local intersection = path.segment_intersects(
+            local intersection = path_utils.segment_intersects(
                 self_seg.start_pos, self_seg.end_pos,
                 other_seg.start_pos, other_seg.end_pos,
                 margin
@@ -1124,7 +562,7 @@ function path:intersects_path(other_path, margin)
             end
         end
     end
-    
+
     return results
 end
 
@@ -1142,9 +580,9 @@ function path:intersects_point(p, margin)
     local best_closest = nil
     local best_segment_index = nil
     local best_segment = nil
-    
+
     for i, seg in ipairs(segments) do
-        local dist, closest = point_to_segment_distance_2d(p, seg.start_pos, seg.end_pos)
+        local dist, closest = path_utils.point_to_segment_distance_2d(p, seg.start_pos, seg.end_pos)
         if dist < best_dist then
             best_dist = dist
             best_closest = closest
@@ -1152,7 +590,7 @@ function path:intersects_point(p, margin)
             best_segment = seg
         end
     end
-    
+
     if best_dist <= margin then
         return {
             distance = best_dist,
@@ -1161,7 +599,7 @@ function path:intersects_point(p, margin)
             segment = best_segment
         }
     end
-    
+
     return nil
 end
 
@@ -1173,7 +611,7 @@ function path:first_intersection_with_path(other_path, margin)
     if #intersections == 0 then
         return nil
     end
-    
+
     -- Sort by self_segment_index to find first intersection
     table.sort(intersections, function(a, b)
         if a.self_segment_index ~= b.self_segment_index then
@@ -1184,7 +622,7 @@ function path:first_intersection_with_path(other_path, margin)
         local dist_b = vector.distance(b.point_a, b.self_segment.start_pos)
         return dist_a < dist_b
     end)
-    
+
     return intersections[1]
 end
 
@@ -1195,10 +633,10 @@ function path:self_intersections(margin)
     margin = margin or 0
     local results = {}
     local segments = self:all_segments()
-    
+
     for i = 1, #segments - 2 do
         for j = i + 2, #segments do
-            local intersection = path.segment_intersects(
+            local intersection = path_utils.segment_intersects(
                 segments[i].start_pos, segments[i].end_pos,
                 segments[j].start_pos, segments[j].end_pos,
                 margin
@@ -1212,7 +650,7 @@ function path:self_intersections(margin)
             end
         end
     end
-    
+
     return results
 end
 
@@ -1225,32 +663,28 @@ end
 function path:find_segment_containing_point(pos, tolerance)
     tolerance = tolerance or 10
     local segments = self:all_segments()
-    
+
     for seg_idx, seg in ipairs(segments) do
         local seg_dir = vector.subtract(seg.end_pos, seg.start_pos)
-        local seg_len_sq = seg_dir.x * seg_dir.x + seg_dir.z * seg_dir.z
-        
+        local seg_len_sq = path_utils.xz_length_sq(seg_dir)
+
         if seg_len_sq > 1e-6 then
             local to_pos = vector.subtract(pos, seg.start_pos)
-            local t = (to_pos.x * seg_dir.x + to_pos.z * seg_dir.z) / seg_len_sq
-            
+            local t = path_utils.xz_dot(to_pos, seg_dir) / seg_len_sq
+
             -- Check if t is within segment bounds
             if t >= -0.1 and t <= 1.1 then
                 local clamped_t = math.max(0, math.min(1, t))
-                local closest = vector.new(
-                    seg.start_pos.x + clamped_t * seg_dir.x,
-                    seg.start_pos.y + clamped_t * (seg.end_pos.y - seg.start_pos.y),
-                    seg.start_pos.z + clamped_t * seg_dir.z
-                )
+                local closest = vector.add(seg.start_pos, vector.multiply(seg_dir, clamped_t))
                 local dist = vector.distance(pos, closest)
-                
+
                 if dist < tolerance then
                     return seg, seg_idx, t, dist
                 end
             end
         end
     end
-    
+
     return nil, nil, nil, nil
 end
 
@@ -1259,7 +693,7 @@ end
 -- min_distance: minimum distance to existing points before returning existing point
 function path:insert_point_at_position(pos, min_distance)
     min_distance = min_distance or 5
-    
+
     -- Check if there's already a point close to this position
     local all_points = self:all_points()
     for _, p in ipairs(all_points) do
@@ -1267,23 +701,23 @@ function path:insert_point_at_position(pos, min_distance)
             return p, false  -- Return existing point, no insertion needed
         end
     end
-    
+
     -- Find the segment containing this position
     local seg, seg_idx, t, dist = self:find_segment_containing_point(pos, min_distance * 3)
-    
+
     if not seg then
         return nil, false
     end
-    
+
     -- Verify the segment is still valid (points are adjacent)
     if not seg.start_point or not seg.end_point then
         return nil, false
     end
-    
+
     if seg.start_point.next ~= seg.end_point then
         return nil, false
     end
-    
+
     -- Check distance from segment endpoints
     if vector.distance(seg.start_point.pos, pos) < min_distance then
         return seg.start_point, false
@@ -1291,14 +725,14 @@ function path:insert_point_at_position(pos, min_distance)
     if vector.distance(seg.end_point.pos, pos) < min_distance then
         return seg.end_point, false
     end
-    
+
     -- Check if t is too close to endpoints
     if t < 0.05 then
         return seg.start_point, false
     elseif t > 0.95 then
         return seg.end_point, false
     end
-    
+
     -- Insert new point
     local new_point = point.new(pos)
     self:insert_between(seg.start_point, seg.end_point, new_point)
@@ -1318,29 +752,29 @@ function path:find_intersections_with_path(other_path, skip_position, skip_toler
     local intersections = {}
     local self_segments = self:all_segments()
     local other_segments = other_path:all_segments()
-    
+
     for self_idx, self_seg in ipairs(self_segments) do
         for other_idx, other_seg in ipairs(other_segments) do
-            local int_pos, t1, t2 = path.calculate_segment_intersection(
+            local int_pos, t1, t2 = path_utils.calculate_segment_intersection(
                 self_seg.start_pos, self_seg.end_pos,
                 other_seg.start_pos, other_seg.end_pos
             )
-            
+
             if int_pos then
                 -- Skip if this is near the skip position
                 local should_skip = false
                 if skip_position and vector.distance(int_pos, skip_position) < skip_tolerance then
                     should_skip = true
                 end
-                
+
                 -- Skip if segments are parallel
-                if path.segments_are_parallel(
+                if path_utils.segments_are_parallel(
                     self_seg.start_pos, self_seg.end_pos,
                     other_seg.start_pos, other_seg.end_pos
                 ) then
                     should_skip = true
                 end
-                
+
                 if not should_skip then
                     table.insert(intersections, {
                         pos = int_pos,
@@ -1356,7 +790,7 @@ function path:find_intersections_with_path(other_path, skip_position, skip_toler
             end
         end
     end
-    
+
     return intersections
 end
 
@@ -1365,10 +799,10 @@ end
 function path:find_intersections_with_paths(other_paths, skip_position, skip_tolerance)
     local all_intersections = {}
     local self_points = self:all_points()
-    
+
     for _, other_path in ipairs(other_paths) do
         local intersections = self:find_intersections_with_path(other_path, skip_position, skip_tolerance)
-        
+
         for _, int_data in ipairs(intersections) do
             -- Calculate cumulative distance from path start
             local cumulative_dist = 0
@@ -1380,17 +814,17 @@ function path:find_intersections_with_paths(other_paths, skip_position, skip_tol
             cumulative_dist = cumulative_dist + vector.distance(
                 int_data.self_segment.start_pos, int_data.pos
             )
-            
+
             int_data.distance_from_start = cumulative_dist
             table.insert(all_intersections, int_data)
         end
     end
-    
+
     -- Sort by distance from start
     table.sort(all_intersections, function(a, b)
         return a.distance_from_start < b.distance_from_start
     end)
-    
+
     return all_intersections
 end
 
@@ -1401,13 +835,13 @@ end
 function path:create_intersection_points(intersections, modify_other_paths, min_distance)
     min_distance = min_distance or 5
     local created_points = {}
-    
+
     -- Process intersections in reverse order (farthest first)
     -- to avoid invalidating segment references
     for i = #intersections, 1, -1 do
         local int_data = intersections[i]
         local pos = int_data.pos
-        
+
         -- Check if we're too close to an already created point
         local too_close = false
         for _, created in ipairs(created_points) do
@@ -1416,18 +850,18 @@ function path:create_intersection_points(intersections, modify_other_paths, min_
                 break
             end
         end
-        
+
         if not too_close then
             -- Insert point in this path
             local self_point, self_inserted = self:insert_point_at_position(pos, min_distance)
-            
+
             -- Insert point in the other path if requested
             local other_point = nil
             local other_inserted = false
             if modify_other_paths and int_data.other_path then
                 other_point, other_inserted = int_data.other_path:insert_point_at_position(pos, min_distance)
             end
-            
+
             if self_point then
                 table.insert(created_points, {
                     pos = pos,
@@ -1439,63 +873,13 @@ function path:create_intersection_points(intersections, modify_other_paths, min_
             end
         end
     end
-    
+
     return created_points
 end
 
 -- ============================================================
 -- GRID SUBDIVISION
 -- ============================================================
-
--- Find intersection point between a line segment and a grid line
--- Returns the intersection point and t parameter, or nil if no intersection
--- grid_coord: the coordinate of the grid line
--- is_x_grid: if true, grid line is perpendicular to X axis (constant X)
-function path.segment_grid_intersection(seg_start, seg_end, grid_coord, is_x_grid)
-    local start_coord, end_coord
-    local other_start, other_end
-    
-    if is_x_grid then
-        start_coord = seg_start.x
-        end_coord = seg_end.x
-        other_start = seg_start.z
-        other_end = seg_end.z
-    else
-        start_coord = seg_start.z
-        end_coord = seg_end.z
-        other_start = seg_start.x
-        other_end = seg_end.x
-    end
-    
-    -- Check if grid line is between segment endpoints
-    if (start_coord < grid_coord and end_coord < grid_coord) or
-       (start_coord > grid_coord and end_coord > grid_coord) then
-        return nil
-    end
-    
-    -- Handle case where segment is parallel to grid line
-    if math.abs(end_coord - start_coord) < 1e-6 then
-        return nil
-    end
-    
-    -- Calculate interpolation parameter
-    local t = (grid_coord - start_coord) / (end_coord - start_coord)
-    
-    -- Ensure t is within segment bounds (with small epsilon for floating point)
-    if t < 0.01 or t > 0.99 then
-        return nil
-    end
-    
-    -- Calculate intersection point
-    local other_coord = other_start + t * (other_end - other_start)
-    local y_coord = seg_start.y + t * (seg_end.y - seg_start.y)
-    
-    if is_x_grid then
-        return vector.new(grid_coord, y_coord, other_coord), t
-    else
-        return vector.new(other_coord, y_coord, grid_coord), t
-    end
-end
 
 -- Subdivide path by inserting points at grid intersections
 -- grid_spacing: the spacing between grid lines
@@ -1505,17 +889,17 @@ function path:subdivide_to_grid(grid_spacing, min_point_distance)
     min_point_distance = min_point_distance or 5
     local segments = self:all_segments()
     local points_to_insert = {}
-    
+
     -- Collect all grid intersection points for all segments
     for seg_index, seg in ipairs(segments) do
         -- Find X grid lines that intersect this segment
         local min_x = math.min(seg.start_pos.x, seg.end_pos.x)
         local max_x = math.max(seg.start_pos.x, seg.end_pos.x)
         local first_x_grid = math.ceil(min_x / grid_spacing) * grid_spacing
-        
+
         local x_grid = first_x_grid
         while x_grid <= max_x do
-            local int_pos, t = path.segment_grid_intersection(seg.start_pos, seg.end_pos, x_grid, true)
+            local int_pos, t = path_utils.segment_grid_intersection(seg.start_pos, seg.end_pos, x_grid, true)
             if int_pos then
                 local dist = vector.distance(seg.start_pos, int_pos)
                 table.insert(points_to_insert, {
@@ -1528,15 +912,15 @@ function path:subdivide_to_grid(grid_spacing, min_point_distance)
             end
             x_grid = x_grid + grid_spacing
         end
-        
+
         -- Find Z grid lines that intersect this segment
         local min_z = math.min(seg.start_pos.z, seg.end_pos.z)
         local max_z = math.max(seg.start_pos.z, seg.end_pos.z)
         local first_z_grid = math.ceil(min_z / grid_spacing) * grid_spacing
-        
+
         local z_grid = first_z_grid
         while z_grid <= max_z do
-            local int_pos, t = path.segment_grid_intersection(seg.start_pos, seg.end_pos, z_grid, false)
+            local int_pos, t = path_utils.segment_grid_intersection(seg.start_pos, seg.end_pos, z_grid, false)
             if int_pos then
                 local dist = vector.distance(seg.start_pos, int_pos)
                 table.insert(points_to_insert, {
@@ -1550,7 +934,7 @@ function path:subdivide_to_grid(grid_spacing, min_point_distance)
             z_grid = z_grid + grid_spacing
         end
     end
-    
+
     -- Sort by segment index (descending) then by distance (descending)
     -- We insert in reverse order to avoid invalidating segment references
     table.sort(points_to_insert, function(a, b)
@@ -1559,7 +943,7 @@ function path:subdivide_to_grid(grid_spacing, min_point_distance)
         end
         return a.distance_from_start > b.distance_from_start
     end)
-    
+
     -- Insert points into the path
     local inserted_points = {}
     for _, pt_data in ipairs(points_to_insert) do
@@ -1567,13 +951,13 @@ function path:subdivide_to_grid(grid_spacing, min_point_distance)
         if pt_data.start_point.next == pt_data.end_point then
             -- Check we're not too close to existing points
             local too_close = false
-            
+
             if vector.distance(pt_data.start_point.pos, pt_data.pos) < min_point_distance then
                 too_close = true
             elseif vector.distance(pt_data.end_point.pos, pt_data.pos) < min_point_distance then
                 too_close = true
             end
-            
+
             if not too_close then
                 local new_point = point.new(pt_data.pos)
                 self:insert_between(pt_data.start_point, pt_data.end_point, new_point)
@@ -1581,7 +965,7 @@ function path:subdivide_to_grid(grid_spacing, min_point_distance)
             end
         end
     end
-    
+
     return inserted_points
 end
 
@@ -1753,3 +1137,5 @@ function path:make_slanted(segment_length)
         self:subdivide(segment_length)
     end
 end
+
+return pcmg.path
