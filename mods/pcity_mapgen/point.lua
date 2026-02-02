@@ -27,6 +27,7 @@ local point = pcmg.point
 point.__index = point
 
 local path = pcmg.path or dofile(mod_path.."/path.lua")
+local checks = pcmg.point_checks or dofile(mod_path.."/point_checks.lua")
 
 -- Counter for generating unique point IDs. Ensures deterministic
 -- ordering for points at the same position, as long as points are
@@ -36,20 +37,13 @@ local point_id_counter = 0
 -- Counter for generating unique path IDs.
 local path_id_counter = 0
 
--- Validates arguments passed to 'point.new'.
-local function check_point_new_arguments(pos)
-    if not vector.check(pos) then
-        error("Path: pos '"..shallow_dump(pos).."' is not a vector.")
-    end
-end
-
 -- Creates a new instance of the Point class. Points store absolute
 -- world position, the previous and the next point in a sequence and
 -- the path (see the Path class below) they belong to. Points can be
 -- linked to create linked lists which should be helpful for
 -- road/street generation algorithms.
 function point.new(pos)
-    check_point_new_arguments(pos)
+    checks.check_point_new_arguments(pos)
     local p = {}
     point_id_counter = point_id_counter + 1
     p.id = point_id_counter
@@ -72,11 +66,8 @@ function point.check(p)
 end
 
 -- Checks if 'p' is a point, otherwise throws an error.
-local function check_point(p)
-    if not point.check(p) then
-        error("Path: p '"..shallow_dump(p).."' is not a point.")
-    end
-end
+-- (point.check is used elsewhere; checks.check_point resolves runtime)
+-- (no local duplicate here)
 
 -- Creates a copy of point 'p' with the same position. The copy does
 -- not inherit path, previous/next links, attachments, or branches -
@@ -98,18 +89,11 @@ function point.same_path(...)
     return true
 end
 
--- Asserts that all points belong to the same path, otherwise throws an error.
-local function check_same_path(points)
-    if not point.same_path(unpack(points)) then
-        error("Path: Cannot link points that belong to different paths.")
-    end
-end
-
 -- Links points in order, accepts any number of points. '...' is any number of points.
 -- Only points belonging to the same path can be linked.
 function point.link(...)
     local points = {...}
-    check_same_path(points)
+    checks.check_same_path(points)
     for i = 1, #points - 1 do
         points[i].next = points[i + 1]
         points[i + 1].previous = points[i]
@@ -145,7 +129,7 @@ end
 function point:attach(...)
     local points = {...}
     for _, p in ipairs(points) do
-        check_point(p)
+        checks.check_point(p)
         p.pos = self.pos
         self.attached[p] = p
         p.attached[self] = self
@@ -157,7 +141,7 @@ end
 function point:detach(...)
     local points = {...}
     for _, p in ipairs(points) do
-        check_point(p)
+        checks.check_point(p)
         p.attached[self] = nil -- detach 'self' from points attached to it
         self.attached[p] = nil -- detach 'p' from 'self'
     end

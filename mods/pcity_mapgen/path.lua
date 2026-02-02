@@ -28,16 +28,10 @@ path.__index = path
 
 local point = pcmg.point or dofile(mod_path.."/point.lua")
 local path_utils = pcmg.path_utils or dofile(mod_path.."/path_utils.lua")
+local checks = pcmg.point_checks or dofile(mod_path.."/point_checks.lua")
 
 -- Counter for generating unique path IDs.
 local path_id_counter = 0
-
--- Checks if 'p' is a point, otherwise throws an error.
-local function check_point(p)
-    if not point.check(p) then
-        error("Path: p '"..shallow_dump(p).."' is not a point.")
-    end
-end
 
 -- ============================================================
 -- PATH CLASS
@@ -156,7 +150,7 @@ end
 -- Sets the start point of the path to 'p'. The start point is added
 -- to the path's points table.
 function path:set_start(p)
-    check_point(p)
+    checks.check_point(p)
     local old_start = self.start
     local first_intermediate = old_start and old_start.next
     -- Unlink and remove old start from points table
@@ -178,7 +172,7 @@ end
 -- Sets the finish point of the path to 'p'. The finish point is added
 -- to the path's points table.
 function path:set_finish(p)
-    check_point(p)
+    checks.check_point(p)
     local old_finish = self.finish
     local last_intermediate = old_finish and old_finish.previous
     -- Unlink and remove old finish from points table
@@ -229,9 +223,9 @@ end
 -- belonging to the path. Note: start and finish points are never
 -- included in the returned list.
 function path:get_points(from, to)
-    check_point(from)
-    check_point(to)
-    check_same_path({self.start, from, to, self.finish})
+    checks.check_point(from)
+    checks.check_point(to)
+    checks.check_same_path({self.start, from, to, self.finish})
     local points = {}
     local current_point = from ~= self.start and from or from.next
     while current_point and current_point ~= self.finish do
@@ -271,23 +265,11 @@ end
 -- INSERTION
 -- ============================================================
 
--- Checks if arguments passed to 'path:insert' are valid.
-local function check_insert_between_arguments(self, p_prev, p_next, p)
-    check_point(p)
-    check_point(p_prev)
-    check_point(p_next)
-    check_same_path({self.start, p_prev, p_next, self.finish})
-    -- Verify that p_prev and p_next are actually adjacent
-    if p_prev.next ~= p_next then
-        error("Path: p_prev and p_next are not adjacent points.")
-    end
-end
-
 -- Inserts intermediate point 'p' between points 'p_prev' and 'p_next'.
 -- 'p_prev' and 'p_next' need to belong to the path. The inserted point
 -- is added to the path's points table.
 function path:insert_between(p_prev, p_next, p)
-    check_insert_between_arguments(self, p_prev, p_next, p)
+    checks.check_insert_between_arguments(self, p_prev, p_next, p)
     p:set_path(self)
     point.link(p_prev, p, p_next)
 end
@@ -322,26 +304,11 @@ end
 -- REMOVAL
 -- ============================================================
 
--- Checks if arguments passed to 'path:remove', 'path:remove_before'
--- and 'path:remove_after' are valid. Only intermediate points can be
--- removed (not start or finish).
-local function check_remove_arguments(self, p)
-    if not self.points[p] then
-        error("Path: p '"..shallow_dump(p).."' does not belong to the path.")
-    end
-    if p == self.start or p == self.finish then
-        error("Path: cannot remove start or finish point.")
-    end
-    if not self:has_intermediate() then
-        error("Path: there are no intermediate points to remove.")
-    end
-end
-
 -- Removes intermediate point 'p' from the path. Cannot remove start
 -- or finish points.
 function path:remove(p)
-    check_point(p)
-    check_remove_arguments(self, p)
+    checks.check_point(p)
+    checks.check_remove_arguments(self, p)
     local prev = p.previous
     local nxt = p.next
     -- Link neighbors before clearing to maintain chain integrity
@@ -355,33 +322,22 @@ end
 -- Removes the intermediate point that comes before point 'p'.
 -- Cannot remove start or finish points.
 function path:remove_previous(p)
-    check_point(p)
-    check_remove_arguments(self, p.previous)
+    checks.check_point(p)
+    checks.check_remove_arguments(self, p.previous)
     self:remove(p.previous)
 end
 
 -- Removes the intermediate point that comes after point 'p'.
 -- Cannot remove start or finish points.
 function path:remove_next(p)
-    check_point(p)
-    check_remove_arguments(self, p.next)
+    checks.check_point(p)
+    checks.check_remove_arguments(self, p.next)
     self:remove(p.next)
-end
-
--- Checks if arguments passed to 'path:remove_at' are valid.
-local function check_remove_at_arguments(self, nr)
-    if type(nr) ~= "number" then
-        error("Path: nr '"..shallow_dump(nr).."' is not a number.")
-    end
-    local p = self:get_point(nr)
-    if not p then
-        error("Path: no intermediate point at nr '"..shallow_dump(nr).."'.")
-    end
 end
 
 -- Removes an intermediate point given by its ordinal number 'nr'.
 function path:remove_at(nr)
-    check_remove_at_arguments(self, nr)
+    checks.check_remove_at_arguments(self, nr)
     local p = self:get_point(nr)
     self:remove(p)
 end
@@ -394,7 +350,7 @@ end
 -- 'p' becomes the new finish point, and the old finish becomes
 -- an intermediate point.
 function path:extend(p)
-    check_point(p)
+    checks.check_point(p)
     local old_finish = self.finish
     -- Set up new finish
     p:set_path(self)
@@ -433,8 +389,8 @@ end
 -- Cuts off (removes from the path) all points that come after the
 -- point specified by 'stop_point'. Sets 'stop_point' as the new finish.
 function path:cut_off(stop_point)
-    check_point(stop_point)
-    check_same_path({self.start, stop_point, self.finish})
+    checks.check_point(stop_point)
+    checks.check_same_path({self.start, stop_point, self.finish})
     while self.finish ~= stop_point do
         if not self:shorten() then
             break
@@ -1017,18 +973,6 @@ end
 -- SPLIT AND TRANSFER
 -- ============================================================
 
--- Checks if arguments passed to 'path:split_at' are valid.
-local function check_split_at_arguments(self, p)
-    check_same_path({self.start, p, self.finish})
-    -- check if 'p' is an intermediate point
-    if p == self.start or p == self.finish then
-        error("Path: cannot split path at start or finish point.")
-    end
-    if not self:has_intermediate() then
-        error("Path: cannot split path with no intermediate points.")
-    end
-end
-
 -- Transfers all intermediate points between 'first' and 'last'
 -- (inclusive) from 'self' path to 'pth' path. 'first' and 'last'
 -- need to belong to this path. Only intermediate points are
@@ -1047,8 +991,8 @@ end
 -- path. The path needs to have at least 1 intermediate point for the
 -- split to be possible. Returns the newly created second path.
 function path:split_at(p)
-    check_point(p)
-    check_split_at_arguments(self, p)
+    checks.check_point(p)
+    checks.check_split_at_arguments(self, p)
     -- Create new path with duplicated point 'p'
     local new_path = path.new(p:copy(), self.finish:copy())
     -- Transfer points from 'p.next' to 'self.finish' to the new path
