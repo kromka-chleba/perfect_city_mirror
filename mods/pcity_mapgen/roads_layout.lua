@@ -138,52 +138,51 @@ local secondary_street_shape = canvas_shapes.combine_shapes(
 --[[
     Street Generation Configuration
     
-    Streets are spaced evenly along roads with minimum spacing of 80 nodes.
-    Streets can converge at citychunk borders to connect with neighboring chunks.
+    Streets use deterministic border connection points so that streets
+    from adjacent citychunks will meet at the same points on the shared border.
 --]]
 local street_config = {
     -- Minimum segment length (enforced)
     min_segment_length = 80,
     
-    -- Minimum spacing between parallel streets/roads (enforced)
-    min_street_spacing = 80,
+    -- Minimum spacing between parallel streets/roads
+    min_street_spacing = 70,
     
-    -- Subdivision settings (should match min_segment_length)
-    road_subdivision_length = 80,
-    street_subdivision_length = 80,
+    -- Subdivision settings - larger = fewer but more spread out branches
+    road_subdivision_length = 100,
+    street_subdivision_length = 100,
     
-    -- Primary streets (from main roads)
-    primary_branch_probability = 0.85,
-    primary_min_length = 120,
-    primary_max_length = 250,
+    -- Primary streets (from main roads) - much longer to cross the chunk
+    primary_branch_probability = 0.9,
+    primary_min_length = 200,
+    primary_max_length = 500,  -- Can cross entire chunk
     
-    -- Secondary streets (from primary streets)
-    secondary_branch_probability = 0.75,
-    secondary_min_length = 100,
-    secondary_max_length = 200,
+    -- Secondary streets (from primary streets) - also long
+    secondary_branch_probability = 0.8,
+    secondary_min_length = 150,
+    secondary_max_length = 350,
     
     -- Tertiary streets (from secondary streets)
     tertiary_branch_probability = 0.6,
-    tertiary_min_length = 80,
-    tertiary_max_length = 150,
+    tertiary_min_length = 100,
+    tertiary_max_length = 200,
     
     -- Quaternary streets (from tertiary streets)
-    quaternary_branch_probability = 0.45,
+    quaternary_branch_probability = 0.4,
     quaternary_min_length = 80,
-    quaternary_max_length = 120,
+    quaternary_max_length = 150,
     
     -- Merging settings
-    merge_probability = 0.6,
-    merge_search_radius = 120,
-    min_merge_distance = 40,
+    merge_probability = 0.7,
+    merge_search_radius = 150,
+    min_merge_distance = 50,
     
-    -- Border convergence settings
-    border_convergence_enabled = true,
-    border_snap_distance = 30,          -- How close to border to snap
-    border_convergence_spacing = 80,    -- Spacing between convergence points on border
+    -- Border connection settings
+    border_connection_spacing = 80,     -- Spacing between connection points on border
+    border_snap_radius = 50,            -- How close to snap to a connection point
     
     -- Collision settings
-    parallel_overlap_margin = 30,
+    parallel_overlap_margin = 25,
     intersection_margin = 3,
     min_street_length = 80,
     parallel_check_samples = 5,
@@ -216,21 +215,19 @@ local function build_road(megapathpav, start, finish)
 end
 
 --[[
-    Border Convergence System
+    Deterministic Border Connection Points
     
-    Streets that extend to citychunk borders can snap to deterministic
-    convergence points. This allows streets from neighboring citychunks
-    to meet at the same point, creating continuous streets across chunks.
+    Both adjacent citychunks calculate the same connection points on their
+    shared border. This is done by using the actual border coordinate
+    (not the citychunk origin) as the seed.
     
-    Convergence points are calculated based on:
-    - The border edge (which side of the citychunk)
-    - Regular spacing along the border
-    - A deterministic offset based on mapgen seed
+    For example, the x_max border of chunk A and x_min border of chunk B
+    are at the same X coordinate, so they generate the same points.
 --]]
 
 -- Get the citychunk boundaries
 local function get_citychunk_bounds(citychunk_origin)
-    local min_pos = citychunk_origin
+    local min_pos = vector.copy(citychunk_origin)
     local max_pos = vector.add(citychunk_origin, vector.new(
         citychunk.in_nodes - 1,
         0,
@@ -239,9 +236,64 @@ local function get_citychunk_bounds(citychunk_origin)
     return min_pos, max_pos
 end
 
--- Determine which border edge a position is closest to
--- Returns: "x_min", "x_max", "z_min", "z_max", or nil if not near border
-local function get_nearest_border(pos, citychunk_origin, snap_distance)
+-- Calculate deterministic connection points along a border
+-- Uses the actual border position for seeding so adjacent chunks get same points
+local function get_border_connection_points(citychunk_origin, border_edge, spacing)
+    local min_pos, max_pos = get_citychunk_bounds(citychunk_origin)
+    local points = {}
+    
+    -- Use the actual border coordinate for seeding
+    local border_coord
+    local start_coord, end_coord
+    local is_x_border
+    
+    if border_edge == "x_min" then
+        border_coord = min_pos.x
+        start_coord = min_pos.z
+        end_coord = max_pos.z
+        is_x_border = true
+    elseif border_edge == "x_max" then
+        border_coord = max_pos.x
+        start_coord = min_pos.z
+        end_coord = max_pos.z
+        is_x_border = true
+    elseif border_edge == "z_min" then
+        border_coord = min_pos.z
+        start_coord = min_pos.x
+        end_coord = max_pos.x
+        is_x_border = false
+    else -- z_max
+        border_coord = max_pos.z
+        start_coord = min_pos.x
+        end_coord = max_pos.x
+        is_x_border = false
+    end
+    
+    -- Seed based on border coordinate (same for both adjacent chunks)
+    local border_seed = mapgen_seed + border_coord * 73856093
+    math.randomseed(border_seed)
+    
+    -- Random offset for variety
+    local offset = math.random(0, math.floor(spacing / 2))
+    
+    -- Generate evenly spaced points along the border
+    local coord = start_coord + offset
+    while coord < end_coord do
+        local point
+        if is_x_border then
+            point = vector.new(border_coord, min_pos.y, coord)
+        else
+            point = vector.new(coord, min_pos.y, border_coord)
+        end
+        table.insert(points, point)
+        coord = coord + spacing
+    end
+    
+    return points
+end
+
+-- Get the border edge a position is near
+local function get_border_edge(pos, citychunk_origin, tolerance)
     local min_pos, max_pos = get_citychunk_bounds(citychunk_origin)
     
     local dist_x_min = math.abs(pos.x - min_pos.x)
@@ -251,71 +303,90 @@ local function get_nearest_border(pos, citychunk_origin, snap_distance)
     
     local min_dist = math.min(dist_x_min, dist_x_max, dist_z_min, dist_z_max)
     
-    if min_dist > snap_distance then
+    if min_dist > tolerance then
         return nil, min_dist
     end
     
-    if min_dist == dist_x_min then
-        return "x_min", dist_x_min
-    elseif min_dist == dist_x_max then
-        return "x_max", dist_x_max
-    elseif min_dist == dist_z_min then
-        return "z_min", dist_z_min
+    if min_dist == dist_x_min then return "x_min", dist_x_min end
+    if min_dist == dist_x_max then return "x_max", dist_x_max end
+    if min_dist == dist_z_min then return "z_min", dist_z_min end
+    return "z_max", dist_z_max
+end
+
+-- Find which border a direction vector points toward
+local function get_direction_border(direction)
+    if math.abs(direction.x) > math.abs(direction.z) then
+        if direction.x > 0 then
+            return "x_max"
+        else
+            return "x_min"
+        end
     else
-        return "z_max", dist_z_max
+        if direction.z > 0 then
+            return "z_max"
+        else
+            return "z_min"
+        end
     end
 end
 
--- Calculate deterministic convergence points along a border edge
--- These points are the same regardless of which citychunk calculates them
-local function get_border_convergence_points(citychunk_origin, border_edge, spacing)
+-- Calculate where a line from start_pos in direction hits the border
+local function calculate_border_intersection(start_pos, direction, citychunk_origin)
     local min_pos, max_pos = get_citychunk_bounds(citychunk_origin)
-    local points = {}
     
-    -- Use a deterministic seed based on the border position (not the citychunk)
-    local border_seed
-    if border_edge == "x_min" then
-        border_seed = min_pos.x * 73856093 + mapgen_seed
-    elseif border_edge == "x_max" then
-        border_seed = max_pos.x * 73856093 + mapgen_seed
-    elseif border_edge == "z_min" then
-        border_seed = min_pos.z * 83492791 + mapgen_seed
-    else -- z_max
-        border_seed = max_pos.z * 83492791 + mapgen_seed
-    end
+    local t = math.huge
+    local hit_border = nil
     
-    math.randomseed(border_seed)
-    local offset = math.random(0, math.floor(spacing / 2))
-    
-    if border_edge == "x_min" or border_edge == "x_max" then
-        -- Points along Z axis
-        local x = (border_edge == "x_min") and min_pos.x or max_pos.x
-        local z = min_pos.z + offset
-        while z < max_pos.z do
-            table.insert(points, vector.new(x, min_pos.y, z))
-            z = z + spacing
+    if direction.x > 0.1 then
+        local t_x = (max_pos.x - start_pos.x) / direction.x
+        if t_x > 0 and t_x < t then
+            t = t_x
+            hit_border = "x_max"
         end
-    else
-        -- Points along X axis
-        local z = (border_edge == "z_min") and min_pos.z or max_pos.z
-        local x = min_pos.x + offset
-        while x < max_pos.x do
-            table.insert(points, vector.new(x, min_pos.y, z))
-            x = x + spacing
+    elseif direction.x < -0.1 then
+        local t_x = (min_pos.x - start_pos.x) / direction.x
+        if t_x > 0 and t_x < t then
+            t = t_x
+            hit_border = "x_min"
         end
     end
     
-    return points
+    if direction.z > 0.1 then
+        local t_z = (max_pos.z - start_pos.z) / direction.z
+        if t_z > 0 and t_z < t then
+            t = t_z
+            hit_border = "z_max"
+        end
+    elseif direction.z < -0.1 then
+        local t_z = (min_pos.z - start_pos.z) / direction.z
+        if t_z > 0 and t_z < t then
+            t = t_z
+            hit_border = "z_min"
+        end
+    end
+    
+    if t == math.huge then
+        return nil, nil, nil
+    end
+    
+    local border_pos = vector.add(start_pos, vector.multiply(direction, t))
+    border_pos.x = math.floor(border_pos.x + 0.5)
+    border_pos.y = start_pos.y
+    border_pos.z = math.floor(border_pos.z + 0.5)
+    
+    return border_pos, hit_border, t
 end
 
--- Find the nearest convergence point on a border for a given position
-local function find_nearest_convergence_point(pos, citychunk_origin, border_edge, spacing)
-    local convergence_points = get_border_convergence_points(citychunk_origin, border_edge, spacing)
+-- Find the nearest connection point on a border
+local function find_nearest_connection_point(pos, citychunk_origin, border_edge, config)
+    local connection_points = get_border_connection_points(
+        citychunk_origin, border_edge, config.border_connection_spacing
+    )
     
     local best_point = nil
     local best_dist = math.huge
     
-    for _, cp in ipairs(convergence_points) do
+    for _, cp in ipairs(connection_points) do
         local dist = vector.distance(pos, cp)
         if dist < best_dist then
             best_dist = dist
@@ -326,66 +397,47 @@ local function find_nearest_convergence_point(pos, citychunk_origin, border_edge
     return best_point, best_dist
 end
 
--- Check if a position would extend beyond the citychunk border
-local function extends_beyond_border(start_pos, end_pos, citychunk_origin)
-    local min_pos, max_pos = get_citychunk_bounds(citychunk_origin)
+-- Try to snap a street endpoint to a border connection point
+local function snap_to_border_connection(start_pos, end_pos, direction, citychunk_origin, config)
+    -- Calculate where we'd hit the border
+    local border_pos, border_edge, t = calculate_border_intersection(start_pos, direction, citychunk_origin)
     
-    return end_pos.x < min_pos.x or end_pos.x > max_pos.x or
-           end_pos.z < min_pos.z or end_pos.z > max_pos.z
-end
-
--- Snap a street endpoint to a border convergence point if applicable
-local function snap_to_border_convergence(start_pos, end_pos, direction, citychunk_origin, config)
-    if not config.border_convergence_enabled then
+    if not border_pos or not border_edge then
         return end_pos, false
     end
     
-    -- Check if end_pos is near or beyond a border
-    local border_edge, dist = get_nearest_border(end_pos, citychunk_origin, config.border_snap_distance)
+    local dist_to_border = vector.distance(start_pos, border_pos)
+    local dist_to_end = vector.distance(start_pos, end_pos)
     
-    if not border_edge then
-        -- Check if it extends beyond
-        if extends_beyond_border(start_pos, end_pos, citychunk_origin) then
-            local min_pos, max_pos = get_citychunk_bounds(citychunk_origin)
-            
-            -- Determine which border based on direction
-            if direction.x > 0.5 then
-                border_edge = "x_max"
-            elseif direction.x < -0.5 then
-                border_edge = "x_min"
-            elseif direction.z > 0.5 then
-                border_edge = "z_max"
-            elseif direction.z < -0.5 then
-                border_edge = "z_min"
-            end
-        end
-    end
-    
-    if not border_edge then
+    -- Only snap if we're going to or past the border
+    if dist_to_end < dist_to_border - config.border_snap_radius then
         return end_pos, false
     end
     
-    -- Find nearest convergence point on this border
-    local convergence_point, conv_dist = find_nearest_convergence_point(
-        end_pos, citychunk_origin, border_edge, config.border_convergence_spacing
+    -- Find nearest connection point on this border
+    local connection_point, dist_to_connection = find_nearest_connection_point(
+        border_pos, citychunk_origin, border_edge, config
     )
     
-    if convergence_point and conv_dist < config.border_convergence_spacing / 2 then
-        -- Check that the new length is still valid
-        local new_length = vector.distance(start_pos, convergence_point)
+    if connection_point and dist_to_connection <= config.border_snap_radius then
+        local new_length = vector.distance(start_pos, connection_point)
         if new_length >= config.min_segment_length then
-            return convergence_point, true
+            return connection_point, true
         end
+    end
+    
+    -- If can't snap, just go to border if long enough
+    if dist_to_border >= config.min_segment_length then
+        return border_pos, false
     end
     
     return end_pos, false
 end
 
 --[[
-    Street Generation Algorithm
+    Street Generation Utilities
 --]]
 
--- Get axis-aligned perpendicular direction
 local function get_perpendicular_direction(segment_dir)
     local abs_x = math.abs(segment_dir.x)
     local abs_z = math.abs(segment_dir.z)
@@ -405,7 +457,6 @@ local function get_perpendicular_direction(segment_dir)
     end
 end
 
--- Calculate the angle between two direction vectors in 2D
 local function angle_between_2d(dir1, dir2)
     local dot = dir1.x * dir2.x + dir1.z * dir2.z
     local len1 = math.sqrt(dir1.x * dir1.x + dir1.z * dir1.z)
@@ -417,7 +468,6 @@ local function angle_between_2d(dir1, dir2)
     return math.acos(cos_angle)
 end
 
--- Check if two segments are roughly parallel
 local function segments_are_parallel(seg1_start, seg1_end, seg2_start, seg2_end)
     local dir1 = vector.direction(seg1_start, seg1_end)
     local dir2 = vector.direction(seg2_start, seg2_end)
@@ -425,14 +475,12 @@ local function segments_are_parallel(seg1_start, seg1_end, seg2_start, seg2_end)
     return angle < (math.pi / 6) or angle > (math.pi - math.pi / 6)
 end
 
--- Check if a direction is parallel to a segment
 local function direction_parallel_to_segment(direction, seg_start, seg_end)
     local seg_dir = vector.direction(seg_start, seg_end)
     local angle = angle_between_2d(direction, seg_dir)
     return angle < (math.pi / 6) or angle > (math.pi - math.pi / 6)
 end
 
--- Check if segments overlap when parallel
 local function segments_overlap_parallel(seg1_start, seg1_end, seg2_start, seg2_end, margin)
     if not segments_are_parallel(seg1_start, seg1_end, seg2_start, seg2_end) then
         return false, nil
@@ -457,7 +505,6 @@ local function segments_overlap_parallel(seg1_start, seg1_end, seg2_start, seg2_
     return false, nil
 end
 
--- Get all paths for collision detection
 local function get_all_paths(megapathpav, additional_paths)
     local all_paths = {}
     local local_paths = {}
@@ -497,7 +544,6 @@ local function get_all_paths(megapathpav, additional_paths)
     return all_paths, local_paths
 end
 
--- Check if path is local (can be modified)
 local function is_local_path(path, local_paths)
     for _, lp in ipairs(local_paths) do
         if path == lp then return true end
@@ -505,7 +551,6 @@ local function is_local_path(path, local_paths)
     return false
 end
 
--- Find segment containing a position
 local function find_segment_at(pth, pos, tolerance)
     tolerance = tolerance or 5
     local segments = pth:all_segments()
@@ -528,7 +573,6 @@ local function find_segment_at(pth, pos, tolerance)
     return nil
 end
 
--- Insert intersection point into path
 local function insert_intersection(pth, pos, seg)
     if not seg then return nil end
     if not seg.start_point or not seg.end_point then return nil end
@@ -546,7 +590,6 @@ local function insert_intersection(pth, pos, seg)
     return new_point
 end
 
--- Calculate closest distance from a point to a segment
 local function point_to_segment_distance(pos, seg_start, seg_end)
     local seg_dir = vector.subtract(seg_end, seg_start)
     local seg_len_sq = seg_dir.x * seg_dir.x + seg_dir.z * seg_dir.z
@@ -568,10 +611,9 @@ local function point_to_segment_distance(pos, seg_start, seg_end)
     return vector.distance(pos, closest), closest
 end
 
--- Check if a proposed street line would be too close to any existing path
 local function street_too_close_to_existing(start_pos, end_pos, direction, all_paths, parent_path, min_spacing)
     local street_length = vector.distance(start_pos, end_pos)
-    local num_samples = math.max(3, math.floor(street_length / 20))
+    local num_samples = math.max(3, math.floor(street_length / 30))
     
     for _, existing in ipairs(all_paths) do
         if existing == parent_path then goto continue_path end
@@ -603,7 +645,6 @@ local function street_too_close_to_existing(start_pos, end_pos, direction, all_p
     return false
 end
 
--- Check for parallel overlaps with existing paths
 local function has_overlap(street, all_paths, parent_path, config)
     local street_segs = street:all_segments()
     
@@ -641,7 +682,6 @@ local function has_overlap(street, all_paths, parent_path, config)
     return false, nil
 end
 
--- Find intersections with other paths
 local function find_intersections(street, all_paths, local_paths, parent_path, config)
     local results = {}
     local street_points = street:all_points()
@@ -688,7 +728,6 @@ local function find_intersections(street, all_paths, local_paths, parent_path, c
     return results
 end
 
--- Find a path to merge into
 local function find_merge_target(end_pos, direction, all_paths, parent_path, config)
     local best_path = nil
     local best_pos = nil
@@ -739,8 +778,8 @@ local function create_street(branch_point, direction, length, parent_path, all_p
     end_pos.y = math.floor(end_pos.y + 0.5)
     end_pos.z = math.floor(end_pos.z + 0.5)
     
-    -- Try to snap to border convergence point
-    local snapped_end, did_snap = snap_to_border_convergence(
+    -- Try to snap to border connection point
+    local snapped_end, did_snap = snap_to_border_connection(
         start_pos, end_pos, direction, citychunk_origin, config
     )
     end_pos = snapped_end
@@ -748,19 +787,19 @@ local function create_street(branch_point, direction, length, parent_path, all_p
     -- Check minimum length
     local street_length = vector.distance(start_pos, end_pos)
     if street_length < config.min_segment_length then
-        return nil
+        return nil, false
     end
     
     -- Check if proposed street would be too close to existing roads/streets
     if street_too_close_to_existing(start_pos, end_pos, direction, all_paths, parent_path, config.min_street_spacing) then
-        return nil
+        return nil, false
     end
     
     -- Create path using branch
     local finish_point = pcmg.point.new(end_pos)
     local street = branch_point:branch(finish_point)
     
-    -- Check for parallel overlaps (double-check after creation)
+    -- Check for parallel overlaps
     local overlaps, overlap_point = has_overlap(street, all_paths, parent_path, config)
     if overlaps then
         local points = street:all_points()
@@ -784,17 +823,18 @@ local function create_street(branch_point, direction, length, parent_path, all_p
         
         if cut_point and cut_dist >= config.min_segment_length then
             street:cut_off(cut_point)
+            did_snap = false
         else
-            return nil
+            return nil, false
         end
     end
     
     -- Check length after potential cutting
     if street:length() < config.min_segment_length then
-        return nil
+        return nil, false
     end
     
-    -- Try to merge into another path (only if not already snapped to border)
+    -- Try to merge into another path (only if not snapped to border)
     if not did_snap and math.random() < config.merge_probability then
         local merge_path, merge_pos = find_merge_target(
             street.finish.pos, direction, all_paths, parent_path, config
@@ -863,7 +903,7 @@ local function get_branch_points(pth, subdivision_length)
     return points
 end
 
--- Recursive street generation with even spacing
+-- Recursive street generation
 local function generate_streets_recursive(parent_path, depth, all_paths, local_paths, citychunk_origin, config)
     local created = {}
     
@@ -900,7 +940,7 @@ local function generate_streets_recursive(parent_path, depth, all_paths, local_p
     for _, bp in ipairs(branch_points) do
         if last_branch_pos then
             local dist = vector.distance(bp.point.pos, last_branch_pos)
-            if dist < config.min_segment_length * 0.8 then
+            if dist < config.min_segment_length * 0.9 then
                 goto continue
             end
         end
@@ -917,18 +957,21 @@ local function generate_streets_recursive(parent_path, depth, all_paths, local_p
             if street then
                 last_branch_pos = bp.point.pos
                 
-                table.insert(created, {street = street, depth = depth, border_snapped = did_snap})
+                table.insert(created, {
+                    street = street, 
+                    depth = depth, 
+                    border_connected = did_snap
+                })
                 table.insert(all_paths, street)
                 table.insert(local_paths, street)
                 
-                -- Don't recurse on border-snapped streets (they end at border)
-                if not did_snap then
-                    local sub_streets = generate_streets_recursive(
-                        street, depth + 1, all_paths, local_paths, citychunk_origin, config
-                    )
-                    for _, ss in ipairs(sub_streets) do
-                        table.insert(created, ss)
-                    end
+                -- Continue recursion even for border-connected streets
+                -- (they might have room for side branches)
+                local sub_streets = generate_streets_recursive(
+                    street, depth + 1, all_paths, local_paths, citychunk_origin, config
+                )
+                for _, ss in ipairs(sub_streets) do
+                    table.insert(created, ss)
                 end
             end
         end
