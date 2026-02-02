@@ -278,6 +278,7 @@ local street_config = {
     
     -- Intersection point settings
     min_intersection_point_distance = 5,  -- Minimum distance between intersection points
+    branch_point_tolerance = 10,          -- Distance to consider as branch point
 }
 
 local function draw_points(megacanv, points)
@@ -966,30 +967,41 @@ local function is_local_path(path, local_paths)
     return false
 end
 
-local function find_segment_at(pth, pos, tolerance)
-    tolerance = tolerance or 5
+-- Find the segment in a path that contains the given position
+-- Returns the segment and its index, or nil if not found
+local function find_segment_containing_point(pth, pos, tolerance)
+    tolerance = tolerance or 10
     local segments = pth:all_segments()
     
-    for _, seg in ipairs(segments) do
-        local mid = vector.new(
-            (seg.start_pos.x + seg.end_pos.x) / 2,
-            (seg.start_pos.y + seg.end_pos.y) / 2,
-            (seg.start_pos.z + seg.end_pos.z) / 2
-        )
-        local len = vector.distance(seg.start_pos, seg.end_pos)
+    for seg_idx, seg in ipairs(segments) do
+        local seg_dir = vector.subtract(seg.end_pos, seg.start_pos)
+        local seg_len_sq = seg_dir.x * seg_dir.x + seg_dir.z * seg_dir.z
         
-        if vector.distance(mid, pos) < len / 2 + tolerance then
-            if seg.start_point and seg.end_point and
-               seg.start_point.next == seg.end_point then
-                return seg
+        if seg_len_sq > 1e-6 then
+            local to_pos = vector.subtract(pos, seg.start_pos)
+            local t = (to_pos.x * seg_dir.x + to_pos.z * seg_dir.z) / seg_len_sq
+            
+            -- Check if t is within segment bounds
+            if t >= -0.1 and t <= 1.1 then
+                local closest = vector.new(
+                    seg.start_pos.x + math.max(0, math.min(1, t)) * seg_dir.x,
+                    seg.start_pos.y + math.max(0, math.min(1, t)) * (seg.end_pos.y - seg.start_pos.y),
+                    seg.start_pos.z + math.max(0, math.min(1, t)) * seg_dir.z
+                )
+                local dist = vector.distance(pos, closest)
+                
+                if dist < tolerance then
+                    return seg, seg_idx, t, dist
+                end
             end
         end
     end
-    return nil
+    
+    return nil, nil, nil, nil
 end
 
 -- Insert an intersection point into a path at the given position
--- Returns the new point, or an existing point if one is close enough
+-- Returns the new point (or existing point if close enough), and whether it was inserted
 local function insert_intersection_point(pth, pos, min_distance)
     min_distance = min_distance or 5
     
@@ -1002,11 +1014,13 @@ local function insert_intersection_point(pth, pos, min_distance)
     end
     
     -- Find the segment containing this position
-    local seg = find_segment_at(pth, pos, min_distance)
+    local seg, seg_idx, t, dist = find_segment_containing_point(pth, pos, min_distance * 3)
+    
     if not seg then
         return nil, false
     end
     
+    -- Verify the segment is still valid (points are adjacent)
     if not seg.start_point or not seg.end_point then
         return nil, false
     end
@@ -1021,6 +1035,15 @@ local function insert_intersection_point(pth, pos, min_distance)
     end
     if vector.distance(seg.end_point.pos, pos) < min_distance then
         return seg.end_point, false
+    end
+    
+    -- Check if t is too close to endpoints
+    if t < 0.05 or t > 0.95 then
+        if t < 0.05 then
+            return seg.start_point, false
+        else
+            return seg.end_point, false
+        end
     end
     
     -- Insert new point
@@ -1164,33 +1187,12 @@ end
 
 -- Find all intersections between a new street segment and existing paths
 -- Returns a list of intersection data sorted by distance from start
-local function find_segment_intersections(seg_start, seg_end, all_paths, parent_path, config)
+-- branch_point_pos is the position where the street branches from its parent (to skip that intersection)
+local function find_segment_intersections(seg_start, seg_end, all_paths, config, branch_point_pos)
     local intersections = {}
+    local branch_tolerance = config.branch_point_tolerance or 10
     
     for _, existing_path in ipairs(all_paths) do
-        -- Skip parent path (we branch from it, so we'll intersect at start)
-        if existing_path == parent_path then
-            goto continue_path
-        end
-        
-        -- Check if this is an ancestor path (connected via branching)
-        local dominated = nil
-        if parent_path and parent_path.start then
-            dominated = parent_path.start:attached_sorted()
-        end
-        local is_ancestor = false
-        if dominated then
-            for _, att in ipairs(dominated) do
-                if att.path == existing_path then
-                    is_ancestor = true
-                    break
-                end
-            end
-        end
-        if is_ancestor then
-            goto continue_path
-        end
-        
         local existing_segments = existing_path:all_segments()
         
         for seg_idx, existing_seg in ipairs(existing_segments) do
@@ -1200,9 +1202,17 @@ local function find_segment_intersections(seg_start, seg_end, all_paths, parent_
             )
             
             if int_pos then
+                -- Skip if this is the branch point (where we connect to parent)
+                local is_branch_point = false
+                if branch_point_pos and vector.distance(int_pos, branch_point_pos) < branch_tolerance then
+                    is_branch_point = true
+                end
+                
                 -- Skip if segments are parallel (we handle overlaps separately)
-                if not segments_are_parallel(seg_start, seg_end, 
-                                            existing_seg.start_pos, existing_seg.end_pos) then
+                local is_parallel = segments_are_parallel(seg_start, seg_end, 
+                                        existing_seg.start_pos, existing_seg.end_pos)
+                
+                if not is_branch_point and not is_parallel then
                     local dist_from_start = vector.distance(seg_start, int_pos)
                     
                     table.insert(intersections, {
@@ -1217,8 +1227,6 @@ local function find_segment_intersections(seg_start, seg_end, all_paths, parent_
                 end
             end
         end
-        
-        ::continue_path::
     end
     
     -- Sort by distance from start of new segment
@@ -1230,7 +1238,7 @@ local function find_segment_intersections(seg_start, seg_end, all_paths, parent_
 end
 
 -- Find all intersections for a complete street path against all existing paths
-local function find_all_street_intersections(street, all_paths, local_paths, parent_path, config)
+local function find_all_street_intersections(street, all_paths, local_paths, config, branch_point_pos)
     local all_intersections = {}
     local street_segments = street:all_segments()
     local cumulative_distance = 0
@@ -1238,7 +1246,7 @@ local function find_all_street_intersections(street, all_paths, local_paths, par
     for seg_idx, seg in ipairs(street_segments) do
         local seg_intersections = find_segment_intersections(
             seg.start_pos, seg.end_pos,
-            all_paths, parent_path, config
+            all_paths, config, branch_point_pos
         )
         
         for _, int_data in ipairs(seg_intersections) do
@@ -1285,28 +1293,23 @@ local function create_intersection_points(street, intersections, local_paths, co
             -- Insert point in the new street
             local street_point, street_inserted = insert_intersection_point(street, pos, min_dist)
             
-            -- Insert point in the existing path (only if it's a local path we can modify)
-            if int_data.is_local and int_data.existing_path then
-                local existing_point, existing_inserted = insert_intersection_point(
+            -- Always try to insert point in the existing path
+            local existing_point = nil
+            local existing_inserted = false
+            
+            if int_data.existing_path then
+                existing_point, existing_inserted = insert_intersection_point(
                     int_data.existing_path, pos, min_dist
                 )
-                
-                if existing_point and street_point then
-                    table.insert(created_points, {
-                        pos = pos,
-                        street_point = street_point,
-                        existing_point = existing_point,
-                        street_inserted = street_inserted,
-                        existing_inserted = existing_inserted
-                    })
-                end
-            elseif street_point then
+            end
+            
+            if street_point then
                 table.insert(created_points, {
                     pos = pos,
                     street_point = street_point,
-                    existing_point = nil,
+                    existing_point = existing_point,
                     street_inserted = street_inserted,
-                    existing_inserted = false
+                    existing_inserted = existing_inserted
                 })
             end
         end
@@ -1315,8 +1318,7 @@ local function create_intersection_points(street, intersections, local_paths, co
     return created_points
 end
 
--- Check if a proposed street segment would create too many intersections
--- or if intersections are too close together
+-- Validate intersections - check if they're too close together or problematic
 local function validate_intersections(intersections, config)
     local min_dist = config.min_intersection_point_distance or 5
     
@@ -1324,7 +1326,6 @@ local function validate_intersections(intersections, config)
     for i = 1, #intersections - 1 do
         local dist = intersections[i + 1].total_distance - intersections[i].total_distance
         if dist < min_dist then
-            -- Intersections too close, might cause issues
             return false, "intersections_too_close"
         end
     end
@@ -1418,7 +1419,7 @@ local function create_street(branch_point, direction, length, parent_path, all_p
     end
     
     -- Pre-check intersections before creating the street
-    local pre_intersections = find_segment_intersections(start_pos, end_pos, all_paths, parent_path, config)
+    local pre_intersections = find_segment_intersections(start_pos, end_pos, all_paths, config, start_pos)
     
     -- If there are too many close intersections, reject this street
     if #pre_intersections > 0 then
@@ -1426,7 +1427,7 @@ local function create_street(branch_point, direction, length, parent_path, all_p
         table.sort(pre_intersections, function(a, b) return a.distance < b.distance end)
         
         -- Check if first intersection is too close to start
-        if pre_intersections[1].distance < config.min_segment_length * 0.5 then
+        if pre_intersections[1].distance < config.min_segment_length * 0.3 then
             -- Intersection too close to start, skip this street
             return nil, false
         end
@@ -1482,8 +1483,7 @@ local function create_street(branch_point, direction, length, parent_path, all_p
     -- Try to merge into another path (only if not snapped to border)
     if not did_snap and math.random() < config.merge_probability then
         local merge_path, merge_pos = find_merge_target(
-            street.finish.pos, direction, all_paths, parent_path, config, citychunk_origin
-        )
+            street.finish.pos, direction, all_paths, parent_path, config, citychunk_origin)
         if merge_path and merge_pos then
             local new_length = vector.distance(start_pos, merge_pos)
             if new_length >= config.min_segment_length then
@@ -1492,23 +1492,20 @@ local function create_street(branch_point, direction, length, parent_path, all_p
                     street:set_finish(new_finish)
                     
                     -- Insert intersection point in the merge target
-                    if is_local_path(merge_path, local_paths) then
-                        insert_intersection_point(merge_path, merge_pos, config.min_intersection_point_distance)
-                    end
+                    insert_intersection_point(merge_path, merge_pos, config.min_intersection_point_distance)
                 end
             end
         end
     end
     
     -- Find and create all intersection points
-    local intersections = find_all_street_intersections(street, all_paths, local_paths, parent_path, config)
+    local intersections = find_all_street_intersections(street, all_paths, local_paths, config, start_pos)
     
     -- Validate intersections
     local valid, reason = validate_intersections(intersections, config)
     if not valid then
         -- If intersections are problematic, we could either reject the street
         -- or try to adjust it. For now, we'll still create it but log the issue.
-        -- In production, you might want to return nil here
     end
     
     -- Create intersection points in both paths
