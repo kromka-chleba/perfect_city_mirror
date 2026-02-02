@@ -35,10 +35,13 @@ local node = sizes.node
 local mapchunk = sizes.mapchunk
 local citychunk = sizes.citychunk
 
-local road_margin = 40
-if citychunk.in_mapchunks == 1 then
-    road_margin = 15
-end
+-- Grid spacing for all road/street points (1 mapchunk = 80 nodes)
+local grid_spacing = 80
+
+-- Border connection point configuration
+local border_grid_spacing = grid_spacing
+local border_point_probability = 0.6        -- Chance of generating point at each grid intersection
+local road_origin_margin = 80               -- Minimum distance from road origins
 
 -- Set random seed based on mapgen seed and position
 local function set_position_seed(pos, salt)
@@ -55,14 +58,100 @@ local function set_citychunk_seed(citychunk_origin, salt)
     set_position_seed(citychunk_origin, salt)
 end
 
+-- Get all grid-aligned points along a citychunk border
+-- Returns points that fall on the grid within the citychunk edge
+local function get_grid_points_on_border(citychunk_origin, border_edge)
+    local min_x = citychunk_origin.x
+    local max_x = citychunk_origin.x + citychunk.in_nodes - 1
+    local min_z = citychunk_origin.z
+    local max_z = citychunk_origin.z + citychunk.in_nodes - 1
+    local y = citychunk_origin.y
+    
+    local points = {}
+    
+    if border_edge == "x_min" or border_edge == "x_max" then
+        -- Points along Z axis
+        local x = (border_edge == "x_min") and min_x or max_x
+        local first_z = math.ceil(min_z / grid_spacing) * grid_spacing
+        local z = first_z
+        while z <= max_z do
+            -- Skip corners (they belong to z borders)
+            if z > min_z and z < max_z then
+                table.insert(points, vector.new(x, y, z))
+            end
+            z = z + grid_spacing
+        end
+    else
+        -- Points along X axis (z_min or z_max)
+        local z = (border_edge == "z_min") and min_z or max_z
+        local first_x = math.ceil(min_x / grid_spacing) * grid_spacing
+        local x = first_x
+        while x <= max_x do
+            -- Skip corners (they belong to x borders)
+            if x > min_x and x < max_x then
+                table.insert(points, vector.new(x, y, z))
+            end
+            x = x + grid_spacing
+        end
+    end
+    
+    return points
+end
+
+-- Returns a random grid-aligned road origin point for the given border edge
+-- Uses deterministic seeding based on border coordinate
+local function get_road_origin_on_border(citychunk_origin, border_edge, salt)
+    local grid_points = get_grid_points_on_border(citychunk_origin, border_edge)
+    
+    if #grid_points == 0 then
+        -- Fallback: return center of border if no grid points available
+        local min_x = citychunk_origin.x
+        local max_x = citychunk_origin.x + citychunk.in_nodes - 1
+        local min_z = citychunk_origin.z
+        local max_z = citychunk_origin.z + citychunk.in_nodes - 1
+        local y = citychunk_origin.y
+        
+        if border_edge == "x_min" then
+            return vector.new(min_x, y, (min_z + max_z) / 2)
+        elseif border_edge == "x_max" then
+            return vector.new(max_x, y, (min_z + max_z) / 2)
+        elseif border_edge == "z_min" then
+            return vector.new((min_x + max_x) / 2, y, min_z)
+        else -- z_max
+            return vector.new((min_x + max_x) / 2, y, max_z)
+        end
+    end
+    
+    -- Get the border coordinate for deterministic seeding
+    local border_coord
+    if border_edge == "x_min" then
+        border_coord = citychunk_origin.x
+    elseif border_edge == "x_max" then
+        border_coord = citychunk_origin.x + citychunk.in_nodes - 1
+    elseif border_edge == "z_min" then
+        border_coord = citychunk_origin.z
+    else -- z_max
+        border_coord = citychunk_origin.z + citychunk.in_nodes - 1
+    end
+    
+    -- Seed based on border coordinate (same for both adjacent chunks)
+    local border_seed = mapgen_seed + border_coord * 73856093 + salt * 83492791
+    math.randomseed(border_seed)
+    
+    -- Pick a random grid point
+    local index = math.random(1, #grid_points)
+    return grid_points[index]
+end
+
 -- Returns road origin points for the bottom (X) and left (Z) edges
+-- Points are aligned to the grid
 local function halfchunk_ori(citychunk_coords)
     local origin = units.citychunk_to_node(citychunk_coords)
-    set_position_seed(origin, 1)
-    local random_x = math.random(0 + road_margin, citychunk.in_nodes - 1 - road_margin)
-    local x_edge_ori = origin + vector.new(random_x, 0, 0)
-    local random_z = math.random(0 + road_margin, citychunk.in_nodes - 1 - road_margin)
-    local z_edge_ori = origin + vector.new(0, 0, random_z)
+    
+    -- Get grid-aligned road origins for x_min (bottom) and z_min (left) edges
+    local x_edge_ori = get_road_origin_on_border(origin, "z_min", 1)  -- bottom edge (along X)
+    local z_edge_ori = get_road_origin_on_border(origin, "x_min", 2)  -- left edge (along Z)
+    
     return x_edge_ori, z_edge_ori
 end
 
@@ -186,6 +275,9 @@ local street_config = {
     intersection_margin = 3,
     min_street_length = 80,
     parallel_check_samples = 5,
+    
+    -- Intersection point settings
+    min_intersection_point_distance = 5,  -- Minimum distance between intersection points
 }
 
 local function draw_points(megacanv, points)
@@ -223,6 +315,10 @@ end
     
     For example, the x_max border of chunk A and x_min border of chunk B
     are at the same X coordinate, so they generate the same points.
+    
+    Points are generated at grid intersections (every 80 nodes, matching
+    mapchunk size) with a probability check, and filtered to maintain
+    minimum distance from road origins.
 --]]
 
 -- Get the citychunk boundaries
@@ -236,11 +332,143 @@ local function get_citychunk_bounds(citychunk_origin)
     return min_pos, max_pos
 end
 
--- Calculate deterministic connection points along a border
+-- Check if a position is inside the citychunk boundaries
+local function is_inside_citychunk(pos, citychunk_origin)
+    local min_pos, max_pos = get_citychunk_bounds(citychunk_origin)
+    return pos.x >= min_pos.x and pos.x <= max_pos.x and
+           pos.z >= min_pos.z and pos.z <= max_pos.z
+end
+
+-- Check if a position is on the citychunk border
+local function is_on_citychunk_border(pos, citychunk_origin, tolerance)
+    tolerance = tolerance or 1
+    local min_pos, max_pos = get_citychunk_bounds(citychunk_origin)
+    
+    local on_x_min = math.abs(pos.x - min_pos.x) <= tolerance
+    local on_x_max = math.abs(pos.x - max_pos.x) <= tolerance
+    local on_z_min = math.abs(pos.z - min_pos.z) <= tolerance
+    local on_z_max = math.abs(pos.z - max_pos.z) <= tolerance
+    
+    local in_x_range = pos.x >= min_pos.x - tolerance and pos.x <= max_pos.x + tolerance
+    local in_z_range = pos.z >= min_pos.z - tolerance and pos.z <= max_pos.z + tolerance
+    
+    return (on_x_min or on_x_max) and in_z_range or
+           (on_z_min or on_z_max) and in_x_range
+end
+
+-- Clamp a position to stay within citychunk boundaries
+local function clamp_to_citychunk(pos, citychunk_origin)
+    local min_pos, max_pos = get_citychunk_bounds(citychunk_origin)
+    return vector.new(
+        math.max(min_pos.x, math.min(max_pos.x, pos.x)),
+        pos.y,
+        math.max(min_pos.z, math.min(max_pos.z, pos.z))
+    )
+end
+
+-- Calculate where a line segment intersects the citychunk boundary
+-- Returns the intersection point closest to start_pos, or nil if no intersection
+local function get_citychunk_border_intersection(start_pos, end_pos, citychunk_origin)
+    local min_pos, max_pos = get_citychunk_bounds(citychunk_origin)
+    
+    local direction = vector.subtract(end_pos, start_pos)
+    local length = vector.length(direction)
+    if length < 1e-6 then
+        return nil
+    end
+    direction = vector.divide(direction, length)
+    
+    local best_t = math.huge
+    local best_pos = nil
+    
+    -- Check intersection with each boundary
+    -- X min boundary
+    if direction.x < -1e-6 then
+        local t = (min_pos.x - start_pos.x) / direction.x
+        if t > 0 and t < best_t and t <= length then
+            local z = start_pos.z + t * direction.z
+            if z >= min_pos.z and z <= max_pos.z then
+                best_t = t
+                best_pos = vector.new(min_pos.x, start_pos.y, z)
+            end
+        end
+    end
+    
+    -- X max boundary
+    if direction.x > 1e-6 then
+        local t = (max_pos.x - start_pos.x) / direction.x
+        if t > 0 and t < best_t and t <= length then
+            local z = start_pos.z + t * direction.z
+            if z >= min_pos.z and z <= max_pos.z then
+                best_t = t
+                best_pos = vector.new(max_pos.x, start_pos.y, z)
+            end
+        end
+    end
+    
+    -- Z min boundary
+    if direction.z < -1e-6 then
+        local t = (min_pos.z - start_pos.z) / direction.z
+        if t > 0 and t < best_t and t <= length then
+            local x = start_pos.x + t * direction.x
+            if x >= min_pos.x and x <= max_pos.x then
+                best_t = t
+                best_pos = vector.new(x, start_pos.y, min_pos.z)
+            end
+        end
+    end
+    
+    -- Z max boundary
+    if direction.z > 1e-6 then
+        local t = (max_pos.z - start_pos.z) / direction.z
+        if t > 0 and t < best_t and t <= length then
+            local x = start_pos.x + t * direction.x
+            if x >= min_pos.x and x <= max_pos.x then
+                best_t = t
+                best_pos = vector.new(x, start_pos.y, max_pos.z)
+            end
+        end
+    end
+    
+    return best_pos, best_t
+end
+
+-- Get all road origins for a citychunk (needed for margin checking)
+local function get_all_road_origins_for_chunk(citychunk_origin)
+    local citychunk_coords = pcmg.citychunk_coords(citychunk_origin)
+    local up_coords = citychunk_coords + vector.new(0, 0, 1)
+    local right_coords = citychunk_coords + vector.new(1, 0, 0)
+    
+    local bottom, left = halfchunk_ori(citychunk_coords)
+    local up, _ = halfchunk_ori(up_coords)
+    local _, right = halfchunk_ori(right_coords)
+    
+    return {bottom, left, up, right}
+end
+
+-- Check if a position is too close to any road origin
+local function is_too_close_to_road_origins(pos, road_origins, margin)
+    for _, origin in ipairs(road_origins) do
+        local dist = math.sqrt(
+            (pos.x - origin.x)^2 + 
+            (pos.z - origin.z)^2
+        )
+        if dist < margin then
+            return true
+        end
+    end
+    return false
+end
+
+-- Calculate deterministic connection points along a border using grid alignment
 -- Uses the actual border position for seeding so adjacent chunks get same points
+-- Points are placed at grid intersections and filtered against road origins
 local function get_border_connection_points(citychunk_origin, border_edge, spacing)
     local min_pos, max_pos = get_citychunk_bounds(citychunk_origin)
     local points = {}
+    
+    -- Get road origins to check for margin
+    local road_origins = get_all_road_origins_for_chunk(citychunk_origin)
     
     -- Use the actual border coordinate for seeding
     local border_coord
@@ -269,24 +497,41 @@ local function get_border_connection_points(citychunk_origin, border_edge, spaci
         is_x_border = false
     end
     
+    -- Align start_coord to grid (find first grid line at or after start_coord)
+    local grid_start = math.ceil(start_coord / border_grid_spacing) * border_grid_spacing
+    
     -- Seed based on border coordinate (same for both adjacent chunks)
-    local border_seed = mapgen_seed + border_coord * 73856093
-    math.randomseed(border_seed)
+    -- This ensures deterministic but varied results per grid point
+    local base_border_seed = mapgen_seed + border_coord * 73856093
     
-    -- Random offset for variety
-    local offset = math.random(0, math.floor(spacing / 2))
-    
-    -- Generate evenly spaced points along the border
-    local coord = start_coord + offset
-    while coord < end_coord do
-        local point
-        if is_x_border then
-            point = vector.new(border_coord, min_pos.y, coord)
-        else
-            point = vector.new(coord, min_pos.y, border_coord)
+    -- Generate points at grid intersections
+    local coord = grid_start
+    while coord <= end_coord do
+        -- Skip points at the very edges (corners)
+        if coord > start_coord and coord < end_coord then
+            -- Create unique seed for this specific grid point
+            local point_seed = base_border_seed + coord * 19349663
+            math.randomseed(point_seed)
+            
+            -- Determine the candidate point position
+            local candidate_point
+            if is_x_border then
+                candidate_point = vector.new(border_coord, min_pos.y, coord)
+            else
+                candidate_point = vector.new(coord, min_pos.y, border_coord)
+            end
+            
+            -- Check if this grid point should have a connection point
+            -- and if it's far enough from road origins
+            if math.random() < border_point_probability then
+                if not is_too_close_to_road_origins(candidate_point, road_origins, road_origin_margin) then
+                    table.insert(points, candidate_point)
+                end
+            end
         end
-        table.insert(points, point)
-        coord = coord + spacing
+        
+        -- Move to next grid intersection
+        coord = coord + border_grid_spacing
     end
     
     return points
@@ -398,7 +643,18 @@ local function find_nearest_connection_point(pos, citychunk_origin, border_edge,
 end
 
 -- Try to snap a street endpoint to a border connection point
+-- Also ensures the endpoint doesn't go beyond the citychunk boundary
 local function snap_to_border_connection(start_pos, end_pos, direction, citychunk_origin, config)
+    -- First, check if end_pos is outside citychunk and clamp it
+    if not is_inside_citychunk(end_pos, citychunk_origin) then
+        local border_intersection = get_citychunk_border_intersection(start_pos, end_pos, citychunk_origin)
+        if border_intersection then
+            end_pos = border_intersection
+        else
+            end_pos = clamp_to_citychunk(end_pos, citychunk_origin)
+        end
+    end
+    
     -- Calculate where we'd hit the border
     local border_pos, border_edge, t = calculate_border_intersection(start_pos, direction, citychunk_origin)
     
@@ -432,6 +688,165 @@ local function snap_to_border_connection(start_pos, end_pos, direction, citychun
     end
     
     return end_pos, false
+end
+
+--[[
+    Grid-Aligned Street Origin Points
+    
+    Street origin points (where streets branch from roads) are placed at
+    grid-aligned positions. This is done by finding where the road segments
+    intersect with the global grid lines (every 80 nodes).
+--]]
+
+-- Find intersection point between a line segment and a grid line
+-- Returns the intersection point or nil if no intersection
+local function segment_grid_intersection(seg_start, seg_end, grid_coord, is_x_grid)
+    local start_coord, end_coord
+    local other_start, other_end
+    
+    if is_x_grid then
+        start_coord = seg_start.x
+        end_coord = seg_end.x
+        other_start = seg_start.z
+        other_end = seg_end.z
+    else
+        start_coord = seg_start.z
+        end_coord = seg_end.z
+        other_start = seg_start.x
+        other_end = seg_end.x
+    end
+    
+    -- Check if grid line is between segment endpoints
+    if (start_coord < grid_coord and end_coord < grid_coord) or
+       (start_coord > grid_coord and end_coord > grid_coord) then
+        return nil
+    end
+    
+    -- Handle case where segment is parallel to grid line
+    if math.abs(end_coord - start_coord) < 1e-6 then
+        return nil
+    end
+    
+    -- Calculate interpolation parameter
+    local t = (grid_coord - start_coord) / (end_coord - start_coord)
+    
+    -- Ensure t is within segment bounds (with small epsilon for floating point)
+    if t < 0.01 or t > 0.99 then
+        return nil
+    end
+    
+    -- Calculate intersection point
+    local other_coord = other_start + t * (other_end - other_start)
+    local y_coord = seg_start.y + t * (seg_end.y - seg_start.y)
+    
+    if is_x_grid then
+        return vector.new(grid_coord, y_coord, other_coord)
+    else
+        return vector.new(other_coord, y_coord, grid_coord)
+    end
+end
+
+-- Find all grid intersection points along a path segment
+local function find_segment_grid_intersections(seg_start, seg_end, grid_spacing_param)
+    local intersections = {}
+    
+    -- Find X grid lines that intersect this segment
+    local min_x = math.min(seg_start.x, seg_end.x)
+    local max_x = math.max(seg_start.x, seg_end.x)
+    local first_x_grid = math.ceil(min_x / grid_spacing_param) * grid_spacing_param
+    
+    local x_grid = first_x_grid
+    while x_grid <= max_x do
+        local intersection = segment_grid_intersection(seg_start, seg_end, x_grid, true)
+        if intersection then
+            table.insert(intersections, {
+                pos = intersection,
+                grid_coord = x_grid,
+                is_x_grid = true
+            })
+        end
+        x_grid = x_grid + grid_spacing_param
+    end
+    
+    -- Find Z grid lines that intersect this segment
+    local min_z = math.min(seg_start.z, seg_end.z)
+    local max_z = math.max(seg_start.z, seg_end.z)
+    local first_z_grid = math.ceil(min_z / grid_spacing_param) * grid_spacing_param
+    
+    local z_grid = first_z_grid
+    while z_grid <= max_z do
+        local intersection = segment_grid_intersection(seg_start, seg_end, z_grid, false)
+        if intersection then
+            table.insert(intersections, {
+                pos = intersection,
+                grid_coord = z_grid,
+                is_x_grid = false
+            })
+        end
+        z_grid = z_grid + grid_spacing_param
+    end
+    
+    return intersections
+end
+
+-- Insert grid-aligned points into a path for street branching
+-- This subdivides the path so that points exist at grid intersections
+local function subdivide_path_to_grid(pth, grid_spacing_param)
+    local segments = pth:all_segments()
+    local points_to_insert = {}
+    
+    -- Collect all grid intersection points for all segments
+    for seg_index, seg in ipairs(segments) do
+        local intersections = find_segment_grid_intersections(
+            seg.start_pos, seg.end_pos, grid_spacing_param
+        )
+        
+        for _, int in ipairs(intersections) do
+            -- Calculate distance from segment start for sorting
+            local dist = vector.distance(seg.start_pos, int.pos)
+            table.insert(points_to_insert, {
+                pos = int.pos,
+                segment_index = seg_index,
+                distance_from_start = dist,
+                start_point = seg.start_point,
+                end_point = seg.end_point
+            })
+        end
+    end
+    
+    -- Sort by segment index (descending) then by distance (descending)
+    -- We insert in reverse order to avoid invalidating segment references
+    table.sort(points_to_insert, function(a, b)
+        if a.segment_index ~= b.segment_index then
+            return a.segment_index > b.segment_index
+        end
+        return a.distance_from_start > b.distance_from_start
+    end)
+    
+    -- Insert points into the path
+    local inserted_points = {}
+    for _, pt_data in ipairs(points_to_insert) do
+        -- Check if this segment is still valid (points still adjacent)
+        if pt_data.start_point.next == pt_data.end_point then
+            -- Check we're not too close to existing points
+            local too_close = false
+            local min_dist = 5  -- Minimum distance between points
+            
+            if vector.distance(pt_data.start_point.pos, pt_data.pos) < min_dist then
+                too_close = true
+            elseif vector.distance(pt_data.end_point.pos, pt_data.pos) < min_dist then
+                too_close = true
+            end
+            
+            if not too_close then
+                local new_point = pcmg.point.new(pt_data.pos)
+                pth:insert_between(pt_data.start_point, pt_data.end_point, new_point)
+                table.insert(inserted_points, new_point)
+            end
+        end
+    end
+    
+    return inserted_points
 end
 
 --[[
@@ -573,21 +988,45 @@ local function find_segment_at(pth, pos, tolerance)
     return nil
 end
 
-local function insert_intersection(pth, pos, seg)
-    if not seg then return nil end
-    if not seg.start_point or not seg.end_point then return nil end
-    if seg.start_point.next ~= seg.end_point then return nil end
+-- Insert an intersection point into a path at the given position
+-- Returns the new point, or an existing point if one is close enough
+local function insert_intersection_point(pth, pos, min_distance)
+    min_distance = min_distance or 5
     
-    if vector.distance(seg.start_point.pos, pos) < 2 then
-        return seg.start_point
-    end
-    if vector.distance(seg.end_point.pos, pos) < 2 then
-        return seg.end_point
+    -- Check if there's already a point close to this position
+    local all_points = pth:all_points()
+    for _, p in ipairs(all_points) do
+        if vector.distance(p.pos, pos) < min_distance then
+            return p, false  -- Return existing point, no insertion needed
+        end
     end
     
+    -- Find the segment containing this position
+    local seg = find_segment_at(pth, pos, min_distance)
+    if not seg then
+        return nil, false
+    end
+    
+    if not seg.start_point or not seg.end_point then
+        return nil, false
+    end
+    
+    if seg.start_point.next ~= seg.end_point then
+        return nil, false
+    end
+    
+    -- Check distance from segment endpoints
+    if vector.distance(seg.start_point.pos, pos) < min_distance then
+        return seg.start_point, false
+    end
+    if vector.distance(seg.end_point.pos, pos) < min_distance then
+        return seg.end_point, false
+    end
+    
+    -- Insert new point
     local new_point = pcmg.point.new(pos)
     pth:insert_between(seg.start_point, seg.end_point, new_point)
-    return new_point
+    return new_point, true
 end
 
 local function point_to_segment_distance(pos, seg_start, seg_end)
@@ -682,73 +1121,246 @@ local function has_overlap(street, all_paths, parent_path, config)
     return false, nil
 end
 
-local function find_intersections(street, all_paths, local_paths, parent_path, config)
-    local results = {}
-    local street_points = street:all_points()
+--[[
+    Intersection Detection and Creation
     
-    for _, existing in ipairs(all_paths) do
-        if existing == parent_path then goto continue end
+    These functions handle finding intersections between streets/roads
+    and creating proper intersection points in both paths.
+--]]
+
+-- Calculate the intersection point between two line segments
+-- Returns the intersection point or nil if segments don't intersect
+local function calculate_segment_intersection(seg1_start, seg1_end, seg2_start, seg2_end)
+    local d1x = seg1_end.x - seg1_start.x
+    local d1z = seg1_end.z - seg1_start.z
+    local d2x = seg2_end.x - seg2_start.x
+    local d2z = seg2_end.z - seg2_start.z
+    
+    local cross = d1x * d2z - d1z * d2x
+    
+    -- Check if segments are parallel
+    if math.abs(cross) < 1e-6 then
+        return nil
+    end
+    
+    local dx = seg2_start.x - seg1_start.x
+    local dz = seg2_start.z - seg1_start.z
+    
+    local t1 = (dx * d2z - dz * d2x) / cross
+    local t2 = (dx * d1z - dz * d1x) / cross
+    
+    -- Check if intersection is within both segments
+    if t1 < 0.01 or t1 > 0.99 or t2 < 0.01 or t2 > 0.99 then
+        return nil
+    end
+    
+    -- Calculate intersection point
+    local ix = seg1_start.x + t1 * d1x
+    local iz = seg1_start.z + t1 * d1z
+    local iy = (seg1_start.y + seg2_start.y) / 2  -- Average Y
+    
+    return vector.new(ix, iy, iz), t1, t2
+end
+
+-- Find all intersections between a new street segment and existing paths
+-- Returns a list of intersection data sorted by distance from start
+local function find_segment_intersections(seg_start, seg_end, all_paths, parent_path, config)
+    local intersections = {}
+    
+    for _, existing_path in ipairs(all_paths) do
+        -- Skip parent path (we branch from it, so we'll intersect at start)
+        if existing_path == parent_path then
+            goto continue_path
+        end
         
-        local dominated = street.start:attached_sorted()
-        local is_parent = false
-        for _, att in ipairs(dominated) do
-            if att.path == existing then
-                is_parent = true
+        -- Check if this is an ancestor path (connected via branching)
+        local dominated = nil
+        if parent_path and parent_path.start then
+            dominated = parent_path.start:attached_sorted()
+        end
+        local is_ancestor = false
+        if dominated then
+            for _, att in ipairs(dominated) do
+                if att.path == existing_path then
+                    is_ancestor = true
+                    break
+                end
+            end
+        end
+        if is_ancestor then
+            goto continue_path
+        end
+        
+        local existing_segments = existing_path:all_segments()
+        
+        for seg_idx, existing_seg in ipairs(existing_segments) do
+            local int_pos, t1, t2 = calculate_segment_intersection(
+                seg_start, seg_end,
+                existing_seg.start_pos, existing_seg.end_pos
+            )
+            
+            if int_pos then
+                -- Skip if segments are parallel (we handle overlaps separately)
+                if not segments_are_parallel(seg_start, seg_end, 
+                                            existing_seg.start_pos, existing_seg.end_pos) then
+                    local dist_from_start = vector.distance(seg_start, int_pos)
+                    
+                    table.insert(intersections, {
+                        pos = int_pos,
+                        t1 = t1,  -- Parameter along new segment
+                        t2 = t2,  -- Parameter along existing segment
+                        distance = dist_from_start,
+                        existing_path = existing_path,
+                        existing_segment = existing_seg,
+                        existing_segment_index = seg_idx
+                    })
+                end
+            end
+        end
+        
+        ::continue_path::
+    end
+    
+    -- Sort by distance from start of new segment
+    table.sort(intersections, function(a, b)
+        return a.distance < b.distance
+    end)
+    
+    return intersections
+end
+
+-- Find all intersections for a complete street path against all existing paths
+local function find_all_street_intersections(street, all_paths, local_paths, parent_path, config)
+    local all_intersections = {}
+    local street_segments = street:all_segments()
+    local cumulative_distance = 0
+    
+    for seg_idx, seg in ipairs(street_segments) do
+        local seg_intersections = find_segment_intersections(
+            seg.start_pos, seg.end_pos,
+            all_paths, parent_path, config
+        )
+        
+        for _, int_data in ipairs(seg_intersections) do
+            int_data.street_segment_index = seg_idx
+            int_data.street_segment = seg
+            int_data.total_distance = cumulative_distance + int_data.distance
+            int_data.is_local = is_local_path(int_data.existing_path, local_paths)
+            table.insert(all_intersections, int_data)
+        end
+        
+        cumulative_distance = cumulative_distance + vector.distance(seg.start_pos, seg.end_pos)
+    end
+    
+    -- Sort by total distance from street start
+    table.sort(all_intersections, function(a, b)
+        return a.total_distance < b.total_distance
+    end)
+    
+    return all_intersections
+end
+
+-- Create intersection points in both the new street and existing paths
+-- This ensures clean crossings with proper points in both paths
+local function create_intersection_points(street, intersections, local_paths, config)
+    local min_dist = config.min_intersection_point_distance or 5
+    local created_points = {}
+    
+    -- Process intersections in reverse order (farthest first)
+    -- to avoid invalidating segment references
+    for i = #intersections, 1, -1 do
+        local int_data = intersections[i]
+        local pos = int_data.pos
+        
+        -- Check if we're too close to an already created point
+        local too_close = false
+        for _, created in ipairs(created_points) do
+            if vector.distance(pos, created.pos) < min_dist then
+                too_close = true
                 break
             end
         end
-        if is_parent then goto continue end
         
-        local intersections = street:intersects_path(existing, config.intersection_margin)
-        
-        for _, int in ipairs(intersections) do
-            local ss = int.self_segment
-            local os = int.other_segment
+        if not too_close then
+            -- Insert point in the new street
+            local street_point, street_inserted = insert_intersection_point(street, pos, min_dist)
             
-            if not segments_are_parallel(ss.start_pos, ss.end_pos, os.start_pos, os.end_pos) then
-                local dist = 0
-                for i = 2, int.self_segment_index do
-                    dist = dist + vector.distance(street_points[i-1].pos, street_points[i].pos)
-                end
-                dist = dist + vector.distance(ss.start_pos, int.point_a)
+            -- Insert point in the existing path (only if it's a local path we can modify)
+            if int_data.is_local and int_data.existing_path then
+                local existing_point, existing_inserted = insert_intersection_point(
+                    int_data.existing_path, pos, min_dist
+                )
                 
-                table.insert(results, {
-                    intersection = int,
-                    existing_path = existing,
-                    distance = dist,
-                    is_local = is_local_path(existing, local_paths)
+                if existing_point and street_point then
+                    table.insert(created_points, {
+                        pos = pos,
+                        street_point = street_point,
+                        existing_point = existing_point,
+                        street_inserted = street_inserted,
+                        existing_inserted = existing_inserted
+                    })
+                end
+            elseif street_point then
+                table.insert(created_points, {
+                    pos = pos,
+                    street_point = street_point,
+                    existing_point = nil,
+                    street_inserted = street_inserted,
+                    existing_inserted = false
                 })
             end
         end
-        
-        ::continue::
     end
     
-    table.sort(results, function(a, b) return a.distance < b.distance end)
-    return results
+    return created_points
 end
 
-local function find_merge_target(end_pos, direction, all_paths, parent_path, config)
+-- Check if a proposed street segment would create too many intersections
+-- or if intersections are too close together
+local function validate_intersections(intersections, config)
+    local min_dist = config.min_intersection_point_distance or 5
+    
+    -- Check for intersections that are too close together
+    for i = 1, #intersections - 1 do
+        local dist = intersections[i + 1].total_distance - intersections[i].total_distance
+        if dist < min_dist then
+            -- Intersections too close, might cause issues
+            return false, "intersections_too_close"
+        end
+    end
+    
+    return true, nil
+end
+
+local function find_merge_target(end_pos, direction, all_paths, parent_path, config, citychunk_origin)
     local best_path = nil
     local best_pos = nil
     local best_dist = config.merge_search_radius
     
     local search_end = vector.add(end_pos, vector.multiply(direction, config.merge_search_radius))
     
+    -- Clamp search_end to citychunk boundaries
+    if not is_inside_citychunk(search_end, citychunk_origin) then
+        local border_intersection = get_citychunk_border_intersection(end_pos, search_end, citychunk_origin)
+        if border_intersection then
+            search_end = border_intersection
+        end
+    end
+    
     for _, existing in ipairs(all_paths) do
         if existing == parent_path then goto continue end
         
         local segments = existing:all_segments()
         for _, seg in ipairs(segments) do
-            local intersection = pcmg.path.segment_intersects(
+            local int_pos = calculate_segment_intersection(
                 end_pos, search_end,
-                seg.start_pos, seg.end_pos,
-                config.intersection_margin
+                seg.start_pos, seg.end_pos
             )
             
-            if intersection then
-                local int_pos = intersection.midpoint
-                if int_pos then
+            if int_pos then
+                -- Ensure intersection is inside citychunk
+                if is_inside_citychunk(int_pos, citychunk_origin) or 
+                   is_on_citychunk_border(int_pos, citychunk_origin) then
                     local dist = vector.distance(end_pos, int_pos)
                     
                     if dist >= config.min_merge_distance and dist < best_dist then
@@ -768,7 +1380,7 @@ local function find_merge_target(end_pos, direction, all_paths, parent_path, con
     return best_path, best_pos
 end
 
--- Create a street from a branching point
+-- Create a street from a branching point with proper intersection handling
 local function create_street(branch_point, direction, length, parent_path, all_paths, local_paths, citychunk_origin, config)
     local start_pos = branch_point.pos
     local end_pos = vector.add(start_pos, vector.multiply(direction, length))
@@ -778,7 +1390,17 @@ local function create_street(branch_point, direction, length, parent_path, all_p
     end_pos.y = math.floor(end_pos.y + 0.5)
     end_pos.z = math.floor(end_pos.z + 0.5)
     
-    -- Try to snap to border connection point
+    -- Clamp end_pos to citychunk boundaries before any other processing
+    if not is_inside_citychunk(end_pos, citychunk_origin) then
+        local border_intersection = get_citychunk_border_intersection(start_pos, end_pos, citychunk_origin)
+        if border_intersection then
+            end_pos = border_intersection
+        else
+            end_pos = clamp_to_citychunk(end_pos, citychunk_origin)
+        end
+    end
+    
+    -- Try to snap to border connection point (this also handles boundary clamping)
     local snapped_end, did_snap = snap_to_border_connection(
         start_pos, end_pos, direction, citychunk_origin, config
     )
@@ -790,9 +1412,32 @@ local function create_street(branch_point, direction, length, parent_path, all_p
         return nil, false
     end
     
-    -- Check if proposed street would be too close to existing roads/streets
+    -- Check if proposed street would be too close to existing roads/streets (parallel)
     if street_too_close_to_existing(start_pos, end_pos, direction, all_paths, parent_path, config.min_street_spacing) then
         return nil, false
+    end
+    
+    -- Pre-check intersections before creating the street
+    local pre_intersections = find_segment_intersections(start_pos, end_pos, all_paths, parent_path, config)
+    
+    -- If there are too many close intersections, reject this street
+    if #pre_intersections > 0 then
+        -- Sort by distance
+        table.sort(pre_intersections, function(a, b) return a.distance < b.distance end)
+        
+        -- Check if first intersection is too close to start
+        if pre_intersections[1].distance < config.min_segment_length * 0.5 then
+            -- Intersection too close to start, skip this street
+            return nil, false
+        end
+        
+        -- Check spacing between intersections
+        for i = 1, #pre_intersections - 1 do
+            local spacing = pre_intersections[i + 1].distance - pre_intersections[i].distance
+            if spacing < config.min_intersection_point_distance then
+                return nil, false
+            end
+        end
     end
     
     -- Create path using branch
@@ -837,7 +1482,7 @@ local function create_street(branch_point, direction, length, parent_path, all_p
     -- Try to merge into another path (only if not snapped to border)
     if not did_snap and math.random() < config.merge_probability then
         local merge_path, merge_pos = find_merge_target(
-            street.finish.pos, direction, all_paths, parent_path, config
+            street.finish.pos, direction, all_paths, parent_path, config, citychunk_origin
         )
         if merge_path and merge_pos then
             local new_length = vector.distance(start_pos, merge_pos)
@@ -846,58 +1491,58 @@ local function create_street(branch_point, direction, length, parent_path, all_p
                     local new_finish = pcmg.point.new(merge_pos)
                     street:set_finish(new_finish)
                     
+                    -- Insert intersection point in the merge target
                     if is_local_path(merge_path, local_paths) then
-                        local seg = find_segment_at(merge_path, merge_pos)
-                        if seg then
-                            insert_intersection(merge_path, merge_pos, seg)
-                        end
+                        insert_intersection_point(merge_path, merge_pos, config.min_intersection_point_distance)
                     end
                 end
             end
         end
     end
     
-    -- Find and create intersection points
-    local intersections = find_intersections(street, all_paths, local_paths, parent_path, config)
-    for _, int_data in ipairs(intersections) do
-        local pos = int_data.intersection.midpoint
-        if pos then
-            if int_data.is_local then
-                local seg = find_segment_at(int_data.existing_path, pos)
-                if seg then
-                    insert_intersection(int_data.existing_path, pos, seg)
-                end
-            end
-            
-            local seg = find_segment_at(street, pos)
-            if seg then
-                insert_intersection(street, pos, seg)
-            end
-        end
+    -- Find and create all intersection points
+    local intersections = find_all_street_intersections(street, all_paths, local_paths, parent_path, config)
+    
+    -- Validate intersections
+    local valid, reason = validate_intersections(intersections, config)
+    if not valid then
+        -- If intersections are problematic, we could either reject the street
+        -- or try to adjust it. For now, we'll still create it but log the issue.
+        -- In production, you might want to return nil here
     end
+    
+    -- Create intersection points in both paths
+    create_intersection_points(street, intersections, local_paths, config)
     
     return street, did_snap
 end
 
--- Get evenly spaced branching points from a path
-local function get_branch_points(pth, subdivision_length)
-    pth:subdivide(subdivision_length)
+-- Get grid-aligned branching points from a path
+-- Points are placed where the path intersects grid lines
+-- Only returns points that are inside the citychunk
+local function get_grid_aligned_branch_points(pth, grid_spacing_param, citychunk_origin)
+    -- First, subdivide the path to insert points at grid intersections
+    subdivide_path_to_grid(pth, grid_spacing_param)
     
     local points = {}
     local all = pth:all_points()
     
+    -- Skip start and finish points
     for i = 2, #all - 1 do
         local prev_pos = all[i - 1].pos
         local curr_pos = all[i].pos
         local next_pos = all[i + 1].pos
         
-        local segment_dir = vector.direction(prev_pos, next_pos)
-        
-        table.insert(points, {
-            point = all[i],
-            segment_dir = segment_dir,
-            index = i,
-        })
+        -- Only include points that are inside the citychunk
+        if is_inside_citychunk(curr_pos, citychunk_origin) then
+            local segment_dir = vector.direction(prev_pos, next_pos)
+            
+            table.insert(points, {
+                point = all[i],
+                segment_dir = segment_dir,
+                index = i,
+            })
+        end
     end
     
     return points
@@ -907,33 +1552,30 @@ end
 local function generate_streets_recursive(parent_path, depth, all_paths, local_paths, citychunk_origin, config)
     local created = {}
     
-    local branch_prob, min_len, max_len, subdiv_len
+    local branch_prob, min_len, max_len
     
     if depth == 0 then
         branch_prob = config.primary_branch_probability
         min_len = config.primary_min_length
         max_len = config.primary_max_length
-        subdiv_len = config.road_subdivision_length
     elseif depth == 1 then
         branch_prob = config.secondary_branch_probability
         min_len = config.secondary_min_length
         max_len = config.secondary_max_length
-        subdiv_len = config.street_subdivision_length
     elseif depth == 2 then
         branch_prob = config.tertiary_branch_probability
         min_len = config.tertiary_min_length
         max_len = config.tertiary_max_length
-        subdiv_len = config.street_subdivision_length
     elseif depth == 3 then
         branch_prob = config.quaternary_branch_probability
         min_len = config.quaternary_min_length
         max_len = config.quaternary_max_length
-        subdiv_len = config.street_subdivision_length
     else
         return created
     end
     
-    local branch_points = get_branch_points(parent_path, subdiv_len)
+    -- Use grid-aligned branch points instead of subdivision-based points
+    local branch_points = get_grid_aligned_branch_points(parent_path, grid_spacing, citychunk_origin)
     
     local last_branch_pos = nil
     
