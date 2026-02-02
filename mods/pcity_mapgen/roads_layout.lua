@@ -140,7 +140,9 @@ end
 
 local function draw_waved_road(megacanv, start, finish)
     pcmg.set_randomseed(megacanv.origin)
-    local path = pcmg.path.new(start, finish)
+    local start_point = pcmg.point.new(start)
+    local finish_point = pcmg.point.new(finish)
+    local path = pcmg.path.new(start_point, finish_point)
     path:make_wave(50, 30, 5)
     megacanv:draw_path(road_shape, path, "straight")
     math.randomseed(os.time())
@@ -184,14 +186,16 @@ local road_metastore = pcmg.metastore.new()
 -- end
 
 local function build_road(megapathpav, start, finish)
-    local guide_path = pcmg.path.new(start, finish)
+    local start_point = pcmg.point.new(start)
+    local finish_point = pcmg.point.new(finish)
+    local guide_path = pcmg.path.new(start_point, finish_point)
     guide_path:make_slanted()
     local current_point = guide_path.start
     for nr, p in guide_path.start:iterator() do
         local colliding =
             megapathpav:colliding_segments(current_point.pos, p.pos, 1)
         if next(colliding) then
-            guide_path:insert(colliding[1].intersections[1], nr)
+            guide_path:insert(pcmg.point.new(colliding[1].intersections[1]), nr)
         end
         current_point = p
     end
@@ -224,5 +228,5 @@ end
 function pcmg.generate_roads(megacanv, pathpaver_cache)
     local t1 = minetest.get_us_time()
     megacanv:generate(road_generator, 1, pathpaver_cache)
-    minetest.log("error", string.format("Overgen time: %g ms", (minetest.get_us_time() - t1) / 1000))
+    --minetest.log("error", string.format("Overgen time: %g ms", (minetest.get_us_time() - t1) / 1000))
 end
