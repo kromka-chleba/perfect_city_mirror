@@ -787,6 +787,341 @@ function path:length()
 end
 
 -- ============================================================
+-- SEGMENT AND PATH INTERSECTION
+-- ============================================================
+
+-- Calculates the shortest distance between two line segments in 2D (XZ plane).
+-- Segment 1: from a1 to a2
+-- Segment 2: from b1 to b2
+-- Returns the shortest distance and the closest points on each segment.
+local function segment_distance_2d(a1, a2, b1, b2)
+    -- Project to XZ plane
+    local ax1, az1 = a1.x, a1.z
+    local ax2, az2 = a2.x, a2.z
+    local bx1, bz1 = b1.x, b1.z
+    local bx2, bz2 = b2.x, b2.z
+    
+    -- Direction vectors
+    local dax, daz = ax2 - ax1, az2 - az1
+    local dbx, dbz = bx2 - bx1, bz2 - bz1
+    
+    -- Vector from a1 to b1
+    local dx, dz = bx1 - ax1, bz1 - az1
+    
+    -- Squared lengths
+    local len_a_sq = dax * dax + daz * daz
+    local len_b_sq = dbx * dbx + dbz * dbz
+    
+    -- Handle degenerate cases (zero-length segments)
+    if len_a_sq < 1e-10 and len_b_sq < 1e-10 then
+        -- Both segments are points
+        local dist = math.sqrt(dx * dx + dz * dz)
+        return dist, a1, b1
+    end
+    
+    if len_a_sq < 1e-10 then
+        -- Segment A is a point, find closest point on B
+        local t = math.max(0, math.min(1, (dx * dbx + dz * dbz) / len_b_sq))
+        local closest_b = vector.new(bx1 + t * dbx, (b1.y + b2.y) / 2, bz1 + t * dbz)
+        local dist = math.sqrt((ax1 - closest_b.x)^2 + (az1 - closest_b.z)^2)
+        return dist, a1, closest_b
+    end
+    
+    if len_b_sq < 1e-10 then
+        -- Segment B is a point, find closest point on A
+        local t = math.max(0, math.min(1, (-dx * dax - dz * daz) / len_a_sq))
+        local closest_a = vector.new(ax1 + t * dax, (a1.y + a2.y) / 2, az1 + t * daz)
+        local dist = math.sqrt((closest_a.x - bx1)^2 + (closest_a.z - bz1)^2)
+        return dist, closest_a, b1
+    end
+    
+    -- Cross product for parallel check
+    local cross = dax * dbz - daz * dbx
+    
+    -- Dot products
+    local dot_aa = len_a_sq
+    local dot_bb = len_b_sq
+    local dot_ab = dax * dbx + daz * dbz
+    local dot_ad = dax * dx + daz * dz
+    local dot_bd = dbx * dx + dbz * dz
+    
+    local s, t
+    local denom = dot_aa * dot_bb - dot_ab * dot_ab
+    
+    if math.abs(denom) < 1e-10 then
+        -- Segments are parallel
+        s = 0
+        t = dot_bd / dot_bb
+    else
+        s = (dot_ab * dot_bd - dot_bb * dot_ad) / denom
+        t = (dot_aa * dot_bd - dot_ab * dot_ad) / denom
+    end
+    
+    -- Clamp parameters to [0, 1]
+    if s < 0 then
+        s = 0
+        t = dot_bd / dot_bb
+    elseif s > 1 then
+        s = 1
+        t = (dot_ab + dot_bd) / dot_bb
+    end
+    
+    if t < 0 then
+        t = 0
+        s = -dot_ad / dot_aa
+        s = math.max(0, math.min(1, s))
+    elseif t > 1 then
+        t = 1
+        s = (dot_ab - dot_ad) / dot_aa
+        s = math.max(0, math.min(1, s))
+    end
+    
+    -- Calculate closest points
+    local closest_a = vector.new(
+        ax1 + s * dax,
+        a1.y + s * (a2.y - a1.y),
+        az1 + s * daz
+    )
+    local closest_b = vector.new(
+        bx1 + t * dbx,
+        b1.y + t * (b2.y - b1.y),
+        bz1 + t * dbz
+    )
+    
+    -- Calculate distance
+    local dist = math.sqrt(
+        (closest_a.x - closest_b.x)^2 + 
+        (closest_a.z - closest_b.z)^2
+    )
+    
+    return dist, closest_a, closest_b
+end
+
+-- Calculates the shortest distance from a point to a line segment in 2D (XZ plane).
+-- Returns the distance and the closest point on the segment.
+local function point_to_segment_distance_2d(p, seg_start, seg_end)
+    local px, pz = p.x, p.z
+    local ax, az = seg_start.x, seg_start.z
+    local bx, bz = seg_end.x, seg_end.z
+    
+    local dx, dz = bx - ax, bz - az
+    local len_sq = dx * dx + dz * dz
+    
+    if len_sq < 1e-10 then
+        -- Segment is a point
+        local dist = math.sqrt((px - ax)^2 + (pz - az)^2)
+        return dist, seg_start
+    end
+    
+    -- Project point onto line, clamped to segment
+    local t = ((px - ax) * dx + (pz - az) * dz) / len_sq
+    t = math.max(0, math.min(1, t))
+    
+    local closest = vector.new(
+        ax + t * dx,
+        seg_start.y + t * (seg_end.y - seg_start.y),
+        az + t * dz
+    )
+    
+    local dist = math.sqrt((px - closest.x)^2 + (pz - closest.z)^2)
+    return dist, closest
+end
+
+-- Checks if two segments intersect or come within 'margin' distance of each other.
+-- Returns intersection info table or nil if no intersection within margin.
+-- The returned table contains:
+--   - intersects: boolean, true if segments actually cross
+--   - distance: number, shortest distance between segments
+--   - point_a: vector, closest point on segment A
+--   - point_b: vector, closest point on segment B
+--   - midpoint: vector, midpoint between closest points
+function path.segment_intersects(a1, a2, b1, b2, margin)
+    margin = margin or 0
+    
+    local dist, closest_a, closest_b = segment_distance_2d(a1, a2, b1, b2)
+    
+    if dist <= margin then
+        local midpoint = vector.new(
+            (closest_a.x + closest_b.x) / 2,
+            (closest_a.y + closest_b.y) / 2,
+            (closest_a.z + closest_b.z) / 2
+        )
+        return {
+            intersects = dist < 1e-6,
+            distance = dist,
+            point_a = closest_a,
+            point_b = closest_b,
+            midpoint = midpoint
+        }
+    end
+    
+    return nil
+end
+
+-- Returns all segments of the path as a list of {start_pos, end_pos} pairs.
+function path:all_segments()
+    local segments = {}
+    local points = self:all_points()
+    for i = 2, #points do
+        table.insert(segments, {
+            start_pos = points[i - 1].pos,
+            end_pos = points[i].pos,
+            start_point = points[i - 1],
+            end_point = points[i]
+        })
+    end
+    return segments
+end
+
+-- Checks if a segment intersects with any segment of this path.
+-- Returns a list of intersection info tables (see segment_intersects).
+-- Each result also includes:
+--   - segment_index: number, index of the path segment that intersects
+--   - segment: table, the path segment {start_pos, end_pos, start_point, end_point}
+function path:intersects_segment(seg_start, seg_end, margin)
+    margin = margin or 0
+    local results = {}
+    local segments = self:all_segments()
+    
+    for i, seg in ipairs(segments) do
+        local intersection = path.segment_intersects(
+            seg_start, seg_end,
+            seg.start_pos, seg.end_pos,
+            margin
+        )
+        if intersection then
+            intersection.segment_index = i
+            intersection.segment = seg
+            table.insert(results, intersection)
+        end
+    end
+    
+    return results
+end
+
+-- Checks if this path intersects with another path.
+-- Returns a list of intersection info tables.
+-- Each result includes:
+--   - self_segment_index: number, index of segment in this path
+--   - self_segment: table, the segment from this path
+--   - other_segment_index: number, index of segment in other path
+--   - other_segment: table, the segment from other path
+--   - (plus all fields from segment_intersects)
+function path:intersects_path(other_path, margin)
+    margin = margin or 0
+    local results = {}
+    local self_segments = self:all_segments()
+    local other_segments = other_path:all_segments()
+    
+    for i, self_seg in ipairs(self_segments) do
+        for j, other_seg in ipairs(other_segments) do
+            local intersection = path.segment_intersects(
+                self_seg.start_pos, self_seg.end_pos,
+                other_seg.start_pos, other_seg.end_pos,
+                margin
+            )
+            if intersection then
+                intersection.self_segment_index = i
+                intersection.self_segment = self_seg
+                intersection.other_segment_index = j
+                intersection.other_segment = other_seg
+                table.insert(results, intersection)
+            end
+        end
+    end
+    
+    return results
+end
+
+-- Checks if a point is within 'margin' distance of any segment of this path.
+-- Returns intersection info or nil.
+-- The returned table contains:
+--   - distance: number, shortest distance from point to path
+--   - closest_point: vector, closest point on the path
+--   - segment_index: number, index of the closest segment
+--   - segment: table, the closest segment
+function path:intersects_point(p, margin)
+    margin = margin or 0
+    local segments = self:all_segments()
+    local best_dist = math.huge
+    local best_closest = nil
+    local best_segment_index = nil
+    local best_segment = nil
+    
+    for i, seg in ipairs(segments) do
+        local dist, closest = point_to_segment_distance_2d(p, seg.start_pos, seg.end_pos)
+        if dist < best_dist then
+            best_dist = dist
+            best_closest = closest
+            best_segment_index = i
+            best_segment = seg
+        end
+    end
+    
+    if best_dist <= margin then
+        return {
+            distance = best_dist,
+            closest_point = best_closest,
+            segment_index = best_segment_index,
+            segment = best_segment
+        }
+    end
+    
+    return nil
+end
+
+-- Finds the first intersection point when traversing this path.
+-- Useful for finding where a path would collide with an obstacle.
+-- Returns the intersection info closest to the start of the path, or nil.
+function path:first_intersection_with_path(other_path, margin)
+    local intersections = self:intersects_path(other_path, margin)
+    if #intersections == 0 then
+        return nil
+    end
+    
+    -- Sort by self_segment_index to find first intersection
+    table.sort(intersections, function(a, b)
+        if a.self_segment_index ~= b.self_segment_index then
+            return a.self_segment_index < b.self_segment_index
+        end
+        -- If same segment, compare distance from segment start
+        local dist_a = vector.distance(a.point_a, a.self_segment.start_pos)
+        local dist_b = vector.distance(b.point_a, b.self_segment.start_pos)
+        return dist_a < dist_b
+    end)
+    
+    return intersections[1]
+end
+
+-- Checks if this path intersects with itself (self-intersection).
+-- Skips adjacent segments as they naturally share endpoints.
+-- Returns a list of intersection info tables.
+function path:self_intersections(margin)
+    margin = margin or 0
+    local results = {}
+    local segments = self:all_segments()
+    
+    for i = 1, #segments - 2 do
+        for j = i + 2, #segments do
+            local intersection = path.segment_intersects(
+                segments[i].start_pos, segments[i].end_pos,
+                segments[j].start_pos, segments[j].end_pos,
+                margin
+            )
+            if intersection then
+                intersection.segment_index_1 = i
+                intersection.segment_1 = segments[i]
+                intersection.segment_index_2 = j
+                intersection.segment_2 = segments[j]
+                table.insert(results, intersection)
+            end
+        end
+    end
+    
+    return results
+end
+
+-- ============================================================
 -- SUBDIVIDE AND UNSUBDIVIDE
 -- ============================================================
 

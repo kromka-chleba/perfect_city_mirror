@@ -27,39 +27,42 @@ local units = sizes.units
 local canvas_shapes = pcmg.canvas_shapes
 local canvas_brush = pcmg.canvas_brush
 
+-- Get mapgen seed for deterministic random generation
+local mapgen_seed = tonumber(minetest.get_mapgen_setting("seed")) or 0
+
 -- Sizes of map division units
 local node = sizes.node
 local mapchunk = sizes.mapchunk
 local citychunk = sizes.citychunk
 
---[[
-    Road origins shouldn't be to close to each other so
-    setting a minimal distance from the start and end points
-    of the edge makes sense.
---]]
 local road_margin = 40
 if citychunk.in_mapchunks == 1 then
     road_margin = 15
 end
 
---[[
-    Road origin points are points where road generation starts.
-    Every citychunk has 4 origin points, 1 per edge.
-    Road origin points are generated randomly somewhere on
-    each edge, but can't get closer to citychunk corners
-    than 'road_margin'.
---]]
+-- Set random seed based on mapgen seed and position
+local function set_position_seed(pos, salt)
+    salt = salt or 0
+    local seed = mapgen_seed + 
+                 pos.x * 73856093 + 
+                 pos.y * 19349663 + 
+                 pos.z * 83492791 + 
+                 salt
+    math.randomseed(seed)
+end
+
+local function set_citychunk_seed(citychunk_origin, salt)
+    set_position_seed(citychunk_origin, salt)
+end
 
 -- Returns road origin points for the bottom (X) and left (Z) edges
--- of the citychunk.
 local function halfchunk_ori(citychunk_coords)
     local origin = units.citychunk_to_node(citychunk_coords)
-    pcmg.set_randomseed(origin)
+    set_position_seed(origin, 1)
     local random_x = math.random(0 + road_margin, citychunk.in_nodes - 1 - road_margin)
     local x_edge_ori = origin + vector.new(random_x, 0, 0)
     local random_z = math.random(0 + road_margin, citychunk.in_nodes - 1 - road_margin)
     local z_edge_ori = origin + vector.new(0, 0, random_z)
-    math.randomseed(os.time())
     return x_edge_ori, z_edge_ori
 end
 
@@ -74,22 +77,13 @@ function pcmg.citychunk_road_origins(citychunk_origin)
     return {bottom, left, up, right}
 end
 
--- Takes a table of road origin points from which it picks 2 randomly
--- and puts the pair into a table. It repeats the process until
--- all origins are in pairs. If an odd number of origins is in the
--- table it ignores the last.
--- Example:
--- input: {p1, p2, p3, p4, p5}
--- output: {{p1, p3}, {p2, p4}} (p5 got skipped)
 local function connect_road_origins(citychunk_origin, road_origins)
     local points = {}
     for _, origin in pairs(road_origins) do
-        -- copy the table to avoid "fun" in other parts of the code
         table.insert(points, vector.new(origin))
     end
-    pcmg.set_randomseed(citychunk_origin)
+    set_citychunk_seed(citychunk_origin, 2)
     if #points % 2 ~= 0 then
-        -- remove one point if for some reason the number of points was odd
         table.remove(points)
     end
     local point_pairs = {}
@@ -102,7 +96,6 @@ local function connect_road_origins(citychunk_origin, road_origins)
         table.remove(points, p2_index)
         table.insert(point_pairs, {p1, p2})
     end
-    math.randomseed(os.time())
     return point_pairs
 end
 
@@ -144,33 +137,50 @@ local secondary_street_shape = canvas_shapes.combine_shapes(
 
 --[[
     Street Generation Configuration
-    Controls how streets branch from main roads.
+    
+    Streets are spaced evenly along roads with minimum spacing of 60 nodes.
+    This creates a regular grid-like pattern while still allowing some variation.
 --]]
 local street_config = {
-    -- Main road settings
-    main_road_segment_length = 10,
+    -- Minimum spacing between streets (enforced)
+    min_street_spacing = 60,
     
-    -- Street branching settings
-    min_branch_distance = 30,      -- Minimum distance between branches
-    max_branch_distance = 60,      -- Maximum distance between branches
-    branch_probability = 0.7,      -- Probability of creating a branch at valid point
+    -- Subdivision settings (should match or exceed min_street_spacing)
+    road_subdivision_length = 60,
+    street_subdivision_length = 60,
     
-    -- Street length settings
-    min_street_length = 40,
-    max_street_length = 120,
+    -- Primary streets (from main roads)
+    primary_branch_probability = 0.7,    -- Higher probability since spacing is enforced
+    primary_min_length = 100,
+    primary_max_length = 200,
     
-    -- Secondary street settings (branches from streets)
-    secondary_branch_probability = 0.4,
-    min_secondary_length = 20,
-    max_secondary_length = 60,
+    -- Secondary streets (from primary streets) - longer now
+    secondary_branch_probability = 0.6,
+    secondary_min_length = 80,
+    secondary_max_length = 160,
     
-    -- Geometry settings
-    street_segment_length = 8,
-    wave_amplitude = 15,
-    wave_density = 3,
+    -- Tertiary streets (from secondary streets)
+    tertiary_branch_probability = 0.4,
+    tertiary_min_length = 50,
+    tertiary_max_length = 100,
+    
+    -- Quaternary streets (from tertiary streets)
+    quaternary_branch_probability = 0.3,
+    quaternary_min_length = 30,
+    quaternary_max_length = 60,
+    
+    -- Merging settings
+    merge_probability = 0.6,
+    merge_search_radius = 100,
+    min_merge_distance = 30,
+    
+    -- Collision settings
+    parallel_overlap_margin = 25,        -- Increased to prevent close parallel streets
+    intersection_margin = 3,
+    min_street_length = 20,
+    parallel_check_samples = 5,
 }
 
--- for testing overgeneration
 local function draw_points(megacanv, points)
     for _, point in pairs(points) do
         megacanv:set_all_cursors(point)
@@ -178,58 +188,7 @@ local function draw_points(megacanv, points)
     end
 end
 
-local function draw_wobbly_road(megacanv, start, finish)
-    pcmg.set_randomseed(megacanv.origin)
-    megacanv:draw_wobbly(road_shape, start, finish)
-    math.randomseed(os.time())
-end
-
-local function draw_waved_road(megacanv, start, finish)
-    pcmg.set_randomseed(megacanv.origin)
-    local start_point = pcmg.point.new(start)
-    local finish_point = pcmg.point.new(finish)
-    local path = pcmg.path.new(start_point, finish_point)
-    path:make_wave(50, 30, 5)
-    megacanv:draw_path(road_shape, path, "straight")
-    math.randomseed(os.time())
-end
-
--- Draws random circles with asphalt and pavement
--- 'nr' is the number of random circles to draw in the citychunk.
--- Useful for testing.
-local function draw_random_dots(megacanv, nr)
-    local nr = nr or 100
-    pcmg.set_randomseed(megacanv.origin)
-    megacanv:draw_random(road_shape, nr)
-    math.randomseed(os.time())
-end
-
 local road_metastore = pcmg.metastore.new()
-
--- local function build_road(megapathpav, start, finish)
---     local guide_path = pcmg.path.new(start, finish)
---     guide_path:make_slanted(10)
---     local colliding
---     for _, p in guide_path.start:iterator() do
---         local collisions = megapathpav:colliding_points(p.pos, 30, true)
---         if next(collisions) then
---             colliding = collisions
---             guide_path:cut_off(p)
---         end
---     end
---     if colliding then
---         local _, col = next(colliding)
---         guide_path:shorten(4)
---         local extension =
---             pcmg.path.new(guide_path.finish.pos, col.pos)
---         extension:make_slanted(10)
---         guide_path:merge(extension)
---         local branch = col:branch(finish)
---         branch:make_slanted(10)
---         -- road_metastore:set(branch, "style", "wobbly")
---     end
---     return guide_path
--- end
 
 local function build_road(megapathpav, start, finish)
     local start_point = pcmg.point.new(start)
@@ -249,211 +208,596 @@ local function build_road(megapathpav, start, finish)
 end
 
 --[[
-    Street Generation Algorithm
-    Creates branching streets from main roads using the Path API.
-    Streets branch off from main roads at branching points and can
-    further subdivide into smaller streets.
+    Street Generation Algorithm - Even Distribution Tree Branching
+    
+    1. Subdivide roads/streets into segments of min_street_spacing length
+    2. At each subdivision point, possibly create a perpendicular street
+    3. Streets maintain minimum spacing from each other
+    4. When streets would be too close, they either intersect cleanly or don't spawn
 --]]
 
--- Calculate perpendicular direction for branching
-local function get_perpendicular_direction(from_pos, to_pos)
-    local dir = vector.direction(from_pos, to_pos)
-    -- Rotate 90 degrees in the XZ plane
-    -- Randomly choose left or right
-    if math.random() > 0.5 then
-        return vector.new(-dir.z, 0, dir.x)
+-- Get axis-aligned perpendicular direction
+local function get_perpendicular_direction(segment_dir)
+    local abs_x = math.abs(segment_dir.x)
+    local abs_z = math.abs(segment_dir.z)
+    
+    if abs_x > abs_z then
+        if math.random() > 0.5 then
+            return vector.new(0, 0, 1)
+        else
+            return vector.new(0, 0, -1)
+        end
     else
-        return vector.new(dir.z, 0, -dir.x)
+        if math.random() > 0.5 then
+            return vector.new(1, 0, 0)
+        else
+            return vector.new(-1, 0, 0)
+        end
     end
 end
 
--- Find suitable branching points along a path
-local function find_branching_points(pth, config)
-    local branching_points = {}
-    local last_branch_distance = 0
-    local min_dist = config.min_branch_distance
-    local max_dist = config.max_branch_distance
+-- Calculate the angle between two direction vectors in 2D
+local function angle_between_2d(dir1, dir2)
+    local dot = dir1.x * dir2.x + dir1.z * dir2.z
+    local len1 = math.sqrt(dir1.x * dir1.x + dir1.z * dir1.z)
+    local len2 = math.sqrt(dir2.x * dir2.x + dir2.z * dir2.z)
+    if len1 < 1e-6 or len2 < 1e-6 then
+        return 0
+    end
+    local cos_angle = math.max(-1, math.min(1, dot / (len1 * len2)))
+    return math.acos(cos_angle)
+end
+
+-- Check if two segments are roughly parallel
+local function segments_are_parallel(seg1_start, seg1_end, seg2_start, seg2_end)
+    local dir1 = vector.direction(seg1_start, seg1_end)
+    local dir2 = vector.direction(seg2_start, seg2_end)
+    local angle = angle_between_2d(dir1, dir2)
+    return angle < (math.pi / 6) or angle > (math.pi - math.pi / 6)
+end
+
+-- Check if segments overlap when parallel
+local function segments_overlap_parallel(seg1_start, seg1_end, seg2_start, seg2_end, margin)
+    if not segments_are_parallel(seg1_start, seg1_end, seg2_start, seg2_end) then
+        return false, nil
+    end
     
-    local all_points = pth:all_points()
-    local current_distance = 0
+    for i = 0, 5 do
+        local t = i / 5
+        local sample = vector.new(
+            seg1_start.x + t * (seg1_end.x - seg1_start.x),
+            seg1_start.y + t * (seg1_end.y - seg1_start.y),
+            seg1_start.z + t * (seg1_end.z - seg1_start.z)
+        )
+        
+        local intersection = pcmg.path.segment_intersects(
+            sample, sample, seg2_start, seg2_end, margin
+        )
+        if intersection then
+            return true, sample
+        end
+    end
     
-    for i = 2, #all_points do
-        local prev_pos = all_points[i - 1].pos
-        local curr_pos = all_points[i].pos
-        local segment_length = vector.distance(prev_pos, curr_pos)
-        current_distance = current_distance + segment_length
-        
-        -- Check if we've traveled enough distance since last branch
-        local distance_since_branch = current_distance - last_branch_distance
-        
-        if distance_since_branch >= min_dist then
-            -- Probability increases as we get further from min distance
-            local branch_chance = config.branch_probability
-            if distance_since_branch >= max_dist then
-                branch_chance = 1.0  -- Force a branch
+    return false, nil
+end
+
+-- Get all paths for collision detection
+local function get_all_paths(megapathpav, additional_paths)
+    local all_paths = {}
+    local local_paths = {}
+    local seen = {}
+    
+    for _, path in ipairs(additional_paths) do
+        if not seen[path] then
+            table.insert(all_paths, path)
+            table.insert(local_paths, path)
+            seen[path] = true
+        end
+    end
+    
+    if megapathpav.central and megapathpav.central.paths then
+        for _, path in pairs(megapathpav.central.paths) do
+            if not seen[path] then
+                table.insert(all_paths, path)
+                table.insert(local_paths, path)
+                seen[path] = true
             end
-            
-            if math.random() < branch_chance then
-                -- Don't branch at start or finish
-                if all_points[i] ~= pth.start and all_points[i] ~= pth.finish then
-                    table.insert(branching_points, {
-                        point = all_points[i],
-                        direction = get_perpendicular_direction(prev_pos, curr_pos)
-                    })
-                    last_branch_distance = current_distance
+        end
+    end
+    
+    if megapathpav.neighbors then
+        for _, neighbor in ipairs(megapathpav.neighbors) do
+            if neighbor.paths then
+                for _, path in pairs(neighbor.paths) do
+                    if not seen[path] then
+                        table.insert(all_paths, path)
+                        seen[path] = true
+                    end
                 end
             end
         end
     end
     
-    return branching_points
+    return all_paths, local_paths
 end
 
--- Create a street branch from a point on the main road
-local function create_street_branch(branch_point, direction, length, config)
-    -- Calculate the end position of the street
+-- Check if path is local (can be modified)
+local function is_local_path(path, local_paths)
+    for _, lp in ipairs(local_paths) do
+        if path == lp then return true end
+    end
+    return false
+end
+
+-- Find segment containing a position
+local function find_segment_at(pth, pos, tolerance)
+    tolerance = tolerance or 5
+    local segments = pth:all_segments()
+    
+    for _, seg in ipairs(segments) do
+        local mid = vector.new(
+            (seg.start_pos.x + seg.end_pos.x) / 2,
+            (seg.start_pos.y + seg.end_pos.y) / 2,
+            (seg.start_pos.z + seg.end_pos.z) / 2
+        )
+        local len = vector.distance(seg.start_pos, seg.end_pos)
+        
+        if vector.distance(mid, pos) < len / 2 + tolerance then
+            if seg.start_point and seg.end_point and
+               seg.start_point.next == seg.end_point then
+                return seg
+            end
+        end
+    end
+    return nil
+end
+
+-- Insert intersection point into path
+local function insert_intersection(pth, pos, seg)
+    if not seg then return nil end
+    if not seg.start_point or not seg.end_point then return nil end
+    if seg.start_point.next ~= seg.end_point then return nil end
+    
+    if vector.distance(seg.start_point.pos, pos) < 2 then
+        return seg.start_point
+    end
+    if vector.distance(seg.end_point.pos, pos) < 2 then
+        return seg.end_point
+    end
+    
+    local new_point = pcmg.point.new(pos)
+    pth:insert_between(seg.start_point, seg.end_point, new_point)
+    return new_point
+end
+
+-- Check if a position is too close to any existing street start point
+-- This enforces minimum spacing between parallel streets
+local function is_too_close_to_existing_streets(pos, direction, all_paths, parent_path, min_spacing)
+    for _, existing in ipairs(all_paths) do
+        if existing == parent_path then goto continue end
+        
+        -- Check distance to start of existing path
+        local start_pos = existing.start.pos
+        local dist = vector.distance(pos, start_pos)
+        
+        if dist < min_spacing then
+            -- Check if streets would be parallel (going same direction)
+            local existing_dir = vector.direction(existing.start.pos, existing.finish.pos)
+            if segments_are_parallel(pos, vector.add(pos, direction), start_pos, existing.finish.pos) then
+                return true
+            end
+        end
+        
+        -- Also check along the path for parallel segments nearby
+        local segments = existing:all_segments()
+        for _, seg in ipairs(segments) do
+            -- Find closest point on segment to our position
+            local seg_dir = vector.subtract(seg.end_pos, seg.start_pos)
+            local seg_len = vector.length(seg_dir)
+            if seg_len > 0 then
+                local to_pos = vector.subtract(pos, seg.start_pos)
+                local t = (to_pos.x * seg_dir.x + to_pos.z * seg_dir.z) / (seg_len * seg_len)
+                t = math.max(0, math.min(1, t))
+                
+                local closest = vector.new(
+                    seg.start_pos.x + t * seg_dir.x,
+                    seg.start_pos.y + t * seg_dir.y,
+                    seg.start_pos.z + t * seg_dir.z
+                )
+                
+                local dist_to_seg = vector.distance(pos, closest)
+                
+                if dist_to_seg < min_spacing then
+                    -- Check if our street would be parallel to this segment
+                    if segments_are_parallel(pos, vector.add(pos, direction), seg.start_pos, seg.end_pos) then
+                        return true
+                    end
+                end
+            end
+        end
+        
+        ::continue::
+    end
+    
+    return false
+end
+
+-- Check for parallel overlaps with existing paths
+local function has_overlap(street, all_paths, parent_path, config)
+    local street_segs = street:all_segments()
+    
+    for _, existing in ipairs(all_paths) do
+        if existing == parent_path then goto continue end
+        
+        local dominated = street.start:attached_sorted()
+        local is_parent = false
+        for _, att in ipairs(dominated) do
+            if att.path == existing then
+                is_parent = true
+                break
+            end
+        end
+        if is_parent then goto continue end
+        
+        local existing_segs = existing:all_segments()
+        
+        for _, ss in ipairs(street_segs) do
+            for _, es in ipairs(existing_segs) do
+                local overlaps, point = segments_overlap_parallel(
+                    ss.start_pos, ss.end_pos,
+                    es.start_pos, es.end_pos,
+                    config.parallel_overlap_margin
+                )
+                if overlaps then
+                    return true, point
+                end
+            end
+        end
+        
+        ::continue::
+    end
+    
+    return false, nil
+end
+
+-- Find intersections with other paths
+local function find_intersections(street, all_paths, local_paths, parent_path, config)
+    local results = {}
+    local street_points = street:all_points()
+    
+    for _, existing in ipairs(all_paths) do
+        if existing == parent_path then goto continue end
+        
+        local dominated = street.start:attached_sorted()
+        local is_parent = false
+        for _, att in ipairs(dominated) do
+            if att.path == existing then
+                is_parent = true
+                break
+            end
+        end
+        if is_parent then goto continue end
+        
+        local intersections = street:intersects_path(existing, config.intersection_margin)
+        
+        for _, int in ipairs(intersections) do
+            local ss = int.self_segment
+            local os = int.other_segment
+            
+            if not segments_are_parallel(ss.start_pos, ss.end_pos, os.start_pos, os.end_pos) then
+                local dist = 0
+                for i = 2, int.self_segment_index do
+                    dist = dist + vector.distance(street_points[i-1].pos, street_points[i].pos)
+                end
+                dist = dist + vector.distance(ss.start_pos, int.point_a)
+                
+                table.insert(results, {
+                    intersection = int,
+                    existing_path = existing,
+                    distance = dist,
+                    is_local = is_local_path(existing, local_paths)
+                })
+            end
+        end
+        
+        ::continue::
+    end
+    
+    table.sort(results, function(a, b) return a.distance < b.distance end)
+    return results
+end
+
+-- Find a path to merge into
+local function find_merge_target(end_pos, direction, all_paths, parent_path, config)
+    local best_path = nil
+    local best_pos = nil
+    local best_dist = config.merge_search_radius
+    
+    local search_end = vector.add(end_pos, vector.multiply(direction, config.merge_search_radius))
+    
+    for _, existing in ipairs(all_paths) do
+        if existing == parent_path then goto continue end
+        
+        local segments = existing:all_segments()
+        for _, seg in ipairs(segments) do
+            local intersection = pcmg.path.segment_intersects(
+                end_pos, search_end,
+                seg.start_pos, seg.end_pos,
+                config.intersection_margin
+            )
+            
+            if intersection then
+                local int_pos = intersection.midpoint
+                if int_pos then
+                    local dist = vector.distance(end_pos, int_pos)
+                    
+                    if dist >= config.min_merge_distance and dist < best_dist then
+                        if not segments_are_parallel(end_pos, search_end, seg.start_pos, seg.end_pos) then
+                            best_path = existing
+                            best_pos = int_pos
+                            best_dist = dist
+                        end
+                    end
+                end
+            end
+        end
+        
+        ::continue::
+    end
+    
+    return best_path, best_pos
+end
+
+-- Create a street from a branching point
+local function create_street(branch_point, direction, length, parent_path, all_paths, local_paths, config)
     local start_pos = branch_point.pos
+    
+    -- Check if too close to existing parallel streets before creating
+    if is_too_close_to_existing_streets(start_pos, direction, all_paths, parent_path, config.min_street_spacing) then
+        return nil
+    end
+    
     local end_pos = vector.add(start_pos, vector.multiply(direction, length))
     
-    -- Use the point:branch() method to create a new path
+    -- Round to grid
+    end_pos.x = math.floor(end_pos.x + 0.5)
+    end_pos.y = math.floor(end_pos.y + 0.5)
+    end_pos.z = math.floor(end_pos.z + 0.5)
+    
+    -- Create path using branch
     local finish_point = pcmg.point.new(end_pos)
     local street = branch_point:branch(finish_point)
     
-    -- Apply some curvature to make streets more interesting
-    if math.random() > 0.5 then
-        street:make_wave(
-            math.floor(length / config.street_segment_length),
-            config.wave_amplitude,
-            config.wave_density
+    -- Check for parallel overlaps
+    local overlaps, overlap_point = has_overlap(street, all_paths, parent_path, config)
+    if overlaps then
+        local points = street:all_points()
+        local cut_point = nil
+        local cut_dist = 0
+        
+        for i = 2, #points do
+            local seg_mid = vector.new(
+                (points[i-1].pos.x + points[i].pos.x) / 2,
+                (points[i-1].pos.y + points[i].pos.y) / 2,
+                (points[i-1].pos.z + points[i].pos.z) / 2
+            )
+            if vector.distance(seg_mid, overlap_point) < config.parallel_overlap_margin * 2 then
+                if i > 2 then
+                    cut_point = points[i-1]
+                end
+                break
+            end
+            cut_dist = cut_dist + vector.distance(points[i-1].pos, points[i].pos)
+        end
+        
+        if cut_point and cut_dist >= config.min_street_length then
+            street:cut_off(cut_point)
+        else
+            return nil
+        end
+    end
+    
+    -- Check length
+    if street:length() < config.min_street_length then
+        return nil
+    end
+    
+    -- Try to merge into another path
+    if math.random() < config.merge_probability then
+        local merge_path, merge_pos = find_merge_target(
+            street.finish.pos, direction, all_paths, parent_path, config
         )
-    else
-        street:make_slanted(config.street_segment_length)
+        if merge_path and merge_pos then
+            local new_finish = pcmg.point.new(merge_pos)
+            street:set_finish(new_finish)
+            
+            if is_local_path(merge_path, local_paths) then
+                local seg = find_segment_at(merge_path, merge_pos)
+                if seg then
+                    insert_intersection(merge_path, merge_pos, seg)
+                end
+            end
+        end
+    end
+    
+    -- Find and create intersection points
+    local intersections = find_intersections(street, all_paths, local_paths, parent_path, config)
+    for _, int_data in ipairs(intersections) do
+        local pos = int_data.intersection.midpoint
+        if pos then
+            if int_data.is_local then
+                local seg = find_segment_at(int_data.existing_path, pos)
+                if seg then
+                    insert_intersection(int_data.existing_path, pos, seg)
+                end
+            end
+            
+            local seg = find_segment_at(street, pos)
+            if seg then
+                insert_intersection(street, pos, seg)
+            end
+        end
     end
     
     return street
 end
 
--- Create secondary streets branching from primary streets
-local function create_secondary_streets(street, config)
-    local secondary_streets = {}
+-- Get evenly spaced branching points from a path
+local function get_branch_points(pth, subdivision_length)
+    -- Subdivide to create intermediate points at regular intervals
+    pth:subdivide(subdivision_length)
     
-    if not pcmg.path.check(street) then
-        return secondary_streets
-    end
+    -- Collect all intermediate points (not start or finish)
+    local points = {}
+    local all = pth:all_points()
     
-    -- Only create secondary branches on longer streets
-    if street:length() < config.min_street_length then
-        return secondary_streets
-    end
-    
-    local branching_points = find_branching_points(street, {
-        min_branch_distance = config.min_secondary_length,
-        max_branch_distance = config.max_secondary_length,
-        branch_probability = config.secondary_branch_probability,
-    })
-    
-    for _, bp in ipairs(branching_points) do
-        local length = math.random(config.min_secondary_length, config.max_secondary_length)
-        local secondary = create_street_branch(bp.point, bp.direction, length, config)
-        table.insert(secondary_streets, secondary)
-    end
-    
-    return secondary_streets
-end
-
--- Generate streets from a single main road
-local function generate_streets_from_road(main_road, config)
-    config = config or street_config
-    local primary_streets = {}
-    local secondary_streets = {}
-    
-    -- Subdivide main road if needed for more potential branch points
-    if not main_road:has_intermediate() then
-        main_road:subdivide(config.main_road_segment_length)
-    end
-    
-    -- Find branching points on the main road
-    local branching_points = find_branching_points(main_road, config)
-    
-    -- Create primary streets at each branching point
-    for _, bp in ipairs(branching_points) do
-        local length = math.random(config.min_street_length, config.max_street_length)
-        local street = create_street_branch(bp.point, bp.direction, length, config)
-        table.insert(primary_streets, street)
+    for i = 2, #all - 1 do
+        local prev_pos = all[i - 1].pos
+        local curr_pos = all[i].pos
+        local next_pos = all[i + 1].pos
         
-        -- Create secondary streets branching from this street
-        local secondaries = create_secondary_streets(street, config)
-        for _, sec_street in ipairs(secondaries) do
-            table.insert(secondary_streets, sec_street)
-        end
+        local segment_dir = vector.direction(prev_pos, next_pos)
+        
+        table.insert(points, {
+            point = all[i],
+            segment_dir = segment_dir,
+            index = i,
+        })
     end
     
-    return primary_streets, secondary_streets
+    return points
 end
 
--- Generate complete street network from all main roads
-local function generate_street_network(megacanv, main_roads, config)
-    config = config or street_config
-    local all_primary_streets = {}
-    local all_secondary_streets = {}
+-- Recursive street generation with even spacing
+local function generate_streets_recursive(parent_path, depth, all_paths, local_paths, config)
+    local created = {}
     
-    pcmg.set_randomseed(megacanv.origin)
+    -- Get parameters based on depth
+    local branch_prob, min_len, max_len, subdiv_len
+    
+    if depth == 0 then
+        branch_prob = config.primary_branch_probability
+        min_len = config.primary_min_length
+        max_len = config.primary_max_length
+        subdiv_len = config.road_subdivision_length
+    elseif depth == 1 then
+        branch_prob = config.secondary_branch_probability
+        min_len = config.secondary_min_length
+        max_len = config.secondary_max_length
+        subdiv_len = config.street_subdivision_length
+    elseif depth == 2 then
+        branch_prob = config.tertiary_branch_probability
+        min_len = config.tertiary_min_length
+        max_len = config.tertiary_max_length
+        subdiv_len = config.street_subdivision_length
+    elseif depth == 3 then
+        branch_prob = config.quaternary_branch_probability
+        min_len = config.quaternary_min_length
+        max_len = config.quaternary_max_length
+        subdiv_len = config.street_subdivision_length
+    else
+        return created
+    end
+    
+    -- Get branching points at regular intervals
+    local branch_points = get_branch_points(parent_path, subdiv_len)
+    
+    -- Track last branch position to ensure spacing
+    local last_branch_pos = nil
+    
+    for _, bp in ipairs(branch_points) do
+        -- Check spacing from last branch on this path
+        if last_branch_pos then
+            local dist = vector.distance(bp.point.pos, last_branch_pos)
+            if dist < config.min_street_spacing then
+                goto continue
+            end
+        end
+        
+        if math.random() < branch_prob then
+            local direction = get_perpendicular_direction(bp.segment_dir)
+            local length = math.random(min_len, max_len)
+            
+            local street = create_street(
+                bp.point, direction, length,
+                parent_path, all_paths, local_paths, config
+            )
+            
+            if street then
+                last_branch_pos = bp.point.pos
+                
+                table.insert(created, {street = street, depth = depth})
+                table.insert(all_paths, street)
+                table.insert(local_paths, street)
+                
+                -- Recursively create sub-branches
+                local sub_streets = generate_streets_recursive(
+                    street, depth + 1, all_paths, local_paths, config
+                )
+                for _, ss in ipairs(sub_streets) do
+                    table.insert(created, ss)
+                end
+            end
+        end
+        
+        ::continue::
+    end
+    
+    return created
+end
+
+-- Generate all streets from main roads
+local function generate_street_network(megapathpav, main_roads, config)
+    local all_paths, local_paths = get_all_paths(megapathpav, main_roads)
+    local all_streets = {}
     
     for _, road in ipairs(main_roads) do
-        local primary, secondary = generate_streets_from_road(road, config)
-        for _, street in ipairs(primary) do
-            table.insert(all_primary_streets, street)
-        end
-        for _, street in ipairs(secondary) do
-            table.insert(all_secondary_streets, street)
+        local streets = generate_streets_recursive(road, 0, all_paths, local_paths, config)
+        for _, s in ipairs(streets) do
+            table.insert(all_streets, s)
         end
     end
     
-    math.randomseed(os.time())
-    return all_primary_streets, all_secondary_streets
+    return all_streets
 end
 
--- Draw all streets with appropriate shapes
-local function draw_streets(megacanv, primary_streets, secondary_streets)
-    -- Draw primary streets
-    for _, street in ipairs(primary_streets) do
-        megacanv:draw_path(street_shape, street, "straight")
+-- Draw streets based on depth
+local function draw_streets(megacanv, all_streets)
+    for _, street_data in ipairs(all_streets) do
+        local street = street_data.street
+        local depth = street_data.depth
+        
+        if depth == 0 then
+            megacanv:draw_path(street_shape, street, "straight")
+        else
+            megacanv:draw_path(secondary_street_shape, street, "straight")
+        end
         megacanv:draw_path_points(midpoint_shape, street)
     end
-    
-    -- Draw secondary streets (narrower)
-    for _, street in ipairs(secondary_streets) do
-        megacanv:draw_path(secondary_street_shape, street, "straight")
-    end
 end
 
--- Complete street generation and drawing pipeline
+-- Main generation pipeline
 local function generate_and_draw_streets(megacanv, megapathpav, main_roads, config)
-    -- Generate street network
-    local primary_streets, secondary_streets = 
-        generate_street_network(megacanv, main_roads, config)
+    local all_streets = generate_street_network(megapathpav, main_roads, config)
     
-    -- Save streets to pathpaver for collision detection
-    for _, street in ipairs(primary_streets) do
-        megapathpav:save_path(street)
-    end
-    for _, street in ipairs(secondary_streets) do
-        megapathpav:save_path(street)
+    for _, street_data in ipairs(all_streets) do
+        megapathpav:save_path(street_data.street)
     end
     
-    -- Draw all streets
-    draw_streets(megacanv, primary_streets, secondary_streets)
+    draw_streets(megacanv, all_streets)
     
-    return primary_streets, secondary_streets
+    return all_streets
 end
 
 local function road_generator(megacanv, pathpaver_cache)
     megacanv:set_metastore(road_metastore)
+    
+    set_citychunk_seed(megacanv.origin, 0)
+    
     local road_origins = pcmg.citychunk_road_origins(megacanv.origin)
     local connected_points = connect_road_origins(megacanv.origin, road_origins)
     local megapathpav = pcmg.megapathpaver.new(megacanv.origin, pathpaver_cache)
     
-    -- Build main roads
     local main_roads = {}
     for _, points in ipairs(connected_points) do
         local start = points[1]
@@ -464,18 +808,15 @@ local function road_generator(megacanv, pathpaver_cache)
         draw_points(megacanv, road_origins)
     end
     
-    -- Draw main roads
     for _, path in pairs(megapathpav.paths) do
         megacanv:draw_path(road_shape, path, "straight")
         megacanv:draw_path_points(midpoint_shape, path)
     end
     
-    -- Generate and draw branching streets from main roads
     generate_and_draw_streets(megacanv, megapathpav, main_roads, street_config)
 end
 
 function pcmg.generate_roads(megacanv, pathpaver_cache)
     local t1 = minetest.get_us_time()
     megacanv:generate(road_generator, 1, pathpaver_cache)
-    --minetest.log("error", string.format("Overgen time: %g ms", (minetest.get_us_time() - t1) / 1000))
 end
