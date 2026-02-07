@@ -48,19 +48,25 @@ mods/pcity_mapgen/tests/
 ## Prerequisites
 
 You need:
+- **Luanti 5.12 or newer** - Required for features used by Perfect City
 - **Luanti server** (`luantiserver`) or Minetest server (`minetestserver`) installed and in PATH
 - That's it! No external dependencies required.
+
+**Important:** Perfect City requires Luanti 5.12+. Older versions will not work.
 
 ## Installation
 
 ### Installing Luanti
 
-**Ubuntu/Debian:**
+**Ubuntu/Debian (Recommended - Latest Stable from PPA):**
 ```bash
+# Add the official Luanti PPA for the latest stable release (5.12+)
+sudo add-apt-repository ppa:luanti/luanti
+sudo apt-get update
 sudo apt-get install luanti-server
-# or for older versions
-sudo apt-get install minetest-server
 ```
+
+**Important:** The default Ubuntu repositories may contain older versions of Minetest (< 5.12) that are incompatible with Perfect City. Always use the PPA to get version 5.12 or newer.
 
 **Arch Linux:**
 ```bash
@@ -82,6 +88,9 @@ luantiserver --version
 # or
 minetestserver --version
 ```
+
+**Verify you have version 5.12 or newer:**
+After installation, make sure the output shows version 5.12.0 or higher. If you see an older version, you'll need to use the PPA or compile from source.
 
 ## Running Tests
 

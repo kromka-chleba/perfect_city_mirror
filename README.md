@@ -1,7 +1,7 @@
 ![Perfect City](doc/logo.png)
 
 Created by lord_of_the_dumpster
-for `Minetest 5.9+`
+for `Luanti 5.12+`
 
 **TRIGGER WARNING: horror, gore, sensitive subjects (suicide, mental illness), bad language**
 

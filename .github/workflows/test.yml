@@ -1,0 +1,53 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Install Luanti/Minetest server
+      run: |
+        # Install software-properties-common for PPA support
+        sudo apt-get update
+        sudo apt-get install -y software-properties-common
+        
+        # Add Luanti PPA for latest stable version
+        sudo add-apt-repository -y ppa:luanti/luanti
+        sudo apt-get update
+        
+        # Install luanti-server from PPA
+        sudo apt-get install -y luanti-server
+    
+    - name: Verify server installation
+      run: |
+        if command -v luantiserver &> /dev/null; then
+          echo "Using luantiserver"
+          luantiserver --version
+        elif command -v minetestserver &> /dev/null; then
+          echo "Using minetestserver"
+          minetestserver --version
+        else
+          echo "Error: Neither luantiserver nor minetestserver found"
+          exit 1
+        fi
+    
+    - name: Run tests
+      run: |
+        cd mods/pcity_mapgen/tests
+        chmod +x run_tests.sh
+        ./run_tests.sh
+    
+    - name: Test results
+      if: success()
+      run: echo "✓ All tests passed successfully!"
