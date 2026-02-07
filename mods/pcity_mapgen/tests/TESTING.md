@@ -14,21 +14,23 @@ The tests are organized as follows:
 
 ```
 mods/pcity_mapgen/tests/
-├── install_test_deps.sh  # Script to install testing dependencies
+├── install_test_deps.sh  # Script to install testing dependencies and clone Luanti
 ├── run_tests.sh          # Script to run all tests
 ├── test_helper.lua       # Test bootstrap and module loading
-├── mocks/
-│   └── minetest_mocks.lua  # Mock implementations of Minetest API
+├── luanti/               # Cloned Luanti repository (gitignored)
+│   └── builtin/common/   # Luanti's built-in Lua modules (vector, math, etc.)
 ├── point_spec.lua        # Point class unit tests
 └── path_spec.lua         # Path class unit tests
 ```
 
 ### Key Components
 
-- **minetest_mocks.lua**: Provides mock implementations of Minetest/Luanti APIs (core, vector) so tests can run without Minetest
-- **test_helper.lua**: Bootstrap file that sets up the test environment and loads the modules under test
-- **point_spec.lua**: Tests for the Point class (26 test cases)
+- **luanti/**: Cloned from https://github.com/luanti-org/luanti - provides the actual Luanti/Minetest built-in Lua implementations
+- **test_helper.lua**: Bootstrap file that loads Luanti's built-in modules (vector.lua, math.lua) and sets up the test environment
+- **point_spec.lua**: Tests for the Point class (25 test cases)
 - **path_spec.lua**: Tests for the Path class (38 test cases)
+
+**Important**: Tests use the *actual* Luanti built-in modules, not mocks. This ensures perfect compatibility and catches any real incompatibilities with Luanti/Minetest.
 
 ## Installation
 
@@ -279,11 +281,22 @@ cd mods/pcity_mapgen/tests
 busted
 ```
 
+### Luanti repository not found
+
+If you get an error about Luanti not being found, run the installation script:
+
+```bash
+cd mods/pcity_mapgen/tests
+./install_test_deps.sh
+```
+
+This will clone the Luanti repository to get the built-in Lua modules.
+
 ### Tests fail with "attempt to index global 'core'"
 
-This means the mocks aren't being loaded correctly. Verify that:
+This means test_helper.lua couldn't load properly. Verify that:
 1. `test_helper.lua` exists
-2. `mocks/minetest_mocks.lua` exists
+2. `luanti/builtin/common/vector.lua` exists (run `./install_test_deps.sh` if not)
 3. You're running from the correct directory
 
 ### Permission denied when running scripts
@@ -326,8 +339,9 @@ tests.run_all()
 - Required Minetest to run
 - Used plain assert() with messages
 - Tests ran automatically when mod loaded
+- Tests in global namespace
 
-### New System (Standalone with busted)
+### New System (Standalone with busted + real Luanti code)
 
 ```lua
 describe("point.new", function()
@@ -340,10 +354,12 @@ end)
 ```
 
 - Runs standalone without Minetest
+- Uses the **actual** Luanti built-in modules (vector.lua, math.lua)
 - Uses expressive busted assertions
 - Tests run via command line tools
 - Better test organization with describe/it blocks
 - Works with CI/CD systems
+- Ensures perfect compatibility with real Luanti code
 
 ## Resources
 
