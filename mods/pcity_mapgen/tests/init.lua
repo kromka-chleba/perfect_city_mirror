@@ -16,16 +16,86 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
+-- Test runner for pcity_mapgen
+-- Runs tests inside the Luanti engine when pcity_run_tests setting is enabled
+-- Following the pattern from WorldEdit: https://github.com/Uberi/Minetest-WorldEdit
+
 local mod_name = core.get_current_modname()
 local mod_path = core.get_modpath("pcity_mapgen")
 
-local pcmg = pcity_mapgen
-pcmg.tests = {}
-pcmg.tests.path = {}
-local tests = pcmg.tests.path
-
--- run unit tests if enabled in settings
-if core.settings:get_bool("pcity_run_tests") then
-    dofile(mod_path.."/tests/tests_point.lua")
-    dofile(mod_path.."/tests/tests_path.lua")
+-- Only run tests if enabled in settings
+if not core.settings:get_bool("pcity_run_tests") then
+    return
 end
+
+local pcmg = pcity_mapgen
+
+-- Initialize test registry
+pcmg.tests = pcmg.tests or {}
+pcmg.tests.registered = {}
+
+-- Register a test
+pcmg.register_test = function(name, func)
+    assert(type(name) == "string", "Test name must be a string")
+    assert(func == nil or type(func) == "function", "Test func must be nil or a function")
+    
+    table.insert(pcmg.tests.registered, {
+        name = name,
+        func = func
+    })
+end
+
+-- Load test files
+dofile(mod_path.."/tests/tests_point.lua")
+dofile(mod_path.."/tests/tests_path.lua")
+
+-- Run all tests
+pcmg.run_tests = function()
+    local v = minetest.get_version()
+    print("Running " .. #pcmg.tests.registered .. " tests for pcity_mapgen on " .. 
+          v.project .. " " .. (v.hash or v.string))
+    
+    local failed = 0
+    local passed = 0
+    
+    for _, test in ipairs(pcmg.tests.registered) do
+        if not test.func then
+            -- This is a section header
+            local s = "---- " .. test.name .. " "
+            print(s .. string.rep("-", 60 - #s))
+        else
+            -- Run the actual test
+            local ok, err = pcall(test.func)
+            local status = ok and "pass" or "FAIL"
+            print(string.format("%-60s %s", test.name, status))
+            
+            if not ok then
+                print("   " .. tostring(err))
+                failed = failed + 1
+            else
+                passed = passed + 1
+            end
+        end
+    end
+    
+    print(string.format("\nResults: %d passed, %d failed, %d total",
+          passed, failed, passed + failed))
+    
+    -- Write success marker file
+    if failed == 0 then
+        local worldpath = minetest.get_worldpath()
+        local file = io.open(worldpath .. "/tests_ok", "w")
+        if file then
+            file:write("All tests passed\n")
+            file:close()
+        end
+    end
+    
+    -- Shutdown the server after tests complete
+    minetest.request_shutdown("Tests completed", false, 0)
+end
+
+-- Run tests after server starts
+minetest.after(0.1, function()
+    pcmg.run_tests()
+end)

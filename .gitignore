@@ -3,3 +3,11 @@
 *\.blend*[0-9]
 *#*#
 *.bak
+
+# Lua testing artifacts
+luacov.*.out
+*.rock
+.luarocks/
+
+# Test dependencies
+mods/pcity_mapgen/tests/luanti/
