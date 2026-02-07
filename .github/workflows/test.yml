@@ -31,6 +31,26 @@ jobs:
         # Note: Don't install minetest-server as it conflicts with the PPA version
         sudo apt-get install -y minetest
     
+    - name: Debug Minetest installation
+      run: |
+        echo "=== Checking installed minetest packages ==="
+        dpkg -l | grep minetest || echo "No minetest packages found"
+        echo ""
+        echo "=== Checking minetest binaries in /usr/bin ==="
+        ls -l /usr/bin | grep minetest || echo "No minetest binaries in /usr/bin"
+        echo ""
+        echo "=== Checking minetest binaries in /usr/games ==="
+        ls -l /usr/games | grep minetest || echo "No minetest binaries in /usr/games"
+        echo ""
+        echo "=== Checking which minetest ==="
+        which minetest || echo "minetest not in PATH"
+        echo ""
+        echo "=== Checking which minetestserver ==="
+        which minetestserver || echo "minetestserver not in PATH"
+        echo ""
+        echo "=== Checking PATH ==="
+        echo "PATH=$PATH"
+    
     - name: Verify server installation
       run: |
         # Check for server binary - prefer minetestserver, fallback to minetest
