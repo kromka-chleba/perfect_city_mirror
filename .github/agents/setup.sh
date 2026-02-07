@@ -84,13 +84,36 @@ echo ""
 echo "Verifying installation..."
 if command -v luantiserver &> /dev/null; then
     echo "✓ luantiserver installed successfully"
-    luantiserver --version
+    VERSION_OUTPUT=$(luantiserver --version 2>&1 | head -1)
+    echo "$VERSION_OUTPUT"
 elif command -v minetestserver &> /dev/null; then
     echo "✓ minetestserver installed successfully"
-    minetestserver --version
+    VERSION_OUTPUT=$(minetestserver --version 2>&1 | head -1)
+    echo "$VERSION_OUTPUT"
 else
     echo "✗ Installation verification failed"
     exit 1
+fi
+
+# Check if version is 5.12 or newer
+echo ""
+echo "Checking version requirement..."
+if echo "$VERSION_OUTPUT" | grep -qE "(Luanti|Minetest) [5-9]\.[0-9]"; then
+    VERSION_NUM=$(echo "$VERSION_OUTPUT" | grep -oE "[5-9]\.[0-9]+\.[0-9]+" | head -1)
+    MAJOR=$(echo "$VERSION_NUM" | cut -d. -f1)
+    MINOR=$(echo "$VERSION_NUM" | cut -d. -f2)
+    
+    if [ "$MAJOR" -gt 5 ] || ([ "$MAJOR" -eq 5 ] && [ "$MINOR" -ge 12 ]); then
+        echo "✓ Version $VERSION_NUM meets minimum requirement (5.12+)"
+    else
+        echo "⚠ WARNING: Version $VERSION_NUM is below the minimum required version 5.12"
+        echo "⚠ Perfect City requires Luanti 5.12 or newer"
+        echo "⚠ Please upgrade to a newer version from the Luanti PPA"
+        exit 1
+    fi
+else
+    echo "⚠ Could not determine version number"
+    echo "⚠ Perfect City requires Luanti 5.12 or newer"
 fi
 
 echo ""
