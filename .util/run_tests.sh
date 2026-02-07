@@ -8,7 +8,7 @@ set -e
 tempdir=$(mktemp -d)
 confpath=$tempdir/minetest.conf
 worldpath=$tempdir/world
-gamepath=$tempdir/games/perfect_city
+gamepath="$tempdir/games/Perfect City"
 
 trap 'rm -rf "$tempdir"' EXIT
 
@@ -44,7 +44,7 @@ path_user = $tempdir
 CONFEOF
 
 echo "Starting test run..."
-$mtserver --server --gameid perfect_city --config "$confpath" --world "$worldpath" --logfile /dev/null
+$mtserver --server --gameid "Perfect City" --config "$confpath" --world "$worldpath" --logfile /dev/null
 
 test -f "$worldpath/tests_ok" || exit 1
 exit 0
