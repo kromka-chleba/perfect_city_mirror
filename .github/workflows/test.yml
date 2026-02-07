@@ -1,54 +1,18 @@
-name: Run Tests
-
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+name: Test
+on: [push, pull_request]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 5
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         submodules: recursive
-    
-    - name: Install Luanti/Minetest server
-      run: |
-        # Install software-properties-common for PPA support
-        sudo apt-get update
-        sudo apt-get install -y software-properties-common
-        
-        # Add Minetest PPA for latest stable version
-        # Note: Luanti is the new name for Minetest, but PPA is still under minetestdevs
-        sudo add-apt-repository -y ppa:minetestdevs/stable
-        sudo apt-get update
-        
-        # Try to install luanti-server first (newer package name), fallback to minetest-server
-        sudo apt-get install -y luanti-server || sudo apt-get install -y minetest-server
-    
-    - name: Verify server installation
-      run: |
-        if command -v luantiserver &> /dev/null; then
-          echo "Using luantiserver"
-          luantiserver --version
-        elif command -v minetestserver &> /dev/null; then
-          echo "Using minetestserver"
-          minetestserver --version
-        else
-          echo "Error: Neither luantiserver nor minetestserver found"
-          exit 1
-        fi
-    
+
     - name: Run tests
-      run: |
-        cd mods/pcity_mapgen/tests
-        chmod +x run_tests.sh
-        ./run_tests.sh
-    
-    - name: Test results
-      if: success()
-      run: echo "✓ All tests passed successfully!"
+      run: ./utils/test/run.sh
+      env:
+        DOCKER_IMAGE: "ghcr.io/luanti-org/luanti:master"
+
