@@ -1,51 +1,65 @@
 #!/bin/bash
-# Test runner script for pcity_mapgen unit tests
-# This script runs busted tests in the correct directory with proper Lua paths
-# Uses LuaJIT (same as Luanti/Minetest)
+# Test runner script for pcity_mapgen
+# Runs tests inside the Luanti engine
+# Based on WorldEdit's test runner: https://github.com/Uberi/Minetest-WorldEdit
 
 set -e
 
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "$SCRIPT_DIR"
+tempdir=$(mktemp -d)
+confpath=$tempdir/minetest.conf
+worldpath=$tempdir/world
 
-# Check if busted is installed
-if ! command -v busted &> /dev/null; then
-    echo "Error: busted is not installed or not in PATH"
-    echo ""
-    echo "Please run the installation script first:"
-    echo "  ./install_test_deps.sh"
-    echo ""
-    echo "Or install busted manually:"
-    echo "  luarocks install busted"
-    echo ""
-    echo "If you installed busted locally, make sure these are in your shell config:"
-    echo "  export PATH=\$HOME/.luarocks/bin:\$PATH"
-    echo "  export LUA_PATH='\$HOME/.luarocks/share/lua/5.1/?.lua;\$HOME/.luarocks/share/lua/5.1/?/init.lua;;\$LUA_PATH'"
-    echo "  export LUA_CPATH='\$HOME/.luarocks/lib/lua/5.1/?.so;;\$LUA_CPATH'"
+trap 'rm -rf "$tempdir"' EXIT
+
+# Find the mod directory
+moddir=$(dirname "$(readlink -f "$0")")
+moddir=$(dirname "$moddir")  # Go up from tests/ to pcity_mapgen/
+
+# Check if we're in the right place
+[ -f "$moddir/mod.conf" ] || { echo "Error: Could not find mod.conf. Run this script from mods/pcity_mapgen/tests/" >&2; exit 1; }
+
+# Find luantiserver or minetestserver
+mtserver=$(command -v luantiserver)
+[ -z "$mtserver" ] && mtserver=$(command -v minetestserver)
+[ -z "$mtserver" ] && { echo "Error: luantiserver or minetestserver not found in PATH" >&2; exit 1; }
+
+echo "Using server: $mtserver"
+echo "Mod directory: $moddir"
+echo "Temp directory: $tempdir"
+
+# Create temporary world
+mkdir -p "$worldpath"
+
+# Create map_meta.txt with singlenode mapgen
+cat > "$worldpath/map_meta.txt" << 'MAPEOF'
+mg_name = singlenode
+[end_of_params]
+MAPEOF
+
+# Create minetest.conf with test settings
+cat > "$confpath" << 'CONFEOF'
+pcity_run_tests = true
+max_forceloaded_blocks = 9999
+CONFEOF
+
+# Create worldmods directory and symlink our mod
+mkdir -p "$worldpath/worldmods"
+ln -s "$moddir" "$worldpath/worldmods/pcity_mapgen"
+
+echo "Starting test run..."
+echo "---"
+
+# Run the server
+# Redirect stderr to stdout so we see everything
+$mtserver --config "$confpath" --world "$worldpath" --logfile /dev/null 2>&1 || true
+
+echo "---"
+
+# Check if tests passed
+if [ -f "$worldpath/tests_ok" ]; then
+    echo "✓ All tests passed!"
+    exit 0
+else
+    echo "✗ Tests failed or did not complete"
     exit 1
 fi
-
-# Print information about the Lua runtime
-if command -v luajit &> /dev/null; then
-    echo "Using LuaJIT: $(luajit -v)"
-else
-    echo "Note: LuaJIT not found. Using standard Lua interpreter."
-    echo "      For best compatibility with Luanti/Minetest, install LuaJIT."
-fi
-
-# Print busted version
-echo "Running tests with busted $(busted --version 2>&1 | head -1)"
-echo ""
-
-# Run busted with the tests directory as the working directory
-# This allows require("test_helper") to work correctly
-# Explicitly specify test files if no arguments provided
-if [ $# -eq 0 ]; then
-    busted point_spec.lua path_spec.lua
-else
-    busted "$@"
-fi
-
-echo ""
-echo "All tests completed successfully!"
