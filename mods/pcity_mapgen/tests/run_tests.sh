@@ -50,8 +50,12 @@ moddir=$(dirname "$moddir")  # Go up from tests/ to pcity_mapgen/
 [ -f "$moddir/mod.conf" ] || { echo "Error: Could not find mod.conf. Run this script from mods/pcity_mapgen/tests/" >&2; exit 1; }
 
 # Find minetestserver or minetest/luanti binary
+echo "=== Debug: Searching for minetest binary ==="
 mtserver=$(command -v minetestserver)
-[ -z "$mtserver" ] && mtserver=$(command -v minetest)
+if [ -z "$mtserver" ]; then
+    echo "minetestserver not found, trying minetest..."
+    mtserver=$(command -v minetest)
+fi
 
 # Check if we found a server binary
 if [ -z "$mtserver" ]; then
@@ -59,10 +63,23 @@ if [ -z "$mtserver" ]; then
     exit 1
 fi
 
+echo "Found binary: $mtserver"
+echo "Binary details:"
+ls -la "$mtserver"
+if [ -L "$mtserver" ]; then
+    echo "Binary is a symlink, resolving:"
+    readlink -f "$mtserver"
+fi
+echo "Binary version:"
+"$mtserver" --version || echo "Failed to get version"
+echo "=== End binary search debug ==="
+echo ""
+
 # If using minetest/luanti binary (not minetestserver), add --server flag
 server_flag=""
 if [[ "$mtserver" == *"minetest"* ]] && [[ "$mtserver" != *"minetestserver"* ]]; then
     server_flag="--server"
+    echo "Detected minetest client binary, will use --server flag"
 fi
 
 echo "Using server: $mtserver $server_flag"
@@ -89,19 +106,30 @@ mkdir -p "$worldpath/worldmods"
 ln -s "$moddir" "$worldpath/worldmods/pcity_mapgen"
 
 echo "Starting test run..."
+echo "Command to execute: $mtserver $server_flag --config \"$confpath\" --world \"$worldpath\" --logfile /dev/null"
 echo "---"
 
 # Run the server
 # Redirect stderr to stdout so we see everything
-$mtserver $server_flag --config "$confpath" --world "$worldpath" --logfile /dev/null 2>&1 || true
+echo "=== Server output start ==="
+set +e  # Temporarily disable exit on error
+$mtserver $server_flag --config "$confpath" --world "$worldpath" --logfile /dev/null 2>&1
+server_exit_code=$?
+set -e  # Re-enable exit on error
+echo "=== Server output end ==="
+echo "Server exit code: $server_exit_code"
 
 echo "---"
 
 # Check if tests passed
+echo "=== Checking test results ==="
+echo "Looking for marker file: $worldpath/tests_ok"
 if [ -f "$worldpath/tests_ok" ]; then
-    echo "✓ All tests passed!"
+    echo "✓ Marker file found! All tests passed!"
     exit 0
 else
-    echo "✗ Tests failed or did not complete"
+    echo "✗ Marker file not found. Tests failed or did not complete"
+    echo "World path contents:"
+    ls -la "$worldpath/" || echo "Cannot list world path"
     exit 1
 fi
