@@ -49,13 +49,23 @@ moddir=$(dirname "$moddir")  # Go up from tests/ to pcity_mapgen/
 # Check if we're in the right place
 [ -f "$moddir/mod.conf" ] || { echo "Error: Could not find mod.conf. Run this script from mods/pcity_mapgen/tests/" >&2; exit 1; }
 
-# Find luantiserver, minetestserver, or minetest binary
-mtserver=$(command -v luantiserver)
-[ -z "$mtserver" ] && mtserver=$(command -v minetestserver)
+# Find minetestserver or minetest/luanti binary
+mtserver=$(command -v minetestserver)
 [ -z "$mtserver" ] && mtserver=$(command -v minetest)
-[ -z "$mtserver" ] && { echo "Error: luantiserver, minetestserver, or minetest binary not found in PATH" >&2; exit 1; }
 
-echo "Using server: $mtserver"
+# Check if we need to add --server flag (for minetest/luanti binary)
+server_flag=""
+if [ -z "$mtserver" ]; then
+    echo "Error: minetestserver or minetest binary not found in PATH" >&2
+    exit 1
+fi
+
+# If using minetest/luanti binary (not minetestserver), add --server flag
+if [[ "$mtserver" == *"minetest"* ]] && [[ "$mtserver" != *"minetestserver"* ]]; then
+    server_flag="--server"
+fi
+
+echo "Using server: $mtserver $server_flag"
 echo "Mod directory: $moddir"
 echo "Temp directory: $tempdir"
 
@@ -83,7 +93,7 @@ echo "---"
 
 # Run the server
 # Redirect stderr to stdout so we see everything
-$mtserver --config "$confpath" --world "$worldpath" --logfile /dev/null 2>&1 || true
+$mtserver $server_flag --config "$confpath" --world "$worldpath" --logfile /dev/null 2>&1 || true
 
 echo "---"
 

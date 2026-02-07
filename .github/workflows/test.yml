@@ -22,25 +22,22 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y software-properties-common
         
-        # Add Minetest PPA for latest stable version
-        # The package repository is at https://launchpad.net/~minetestdevs/+archive/ubuntu/stable
+        # Add universe repository and Minetest PPA
+        sudo add-apt-repository universe
         sudo add-apt-repository -y ppa:minetestdevs/stable
         sudo apt-get update
         
-        # Install minetest package from PPA - the server is included
-        sudo apt-get install -y minetest
+        # Install both minetest and minetest-server packages
+        sudo apt-get install -y minetest minetest-server
     
     - name: Verify server installation
       run: |
-        # Check for various possible server binary names
-        if command -v luantiserver &> /dev/null; then
-          echo "Using luantiserver"
-          luantiserver --version
-        elif command -v minetestserver &> /dev/null; then
+        # Check for server binary - prefer minetestserver, fallback to minetest
+        if command -v minetestserver &> /dev/null; then
           echo "Using minetestserver"
           minetestserver --version
         elif command -v minetest &> /dev/null; then
-          echo "Using minetest binary"
+          echo "Using minetest"
           minetest --version
         else
           echo "Error: No minetest server binary found"
