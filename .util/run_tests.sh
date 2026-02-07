@@ -29,6 +29,7 @@ ln -s "$(pwd)/game.conf" "$gamepath/"
 ln -s "$(pwd)/mods" "$gamepath/"
 [ -f settingtypes.txt ] && ln -s "$(pwd)/settingtypes.txt" "$gamepath/"
 [ -d menu ] && ln -s "$(pwd)/menu" "$gamepath/"
+[ -f minetest.conf ] && ln -s "$(pwd)/minetest.conf" "$gamepath/"
 
 # Create world
 mkdir -p "$worldpath"
