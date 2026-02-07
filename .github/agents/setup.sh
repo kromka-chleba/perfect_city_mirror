@@ -50,17 +50,20 @@ case "$OS" in
             $USE_SUDO apt-get install -y software-properties-common
         fi
         
-        # Add Luanti PPA for latest stable version
-        echo "Adding Luanti PPA for latest stable release..."
-        $USE_SUDO add-apt-repository -y ppa:luanti/luanti
+        # Add Minetest PPA for latest stable version
+        # Note: Luanti is the new name for Minetest, but PPA is still under minetestdevs
+        echo "Adding Minetest PPA for latest stable release..."
+        $USE_SUDO add-apt-repository -y ppa:minetestdevs/stable
         $USE_SUDO apt-get update -qq
         
-        # Install luanti-server (newer name for minetest-server)
-        echo "Installing luanti-server from PPA..."
+        # Try to install luanti-server first (newer package name), fallback to minetest-server
+        echo "Installing Luanti/Minetest server from PPA..."
         if $USE_SUDO apt-get install -y luanti-server; then
             echo "✓ Installed luanti-server from PPA"
+        elif $USE_SUDO apt-get install -y minetest-server; then
+            echo "✓ Installed minetest-server from PPA"
         else
-            echo "✗ Failed to install Luanti server"
+            echo "✗ Failed to install Luanti/Minetest server"
             exit 1
         fi
         ;;
