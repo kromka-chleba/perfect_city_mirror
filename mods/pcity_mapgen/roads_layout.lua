@@ -17,8 +17,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local mod_name = minetest.get_current_modname()
-local mod_path = minetest.get_modpath("pcity_mapgen")
+local mod_name = core.get_current_modname()
+local mod_path = core.get_modpath("pcity_mapgen")
 local pcmg = pcity_mapgen
 local units = pcmg.units
 local math = math
@@ -30,7 +30,7 @@ local canvas_brush = pcmg.canvas_brush
 local path_utils = pcmg.path_utils
 
 -- Get mapgen seed for deterministic random generation
-local mapgen_seed = tonumber(minetest.get_mapgen_setting("seed")) or 0
+local mapgen_seed = tonumber(core.get_mapgen_setting("seed")) or 0
 
 -- Sizes of map division units
 local node = sizes.node
@@ -261,6 +261,6 @@ local function road_generator(megacanv, pathpaver_cache)
 end
 
 function pcmg.generate_roads(megacanv, pathpaver_cache)
-    local t1 = minetest.get_us_time()
+    local t1 = core.get_us_time()
     megacanv:generate(road_generator, 1, pathpaver_cache)
 end

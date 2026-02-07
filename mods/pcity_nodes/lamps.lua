@@ -16,11 +16,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local mod_name = minetest.get_current_modname()
+local mod_name = core.get_current_modname()
 
 local pcc = pcity_common
 
-minetest.register_node(
+core.register_node(
     mod_name..":ceiling_lamp_1",
     {
         drawtype = "mesh",

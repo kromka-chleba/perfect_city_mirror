@@ -17,11 +17,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local mod_name = minetest.get_current_modname()
-local mod_path = minetest.get_modpath("pcity_mapgen")
+local mod_name = core.get_current_modname()
+local mod_path = core.get_modpath("pcity_mapgen")
 local pc_sizes = dofile(mod_path.."/sizes.lua")
 
-minetest.register_biome({
+core.register_biome({
         name = "city",
         node_top = "pcity_nodes:grass",
         depth_top = 1,

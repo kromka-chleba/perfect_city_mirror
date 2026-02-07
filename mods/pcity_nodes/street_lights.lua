@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local mod_name = minetest.get_current_modname()
+local mod_name = core.get_current_modname()
 
 local pcc = pcity_common
 
@@ -26,7 +26,7 @@ local plate_bottom = "pcity_nodes_street_light_plate_bottom.png"
 
 -- Concrete pillars
 
-minetest.register_node(
+core.register_node(
     mod_name..":concrete_pillar_bottom",
     {
         drawtype = "mesh",
@@ -40,7 +40,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":concrete_pillar_bottom_2",
     {
         drawtype = "mesh",
@@ -54,7 +54,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":concrete_pillar_thin",
     {
         drawtype = "mesh",
@@ -68,7 +68,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":concrete_pillar_cross_junction",
     {
         drawtype = "mesh",
@@ -80,7 +80,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":concrete_pillar_L_junction",
     {
         drawtype = "mesh",
@@ -93,7 +93,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":concrete_pillar_neck",
     {
         drawtype = "mesh",
@@ -107,7 +107,7 @@ minetest.register_node(
 
 -- The glowing part
 
-minetest.register_node(
+core.register_node(
     mod_name..":street_light_ball",
     {
         drawtype = "mesh",
@@ -121,7 +121,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":street_light_ball_lit",
     {
         drawtype = "mesh",
@@ -136,7 +136,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":plate_lamp",
     {
         drawtype = "mesh",
@@ -150,7 +150,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":plate_lamp_lit",
     {
         drawtype = "mesh",

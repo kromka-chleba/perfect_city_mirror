@@ -17,12 +17,12 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local mod_name = minetest.get_current_modname()
+local mod_name = core.get_current_modname()
 
 local pcn = pcity_nodes
 
 -- Pierwszego dnia bóg stworzył beton
-minetest.register_node(
+core.register_node(
     mod_name..":concrete",
     {
         description = "Concrete",
@@ -35,7 +35,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":bricks_gray",
     {
         description = "Gray Bricks",
@@ -48,7 +48,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":bricks_red",
     {
         description = "Red Bricks",
@@ -72,7 +72,7 @@ local roughcast_list = {
 }
 
 for _, roughcast in pairs(roughcast_list) do
-    minetest.register_node(
+    core.register_node(
         mod_name..":roughcast_"..roughcast.name,
         {
             description = roughcast.name,

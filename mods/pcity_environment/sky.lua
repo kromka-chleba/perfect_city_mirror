@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local mod_name = minetest.get_current_modname()
+local mod_name = core.get_current_modname()
 local math = math
 
 ---------------------------------------------------
@@ -211,21 +211,21 @@ local refresh_interval = 100
 -- for now it moves the monster around
 local function refresh_sky()
     current_sky = get_default_sky()
-    local players = minetest.get_connected_players()
+    local players = core.get_connected_players()
     for _, player in pairs(players) do
         player:set_sky(current_sky)
         player:set_clouds(clouds)
         player:set_sun(sun)
         player:set_moon(moon)
     end
-    minetest.after(refresh_interval, refresh_sky)
+    core.after(refresh_interval, refresh_sky)
     return
 end
 
-minetest.after(refresh_interval, refresh_sky)
+core.after(refresh_interval, refresh_sky)
 
 -- Loads current sky for players who just connected
-minetest.register_on_joinplayer(
+core.register_on_joinplayer(
     function(player, last_login)
         player:set_sky(current_sky)
         player:set_clouds(clouds)

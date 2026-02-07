@@ -17,8 +17,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local mod_name = minetest.get_current_modname()
-local mod_path = minetest.get_modpath("pcity_mapgen")
+local mod_name = core.get_current_modname()
+local mod_path = core.get_modpath("pcity_mapgen")
 
 local math = math
 local pcmg = pcity_mapgen
@@ -26,7 +26,7 @@ local sizes = dofile(mod_path.."/sizes.lua")
 local units = sizes.units
 
 -- By default chunksize is 5
-local blocks_per_chunk = tonumber(minetest.get_mapgen_setting("chunksize"))
+local blocks_per_chunk = tonumber(core.get_mapgen_setting("chunksize"))
 -- By default 80
 local mapchunk_size = blocks_per_chunk * 16
 -- By default -32
@@ -84,13 +84,13 @@ end
 -- Returns mapchunk hash for a given position
 function pcmg.mapchunk_hash(pos)
     local origin = pcmg.mapchunk_origin(pos)
-    return minetest.hash_node_position(origin)
+    return core.hash_node_position(origin)
 end
 
 -- Returns citychunk hash for a given position
 function pcmg.citychunk_hash(pos)
     local origin = pcmg.citychunk_origin(pos)
-    return minetest.hash_node_position(origin)
+    return core.hash_node_position(origin)
 end
 
 -- Returns node position relative to citychunk origin point.
@@ -117,7 +117,7 @@ function pcmg.citychunk_neighbors(pos)
     return neighbors
 end
 
-local mapgen_seed = minetest.get_mapgen_setting("seed")
+local mapgen_seed = core.get_mapgen_setting("seed")
 
 function pcmg.set_randomseed(citychunk_origin)
     local coords = pcmg.citychunk_coords(citychunk_origin)

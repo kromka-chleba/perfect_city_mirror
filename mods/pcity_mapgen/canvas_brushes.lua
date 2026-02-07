@@ -17,8 +17,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local mod_name = minetest.get_current_modname()
-local mod_path = minetest.get_modpath("pcity_mapgen")
+local mod_name = core.get_current_modname()
+local mod_path = core.get_modpath("pcity_mapgen")
 local math = math
 local vector = vector
 local pcmg = pcity_mapgen
@@ -41,8 +41,8 @@ cs.cache = {}
 function cs.cheap_hash(shape_name, args)
     local data = args
     table.insert(data, 1, shape_name)
-    local serialized = minetest.serialize(data)
-    return minetest.encode_base64(serialized)
+    local serialized = core.serialize(data)
+    return core.encode_base64(serialized)
 end
 
 function cs.make_rectangle(...)
@@ -108,7 +108,7 @@ end
 local function hash_shape_positions(shape)
     local hashed = {}
     for _, cell in pairs(shape) do
-        local hash = minetest.hash_node_position(cell.pos)
+        local hash = core.hash_node_position(cell.pos)
         hashed[hash] = cell
     end
     return hashed
@@ -131,12 +131,12 @@ function cs.make_line(...)
     end
     local samples = vector.split(vec, vector.length(vec) * 3)
     local current_pos = vector.new(0, 0, 0)
-    local current_hash = minetest.hash_node_position(current_pos)
+    local current_hash = core.hash_node_position(current_pos)
     local cells = {}
     for _, vec in pairs(samples) do
         current_pos = current_pos + vec
         local pos = vector.floor(current_pos)
-        current_hash = minetest.hash_node_position(pos)
+        current_hash = core.hash_node_position(pos)
         cells[current_hash] = {pos = pos, material = material_id}
     end
     cs.cache[hash] = unhash_shape_positions(cells)

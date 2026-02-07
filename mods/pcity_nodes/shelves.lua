@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local mod_name = minetest.get_current_modname()
+local mod_name = core.get_current_modname()
 
 local pcc = pcity_common
 local itemstore_api = itemstore_api
