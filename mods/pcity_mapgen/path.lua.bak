@@ -458,6 +458,472 @@ function path:all_segments()
     return segments
 end
 
+-- ============================================================
+-- SEGMENT AND PATH INTERSECTION (EXISTING FUNCTIONS)
+-- ============================================================
+
+-- Checks if a segment intersects with any segment of this path.
+-- Returns a list of intersection info tables (see segment_intersects).
+-- Each result also includes:
+--   - segment_index: number, index of the path segment that intersects
+--   - segment: table, the path segment {start_pos, end_pos, start_point, end_point}
+function path:intersects_segment(seg_start, seg_end, margin)
+    margin = margin or 0
+    local results = {}
+    local segments = self:all_segments()
+
+    for i, seg in ipairs(segments) do
+        local intersection = path_utils.segment_intersects(
+            seg_start, seg_end,
+            seg.start_pos, seg.end_pos,
+            margin
+        )
+        if intersection then
+            intersection.segment_index = i
+            intersection.segment = seg
+            table.insert(results, intersection)
+        end
+    end
+
+    return results
+end
+
+-- Checks if this path intersects with another path.
+-- Returns a list of intersection info tables.
+-- Each result includes:
+--   - self_segment_index: number, index of segment in this path
+--   - self_segment: table, the segment from this path
+--   - other_segment_index: number, index of segment in other path
+--   - other_segment: table, the segment from other path
+--   - (plus all fields from segment_intersects)
+function path:intersects_path(other_path, margin)
+    margin = margin or 0
+    local results = {}
+    local self_segments = self:all_segments()
+    local other_segments = other_path:all_segments()
+
+    for i, self_seg in ipairs(self_segments) do
+        for j, other_seg in ipairs(other_segments) do
+            local intersection = path_utils.segment_intersects(
+                self_seg.start_pos, self_seg.end_pos,
+                other_seg.start_pos, other_seg.end_pos,
+                margin
+            )
+            if intersection then
+                intersection.self_segment_index = i
+                intersection.self_segment = self_seg
+                intersection.other_segment_index = j
+                intersection.other_segment = other_seg
+                table.insert(results, intersection)
+            end
+        end
+    end
+
+    return results
+end
+
+-- Checks if a point is within 'margin' distance of any segment of this path.
+-- Returns intersection info or nil.
+-- The returned table contains:
+--   - distance: number, shortest distance from point to path
+--   - closest_point: vector, closest point on the path
+--   - segment_index: number, index of the closest segment
+--   - segment: table, the closest segment
+function path:intersects_point(p, margin)
+    margin = margin or 0
+    local segments = self:all_segments()
+    local best_dist = math.huge
+    local best_closest = nil
+    local best_segment_index = nil
+    local best_segment = nil
+
+    for i, seg in ipairs(segments) do
+        local dist, closest = path_utils.point_to_segment_distance_2d(p, seg.start_pos, seg.end_pos)
+        if dist < best_dist then
+            best_dist = dist
+            best_closest = closest
+            best_segment_index = i
+            best_segment = seg
+        end
+    end
+
+    if best_dist <= margin then
+        return {
+            distance = best_dist,
+            closest_point = best_closest,
+            segment_index = best_segment_index,
+            segment = best_segment
+        }
+    end
+
+    return nil
+end
+
+-- Finds the first intersection point when traversing this path.
+-- Useful for finding where a path would collide with an obstacle.
+-- Returns the intersection info closest to the start of the path, or nil.
+function path:first_intersection_with_path(other_path, margin)
+    local intersections = self:intersects_path(other_path, margin)
+    if #intersections == 0 then
+        return nil
+    end
+
+    -- Sort by self_segment_index to find first intersection
+    table.sort(intersections, function(a, b)
+        if a.self_segment_index ~= b.self_segment_index then
+            return a.self_segment_index < b.self_segment_index
+        end
+        -- If same segment, compare distance from segment start
+        local dist_a = vector.distance(a.point_a, a.self_segment.start_pos)
+        local dist_b = vector.distance(b.point_a, b.self_segment.start_pos)
+        return dist_a < dist_b
+    end)
+
+    return intersections[1]
+end
+
+-- Checks if this path intersects with itself (self-intersection).
+-- Skips adjacent segments as they naturally share endpoints.
+-- Returns a list of intersection info tables.
+function path:self_intersections(margin)
+    margin = margin or 0
+    local results = {}
+    local segments = self:all_segments()
+
+    for i = 1, #segments - 2 do
+        for j = i + 2, #segments do
+            local intersection = path_utils.segment_intersects(
+                segments[i].start_pos, segments[i].end_pos,
+                segments[j].start_pos, segments[j].end_pos,
+                margin
+            )
+            if intersection then
+                intersection.segment_index_1 = i
+                intersection.segment_1 = segments[i]
+                intersection.segment_index_2 = j
+                intersection.segment_2 = segments[j]
+                table.insert(results, intersection)
+            end
+        end
+    end
+
+    return results
+end
+
+-- ============================================================
+-- SEGMENT FINDING AND POINT INSERTION
+-- ============================================================
+
+-- Find the segment in a path that contains the given position
+-- Returns the segment, its index, the t parameter, and the distance from the segment
+function path:find_segment_containing_point(pos, tolerance)
+    tolerance = tolerance or 10
+    local segments = self:all_segments()
+
+    for seg_idx, seg in ipairs(segments) do
+        local seg_dir = vector.subtract(seg.end_pos, seg.start_pos)
+        local seg_len_sq = path_utils.xz_length_sq(seg_dir)
+
+        if seg_len_sq > 1e-6 then
+            local to_pos = vector.subtract(pos, seg.start_pos)
+            local t = path_utils.xz_dot(to_pos, seg_dir) / seg_len_sq
+
+            -- Check if t is within segment bounds
+            if t >= -0.1 and t <= 1.1 then
+                local clamped_t = math.max(0, math.min(1, t))
+                local closest = vector.add(seg.start_pos, vector.multiply(seg_dir, clamped_t))
+                local dist = vector.distance(pos, closest)
+
+                if dist < tolerance then
+                    return seg, seg_idx, t, dist
+                end
+            end
+        end
+    end
+
+    return nil, nil, nil, nil
+end
+
+-- Insert a point into the path at the given position
+-- Returns the new point (or existing point if close enough), and whether it was inserted
+-- min_distance: minimum distance to existing points before returning existing point
+function path:insert_point_at_position(pos, min_distance)
+    min_distance = min_distance or 5
+
+    -- Check if there's already a point close to this position
+    local all_points = self:all_points()
+    for _, p in ipairs(all_points) do
+        if vector.distance(p.pos, pos) < min_distance then
+            return p, false  -- Return existing point, no insertion needed
+        end
+    end
+
+    -- Find the segment containing this position
+    local seg, seg_idx, t, dist = self:find_segment_containing_point(pos, min_distance * 3)
+
+    if not seg then
+        return nil, false
+    end
+
+    -- Verify the segment is still valid (points are adjacent)
+    if not seg.start_point or not seg.end_point then
+        return nil, false
+    end
+
+    if seg.start_point.next ~= seg.end_point then
+        return nil, false
+    end
+
+    -- Check distance from segment endpoints
+    if vector.distance(seg.start_point.pos, pos) < min_distance then
+        return seg.start_point, false
+    end
+    if vector.distance(seg.end_point.pos, pos) < min_distance then
+        return seg.end_point, false
+    end
+
+    -- Check if t is too close to endpoints
+    if t < 0.05 then
+        return seg.start_point, false
+    elseif t > 0.95 then
+        return seg.end_point, false
+    end
+
+    -- Insert new point
+    local new_point = point.new(pos)
+    self:insert_between(seg.start_point, seg.end_point, new_point)
+    return new_point, true
+end
+
+-- ============================================================
+-- PATH INTERSECTION FINDING (NEW FUNCTIONS)
+-- ============================================================
+
+-- Find all intersections between this path and another path
+-- Returns a list of intersection data with positions and segment info
+-- skip_position: optional position to skip (e.g., branch point)
+-- skip_tolerance: distance within which to skip intersections near skip_position
+function path:find_intersections_with_path(other_path, skip_position, skip_tolerance)
+    skip_tolerance = skip_tolerance or 10
+    local intersections = {}
+    local self_segments = self:all_segments()
+    local other_segments = other_path:all_segments()
+
+    for self_idx, self_seg in ipairs(self_segments) do
+        for other_idx, other_seg in ipairs(other_segments) do
+            local int_pos, t1, t2 = path_utils.calculate_segment_intersection(
+                self_seg.start_pos, self_seg.end_pos,
+                other_seg.start_pos, other_seg.end_pos
+            )
+
+            if int_pos then
+                -- Skip if this is near the skip position
+                local should_skip = false
+                if skip_position and vector.distance(int_pos, skip_position) < skip_tolerance then
+                    should_skip = true
+                end
+
+                -- Skip if segments are parallel
+                if path_utils.segments_are_parallel(
+                    self_seg.start_pos, self_seg.end_pos,
+                    other_seg.start_pos, other_seg.end_pos
+                ) then
+                    should_skip = true
+                end
+
+                if not should_skip then
+                    table.insert(intersections, {
+                        pos = int_pos,
+                        t1 = t1,
+                        t2 = t2,
+                        self_segment = self_seg,
+                        self_segment_index = self_idx,
+                        other_segment = other_seg,
+                        other_segment_index = other_idx,
+                        other_path = other_path
+                    })
+                end
+            end
+        end
+    end
+
+    return intersections
+end
+
+-- Find all intersections between this path and a list of other paths
+-- Returns intersections sorted by distance from start of this path
+function path:find_intersections_with_paths(other_paths, skip_position, skip_tolerance)
+    local all_intersections = {}
+    local self_points = self:all_points()
+
+    for _, other_path in ipairs(other_paths) do
+        local intersections = self:find_intersections_with_path(other_path, skip_position, skip_tolerance)
+
+        for _, int_data in ipairs(intersections) do
+            -- Calculate cumulative distance from path start
+            local cumulative_dist = 0
+            for i = 2, int_data.self_segment_index do
+                cumulative_dist = cumulative_dist + vector.distance(
+                    self_points[i-1].pos, self_points[i].pos
+                )
+            end
+            cumulative_dist = cumulative_dist + vector.distance(
+                int_data.self_segment.start_pos, int_data.pos
+            )
+
+            int_data.distance_from_start = cumulative_dist
+            table.insert(all_intersections, int_data)
+        end
+    end
+
+    -- Sort by distance from start
+    table.sort(all_intersections, function(a, b)
+        return a.distance_from_start < b.distance_from_start
+    end)
+
+    return all_intersections
+end
+
+-- Create intersection points in this path and optionally in intersecting paths
+-- intersections: list from find_intersections_with_path or find_intersections_with_paths
+-- modify_other_paths: if true, also insert points in the other paths
+-- min_distance: minimum distance between intersection points
+function path:create_intersection_points(intersections, modify_other_paths, min_distance)
+    min_distance = min_distance or 5
+    local created_points = {}
+
+    -- Process intersections in reverse order (farthest first)
+    -- to avoid invalidating segment references
+    for i = #intersections, 1, -1 do
+        local int_data = intersections[i]
+        local pos = int_data.pos
+
+        -- Check if we're too close to an already created point
+        local too_close = false
+        for _, created in ipairs(created_points) do
+            if vector.distance(pos, created.pos) < min_distance then
+                too_close = true
+                break
+            end
+        end
+
+        if not too_close then
+            -- Insert point in this path
+            local self_point, self_inserted = self:insert_point_at_position(pos, min_distance)
+
+            -- Insert point in the other path if requested
+            local other_point = nil
+            local other_inserted = false
+            if modify_other_paths and int_data.other_path then
+                other_point, other_inserted = int_data.other_path:insert_point_at_position(pos, min_distance)
+            end
+
+            if self_point then
+                table.insert(created_points, {
+                    pos = pos,
+                    self_point = self_point,
+                    other_point = other_point,
+                    self_inserted = self_inserted,
+                    other_inserted = other_inserted
+                })
+            end
+        end
+    end
+
+    return created_points
+end
+
+-- ============================================================
+-- GRID SUBDIVISION
+-- ============================================================
+
+-- Subdivide path by inserting points at grid intersections
+-- grid_spacing: the spacing between grid lines
+-- min_point_distance: minimum distance between points (to avoid clustering)
+-- Returns list of inserted points
+function path:subdivide_to_grid(grid_spacing, min_point_distance)
+    min_point_distance = min_point_distance or 5
+    local segments = self:all_segments()
+    local points_to_insert = {}
+
+    -- Collect all grid intersection points for all segments
+    for seg_index, seg in ipairs(segments) do
+        -- Find X grid lines that intersect this segment
+        local min_x = math.min(seg.start_pos.x, seg.end_pos.x)
+        local max_x = math.max(seg.start_pos.x, seg.end_pos.x)
+        local first_x_grid = math.ceil(min_x / grid_spacing) * grid_spacing
+
+        local x_grid = first_x_grid
+        while x_grid <= max_x do
+            local int_pos, t = path_utils.segment_grid_intersection(seg.start_pos, seg.end_pos, x_grid, true)
+            if int_pos then
+                local dist = vector.distance(seg.start_pos, int_pos)
+                table.insert(points_to_insert, {
+                    pos = int_pos,
+                    segment_index = seg_index,
+                    distance_from_start = dist,
+                    start_point = seg.start_point,
+                    end_point = seg.end_point
+                })
+            end
+            x_grid = x_grid + grid_spacing
+        end
+
+        -- Find Z grid lines that intersect this segment
+        local min_z = math.min(seg.start_pos.z, seg.end_pos.z)
+        local max_z = math.max(seg.start_pos.z, seg.end_pos.z)
+        local first_z_grid = math.ceil(min_z / grid_spacing) * grid_spacing
+
+        local z_grid = first_z_grid
+        while z_grid <= max_z do
+            local int_pos, t = path_utils.segment_grid_intersection(seg.start_pos, seg.end_pos, z_grid, false)
+            if int_pos then
+                local dist = vector.distance(seg.start_pos, int_pos)
+                table.insert(points_to_insert, {
+                    pos = int_pos,
+                    segment_index = seg_index,
+                    distance_from_start = dist,
+                    start_point = seg.start_point,
+                    end_point = seg.end_point
+                })
+            end
+            z_grid = z_grid + grid_spacing
+        end
+    end
+
+    -- Sort by segment index (descending) then by distance (descending)
+    -- We insert in reverse order to avoid invalidating segment references
+    table.sort(points_to_insert, function(a, b)
+        if a.segment_index ~= b.segment_index then
+            return a.segment_index > b.segment_index
+        end
+        return a.distance_from_start > b.distance_from_start
+    end)
+
+    -- Insert points into the path
+    local inserted_points = {}
+    for _, pt_data in ipairs(points_to_insert) do
+        -- Check if this segment is still valid (points still adjacent)
+        if pt_data.start_point.next == pt_data.end_point then
+            -- Check we're not too close to existing points
+            local too_close = false
+
+            if vector.distance(pt_data.start_point.pos, pt_data.pos) < min_point_distance then
+                too_close = true
+            elseif vector.distance(pt_data.end_point.pos, pt_data.pos) < min_point_distance then
+                too_close = true
+            end
+
+            if not too_close then
+                local new_point = point.new(pt_data.pos)
+                self:insert_between(pt_data.start_point, pt_data.end_point, new_point)
+                table.insert(inserted_points, new_point)
+            end
+        end
+    end
+
+    return inserted_points
+end
 
 -- ============================================================
 -- SUBDIVIDE AND UNSUBDIVIDE (EXISTING)
