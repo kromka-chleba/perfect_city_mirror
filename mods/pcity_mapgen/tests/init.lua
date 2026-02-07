@@ -14,11 +14,22 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+    ---
+
+    This test infrastructure is inspired by WorldEdit's test system:
+    https://github.com/Uberi/Minetest-WorldEdit
+
+    WorldEdit is licensed under GNU Affero General Public License v3 (AGPLv3)
+    Copyright © 2012 sfan5, Anthony Zhang (Uberi/Temperest), and Brett O'Donnell (cornernote)
+
+    The concept of running tests inside the Luanti engine, the test registration
+    pattern, and the overall test runner structure are adapted from WorldEdit's
+    approach, specifically from worldedit/test/init.lua.
 --]]
 
 -- Test runner for pcity_mapgen
 -- Runs tests inside the Luanti engine when pcity_run_tests setting is enabled
--- Following the pattern from WorldEdit: https://github.com/Uberi/Minetest-WorldEdit
 
 local mod_name = core.get_current_modname()
 local mod_path = core.get_modpath("pcity_mapgen")

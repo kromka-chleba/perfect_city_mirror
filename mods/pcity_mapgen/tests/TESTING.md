@@ -8,6 +8,22 @@ The unit tests for Perfect City run **inside the Luanti/Minetest engine**, follo
 
 **Important:** Tests must run inside the engine to have access to all Luanti APIs and ensure proper integration.
 
+## Attribution and License
+
+This test infrastructure is inspired by WorldEdit's test system:
+- **WorldEdit**: https://github.com/Uberi/Minetest-WorldEdit
+- **License**: GNU Affero General Public License v3 (AGPLv3)
+- **Copyright**: © 2012 sfan5, Anthony Zhang (Uberi/Temperest), and Brett O'Donnell (cornernote)
+
+We adapted the following concepts from WorldEdit:
+- Running tests inside the Luanti engine (from `worldedit/test/init.lua`)
+- Test registration and execution pattern
+- Shell script test runner approach (from `.util/run_tests.sh`)
+- Temporary world creation with singlenode mapgen
+- Test success marker file pattern
+
+Our implementation is licensed under GNU General Public License v3+ (GPLv3+), which is compatible with AGPLv3 code inspiration.
+
 ## Test Structure
 
 ```

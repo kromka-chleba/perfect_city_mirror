@@ -1,7 +1,19 @@
 #!/bin/bash
 # Test runner script for pcity_mapgen
 # Runs tests inside the Luanti engine
-# Based on WorldEdit's test runner: https://github.com/Uberi/Minetest-WorldEdit
+#
+# This script is inspired by WorldEdit's test runner:
+# https://github.com/Uberi/Minetest-WorldEdit
+# Specifically: .util/run_tests.sh
+#
+# WorldEdit is licensed under GNU Affero General Public License v3 (AGPLv3)
+# Copyright © 2012 sfan5, Anthony Zhang (Uberi/Temperest), and Brett O'Donnell (cornernote)
+#
+# This implementation follows WorldEdit's pattern of:
+# - Creating a temporary world with singlenode mapgen
+# - Starting luantiserver with test settings enabled
+# - Checking for a test success marker file
+# - Cleaning up temporary files on exit
 
 set -e
 
