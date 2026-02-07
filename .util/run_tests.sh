@@ -8,10 +8,12 @@ set -e
 tempdir=$(mktemp -d)
 confpath=$tempdir/minetest.conf
 worldpath=$tempdir/world
+gamepath=$tempdir/games/perfect_city
 
 trap 'rm -rf "$tempdir"' EXIT
 
 [ -f mods/pcity_mapgen/mod.conf ] || { echo "Must be run from repository root." >&2; exit 1; }
+[ -f game.conf ] || { echo "game.conf not found. Must be run from Perfect City game root." >&2; exit 1; }
 
 # Find minetest/luanti binary
 mtserver=$(command -v minetest)
@@ -20,15 +22,21 @@ mtserver=$(command -v minetest)
 
 echo "Using binary: $mtserver"
 
+# Set up the game directory structure
+mkdir -p "$gamepath"
+# Symlink essential game files and directories
+ln -s "$(pwd)/game.conf" "$gamepath/"
+ln -s "$(pwd)/mods" "$gamepath/"
+[ -f settingtypes.txt ] && ln -s "$(pwd)/settingtypes.txt" "$gamepath/"
+[ -d menu ] && ln -s "$(pwd)/menu" "$gamepath/"
+
+# Create world
 mkdir -p "$worldpath"
 printf '%s\n' 'mg_name = singlenode' '[end_of_params]' > "$worldpath/map_meta.txt"
 printf '%s\n' 'pcity_run_tests = true' 'max_forceloaded_blocks = 9999' > "$confpath"
 
-mkdir -p "$worldpath/worldmods"
-ln -s "$(pwd)/mods/pcity_mapgen" "$worldpath/worldmods/pcity_mapgen"
-
 echo "Starting test run..."
-$mtserver --server --config "$confpath" --world "$worldpath" --logfile /dev/null
+$mtserver --server --gameid perfect_city --config "$confpath" --world "$worldpath" --logfile /dev/null
 
 test -f "$worldpath/tests_ok" || exit 1
 exit 0
