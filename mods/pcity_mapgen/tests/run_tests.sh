@@ -49,10 +49,11 @@ moddir=$(dirname "$moddir")  # Go up from tests/ to pcity_mapgen/
 # Check if we're in the right place
 [ -f "$moddir/mod.conf" ] || { echo "Error: Could not find mod.conf. Run this script from mods/pcity_mapgen/tests/" >&2; exit 1; }
 
-# Find luantiserver or minetestserver
+# Find luantiserver, minetestserver, or minetest binary
 mtserver=$(command -v luantiserver)
 [ -z "$mtserver" ] && mtserver=$(command -v minetestserver)
-[ -z "$mtserver" ] && { echo "Error: luantiserver or minetestserver not found in PATH" >&2; exit 1; }
+[ -z "$mtserver" ] && mtserver=$(command -v minetest)
+[ -z "$mtserver" ] && { echo "Error: luantiserver, minetestserver, or minetest binary not found in PATH" >&2; exit 1; }
 
 echo "Using server: $mtserver"
 echo "Mod directory: $moddir"
