@@ -255,54 +255,11 @@ Length and geometry
 * `path:length()`
     * Returns total path length.
 
-Segments and intersections
---------------------------
+Segments
+--------
 
 * `path:all_segments()`
     * Returns a list of segment tables `{start_pos, end_pos, start_point, end_point}`.
-
-* `path:intersects_segment(seg_start, seg_end, margin)`
-    * Returns a list of intersections between this path and a segment.
-
-* `path:intersects_path(other_path, margin)`
-    * Returns a list of intersections between two paths.
-
-* `path:intersects_point(p, margin)`
-    * Returns intersection info for a point near the path, or `nil`.
-
-* `path:first_intersection_with_path(other_path, margin)`
-    * Returns the earliest intersection along this path, or `nil`.
-
-* `path:self_intersections(margin)`
-    * Returns intersections where the path crosses itself.
-
-Segment finding and insertion
------------------------------
-
-* `path:find_segment_containing_point(pos, tolerance)`
-    * Returns segment info containing `pos`, or `nil`.
-
-* `path:insert_point_at_position(pos, min_distance)`
-    * Inserts a point at `pos` if it lies on a segment.
-    * Returns `(point, inserted)`.
-
-Path intersection finding and insertion
----------------------------------------
-
-* `path:find_intersections_with_path(other_path, skip_position, skip_tolerance)`
-    * Returns intersection data between this path and `other_path`.
-
-* `path:find_intersections_with_paths(other_paths, skip_position, skip_tolerance)`
-    * Returns intersections against multiple paths, sorted by distance.
-
-* `path:create_intersection_points(intersections, modify_other_paths, min_distance)`
-    * Inserts intersection points and returns created point data.
-
-Grid subdivision
-----------------
-
-* `path:subdivide_to_grid(grid_spacing, min_point_distance)`
-    * Inserts points at grid intersections and returns inserted points.
 
 Subdivide and unsubdivide
 -------------------------
