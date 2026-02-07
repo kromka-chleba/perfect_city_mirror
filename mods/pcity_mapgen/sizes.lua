@@ -23,13 +23,13 @@ local sizes = {
 local units = sizes.units
 
 -- By default chunksize is 5
-local blocks_per_chunk = tonumber(minetest.get_mapgen_setting("chunksize"))
+local blocks_per_chunk = tonumber(core.get_mapgen_setting("chunksize"))
 -- By default 80
 local mapchunk_size = blocks_per_chunk * 16
 -- By default -32
 local mapchunk_offset = -16 * math.floor(blocks_per_chunk / 2)
 -- Citychunk size in mapchunks
-local citychunk_size = tonumber(minetest.settings:get("pcity_citychunk_size")) or 10
+local citychunk_size = tonumber(core.settings:get("pcity_citychunk_size")) or 10
 
 -- Translates node position into mapchunk position.
 function units.node_to_mapchunk(pos)
@@ -93,7 +93,7 @@ sizes.citychunk = {
 sizes.room_height = 7
 
 -- Levels of the layers of the city
-sizes.ground_level = minetest.settings:get("mgflat_ground_level") or 8
+sizes.ground_level = core.settings:get("mgflat_ground_level") or 8
 sizes.city_max = sizes.ground_level + 20 * sizes.room_height -- 148
 sizes.city_min = sizes.ground_level -- 8
 sizes.basement_max = sizes.ground_level - 1 -- 7

@@ -17,8 +17,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local mod_name = minetest.get_current_modname()
-local mod_path = minetest.get_modpath("pcity_mapgen")
+local mod_name = core.get_current_modname()
+local mod_path = core.get_modpath("pcity_mapgen")
 local pcmg = pcity_mapgen
 local sizes = dofile(mod_path.."/sizes.lua")
 local units = sizes.units
@@ -32,10 +32,10 @@ local mapchunk = sizes.mapchunk
 local citychunk = sizes.citychunk
 
 -- Node IDs
-local grass_id = minetest.get_content_id("pcity_nodes:grass")
-local concrete_id = minetest.get_content_id("pcity_nodes:concrete")
-local bricks_id = minetest.get_content_id("pcity_nodes:bricks_red")
-local yellow_id = minetest.get_content_id("pcity_nodes:roughcast_yellow")
+local grass_id = core.get_content_id("pcity_nodes:grass")
+local concrete_id = core.get_content_id("pcity_nodes:concrete")
+local bricks_id = core.get_content_id("pcity_nodes:bricks_red")
+local yellow_id = core.get_content_id("pcity_nodes:roughcast_yellow")
 
 -- Draws a grid to visualize mapchunks, citychunks and overgeneration
 function pcmg.debug.helper_grid(mapgen_args)

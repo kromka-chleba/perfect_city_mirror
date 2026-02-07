@@ -17,8 +17,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local mod_name = minetest.get_current_modname()
-local mod_path = minetest.get_modpath("pcity_mapgen")
+local mod_name = core.get_current_modname()
+local mod_path = core.get_modpath("pcity_mapgen")
 pcity_mapgen = {}
 local pcmg = pcity_mapgen
 local sizes = dofile(mod_path.."/sizes.lua")
@@ -56,16 +56,16 @@ local node = sizes.node
 local mapchunk = sizes.mapchunk
 local citychunk = sizes.citychunk
 
-local mapgen_seed = minetest.get_mapgen_setting("seed")
+local mapgen_seed = core.get_mapgen_setting("seed")
 
-minetest.log("error", mapgen_seed)
+core.log("error", mapgen_seed)
 
 -- Cache for canvas and paths
 local road_canvas_cache = pcmg.megacanvas.cache.new()
 local pathpaver_cache = pcmg.megapathpaver.cache.new()
 
 local function mapgen(vm, pos_min, pos_max, blockseed)
-    local t1 = minetest.get_us_time()
+    local t1 = core.get_us_time()
     local mapgen_args = {vm, pos_min, pos_max, blockseed}
     if pos_max.y >= sizes.ground_level and sizes.ground_level >= pos_min.y then
         pcmg.debug.helper_grid(mapgen_args)
@@ -77,8 +77,8 @@ local function mapgen(vm, pos_min, pos_max, blockseed)
         end
         local canvas = road_canvas_cache.citychunks[hash]
         pcmg.write_roads(mapgen_args, canvas)
-        --minetest.log("error", string.format("elapsed time: %g ms", (minetest.get_us_time() - t1) / 1000))
+        --core.log("error", string.format("elapsed time: %g ms", (core.get_us_time() - t1) / 1000))
     end
 end
 
-minetest.register_on_generated(mapgen)
+core.register_on_generated(mapgen)

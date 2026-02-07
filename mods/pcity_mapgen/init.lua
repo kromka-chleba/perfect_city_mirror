@@ -18,27 +18,27 @@
 --]]
 
 -- This mod name and path
-local mod_name = minetest.get_current_modname()
-local mod_path = minetest.get_modpath(mod_name)
+local mod_name = core.get_current_modname()
+local mod_path = core.get_modpath(mod_name)
 
 -- Create global table for mapgen
 pcity_mapgen = {}
 
 -- Cirno's Perfect Math Library
-local CPML_mod_path = minetest.get_modpath("pcity_cpml")
+local CPML_mod_path = core.get_modpath("pcity_cpml")
 
 -- These are necessary so the mapgen works at all lol
-minetest.register_alias("mapgen_stone", "pcity_nodes:asphalt")
-minetest.register_alias("mapgen_water_source", "pcity_nodes:pavement")
-minetest.register_alias("mapgen_river_water_source", "pcity_nodes:pavement")
+core.register_alias("mapgen_stone", "pcity_nodes:asphalt")
+core.register_alias("mapgen_water_source", "pcity_nodes:pavement")
+core.register_alias("mapgen_river_water_source", "pcity_nodes:pavement")
 
-minetest.set_mapgen_setting("mg_flags", "nocaves, nodungeons, light, decorations, biomes", true)
+core.set_mapgen_setting("mg_flags", "nocaves, nodungeons, light, decorations, biomes", true)
 
-if minetest.settings:get("pcity_enable_hills") == "true" then
-    minetest.set_mapgen_setting("mgflat_spflags", "nolakes, hills, nocaverns", true)
+if core.settings:get("pcity_enable_hills") == "true" then
+    core.set_mapgen_setting("mgflat_spflags", "nolakes, hills, nocaverns", true)
 end
 
 dofile(mod_path.."/biomes.lua")
 dofile(mod_path.."/tests/init.lua")
-minetest.register_mapgen_script(CPML_mod_path.."/init.lua")
-minetest.register_mapgen_script(mod_path.."/mapgen.lua")
+core.register_mapgen_script(CPML_mod_path.."/init.lua")
+core.register_mapgen_script(mod_path.."/mapgen.lua")

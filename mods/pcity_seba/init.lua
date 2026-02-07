@@ -20,6 +20,6 @@
 pcity_seba = {}
 
 -- Load files
-local path = minetest.get_modpath("pcity_seba")
+local path = core.get_modpath("pcity_seba")
 
 dofile(path.."/seba.lua")

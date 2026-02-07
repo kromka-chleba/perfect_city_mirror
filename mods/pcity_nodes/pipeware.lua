@@ -16,11 +16,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local mod_name = minetest.get_current_modname()
+local mod_name = core.get_current_modname()
 
 local color_palette = "pcity_common_palette.png"
 
-minetest.register_node(
+core.register_node(
     mod_name..":tap_up",
     {
         drawtype = "mesh",
@@ -36,7 +36,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":tap_down",
     {
         drawtype = "mesh",
@@ -52,7 +52,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":sink",
     {
         drawtype = "mesh",
@@ -69,7 +69,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":bathtub",
     {
         drawtype = "mesh",
@@ -84,7 +84,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":toilet_open",
     {
         drawtype = "mesh",
@@ -99,7 +99,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":toilet_closed",
     {
         drawtype = "mesh",

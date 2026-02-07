@@ -17,11 +17,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local mod_name = minetest.get_current_modname()
+local mod_name = core.get_current_modname()
 
 local pcn = pcity_nodes
 
-minetest.register_node(
+core.register_node(
     mod_name..":grass",
     {
         description = "Grass",

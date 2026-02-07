@@ -156,13 +156,13 @@ function player_api.set_animation(player, anim_name, speed)
 	end
 end
 
-minetest.register_on_joinplayer(function(player)
+core.register_on_joinplayer(function(player)
 	local name = player:get_player_name()
 	players[name] = {}
 	player_api.player_attached[name] = false
 end)
 
-minetest.register_on_leaveplayer(function(player)
+core.register_on_leaveplayer(function(player)
 	local name = player:get_player_name()
 	players[name] = nil
 	player_api.player_attached[name] = nil
@@ -173,8 +173,8 @@ local player_set_animation = player_api.set_animation
 local player_attached = player_api.player_attached
 
 -- Prevent knockback for attached players
-local old_calculate_knockback = minetest.calculate_knockback
-function minetest.calculate_knockback(player, ...)
+local old_calculate_knockback = core.calculate_knockback
+function core.calculate_knockback(player, ...)
 	if player_attached[player:get_player_name()] then
 		return 0
 	end
@@ -183,7 +183,7 @@ end
 
 -- Check each player and apply animations
 function player_api.globalstep()
-	for _, player in ipairs(minetest.get_connected_players()) do
+	for _, player in ipairs(core.get_connected_players()) do
 		local name = player:get_player_name()
 		local player_data = players[name]
 		local model = player_data and models[player_data.model]
@@ -215,7 +215,7 @@ function player_api.globalstep()
 end
 
 -- Mods can modify the globalstep by overriding player_api.globalstep
-minetest.register_globalstep(function(...)
+core.register_globalstep(function(...)
 	player_api.globalstep(...)
 end)
 
@@ -224,7 +224,7 @@ for _, api_function in pairs({"get_animation", "set_animation", "set_model", "se
 	player_api[api_function] = function(player, ...)
 		if not players[player:get_player_name()] then
 			-- HACK for keeping backwards compatibility
-			minetest.log("warning", api_function .. " called on offline player")
+			core.log("warning", api_function .. " called on offline player")
 			return
 		end
 		return original_function(player, ...)

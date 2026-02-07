@@ -17,11 +17,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local mod_name = minetest.get_current_modname()
+local mod_name = core.get_current_modname()
 
 local pcn = pcity_nodes
 
-minetest.register_node(
+core.register_node(
     mod_name..":asphalt",
     {
         description = "Asphalt",
@@ -34,7 +34,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":pavement",
     {
         description = "Pavement",
@@ -47,7 +47,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":curb_middle",
     {
         drawtype = "mesh",
@@ -69,7 +69,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":curb_gap",
     {
         drawtype = "mesh",
@@ -92,7 +92,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":curb_corner",
     {
         drawtype = "mesh",
@@ -120,7 +120,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":curb_small",
     {
         drawtype = "mesh",
@@ -143,7 +143,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":curb_road",
     {
         drawtype = "mesh",
@@ -165,7 +165,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":curb_road_corner",
     {
         drawtype = "mesh",
@@ -193,7 +193,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":curb_road_small",
     {
         drawtype = "mesh",
@@ -215,7 +215,7 @@ minetest.register_node(
     }
 )
 
-minetest.register_node(
+core.register_node(
     mod_name..":curb_road_slab",
     {
         drawtype = "mesh",

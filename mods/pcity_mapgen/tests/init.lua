@@ -64,7 +64,7 @@ dofile(mod_path.."/tests/tests_path.lua")
 
 -- Run all tests
 pcmg.run_tests = function()
-    local v = minetest.get_version()
+    local v = core.get_version()
     print("Running " .. #pcmg.tests.registered .. " tests for pcity_mapgen on " .. 
           v.project .. " " .. (v.hash or v.string))
     
@@ -96,7 +96,7 @@ pcmg.run_tests = function()
     
     -- Write success marker file
     if failed == 0 then
-        local worldpath = minetest.get_worldpath()
+        local worldpath = core.get_worldpath()
         local file = io.open(worldpath .. "/tests_ok", "w")
         if file then
             file:write("All tests passed\n")
@@ -105,10 +105,10 @@ pcmg.run_tests = function()
     end
     
     -- Shutdown the server after tests complete
-    minetest.request_shutdown("Tests completed", false, 0)
+    core.request_shutdown("Tests completed", false, 0)
 end
 
 -- Run tests after server starts
-minetest.after(0.1, function()
+core.after(0.1, function()
     pcmg.run_tests()
 end)

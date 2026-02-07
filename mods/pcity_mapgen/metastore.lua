@@ -17,8 +17,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local mod_name = minetest.get_current_modname()
-local mod_path = minetest.get_modpath("pcity_mapgen")
+local mod_name = core.get_current_modname()
+local mod_path = core.get_modpath("pcity_mapgen")
 local pcmg = pcity_mapgen
 
 pcmg.metastore = {}
@@ -39,7 +39,7 @@ local private_const = setmetatable({}, {__mode = "k"})
 
 function metastore:__newindex(key, value)
     -- forbid setting new keys for this class
-    minetest.log("error", "Metastore: Don't set values directly, use 'metastore:set', etc. instead.")
+    core.log("error", "Metastore: Don't set values directly, use 'metastore:set', etc. instead.")
 end
 
 function metastore.new()
