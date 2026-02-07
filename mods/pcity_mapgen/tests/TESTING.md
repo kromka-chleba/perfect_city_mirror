@@ -6,7 +6,10 @@ This document describes how to run unit tests for the `pcity_mapgen` module.
 
 The unit tests for Perfect City run **inside the Luanti/Minetest engine**, following the pattern established by the [WorldEdit mod](https://github.com/Uberi/Minetest-WorldEdit). This approach was recommended by Luanti developers as the proper way to test mods.
 
-**Important:** Tests must run inside the engine to have access to all Luanti APIs and ensure proper integration.
+**Important:** 
+- Tests must run inside the engine to have access to all Luanti APIs and ensure proper integration.
+- **Perfect City is a game**, not just a mod. The `pcity_mapgen` mod is tested within the Perfect City game context.
+- The test runner automatically sets up the game environment and runs tests with `--gameid perfect_city`.
 
 ## Attribution and License
 
@@ -39,13 +42,15 @@ mods/pcity_mapgen/tests/
 
 ### How It Works
 
-1. `.util/run_tests.sh` creates a temporary world with `singlenode` mapgen
-2. Starts `minetest` or `luanti` with `--server` flag and `pcity_run_tests=true` setting
-3. `tests/init.lua` loads test files and runs all registered tests
-4. Tests execute using real Luanti APIs (vector, minetest functions)
-5. Results are printed to console
-6. If all tests pass, creates `tests_ok` file and shuts down server
-7. Script checks for `tests_ok` file and reports success/failure
+1. `.util/run_tests.sh` creates a temporary game directory structure
+2. Symlinks the Perfect City game files (game.conf, mods, etc.) into the temp directory
+3. Creates a temporary world with `singlenode` mapgen
+4. Starts `minetest` or `luanti` with `--server --gameid perfect_city` and `pcity_run_tests=true` setting
+5. `tests/init.lua` (part of pcity_mapgen mod) loads test files and runs all registered tests
+6. Tests execute using real Luanti APIs (vector, minetest functions) within the Perfect City game context
+7. Results are printed to console
+8. If all tests pass, creates `tests_ok` file and shuts down server
+9. Script checks for `tests_ok` file and reports success/failure
 
 ## Prerequisites
 
