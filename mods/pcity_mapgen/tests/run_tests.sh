@@ -49,17 +49,17 @@ moddir=$(dirname "$moddir")  # Go up from tests/ to pcity_mapgen/
 # Check if we're in the right place
 [ -f "$moddir/mod.conf" ] || { echo "Error: Could not find mod.conf. Run this script from mods/pcity_mapgen/tests/" >&2; exit 1; }
 
-# Find minetestserver or minetest/luanti binary
-echo "=== Debug: Searching for minetest binary ==="
-mtserver=$(command -v minetestserver)
+# Find minetest or luanti binary
+echo "=== Debug: Searching for minetest/luanti binary ==="
+mtserver=$(command -v minetest)
 if [ -z "$mtserver" ]; then
-    echo "minetestserver not found, trying minetest..."
-    mtserver=$(command -v minetest)
+    echo "minetest not found, trying luanti..."
+    mtserver=$(command -v luanti)
 fi
 
-# Check if we found a server binary
+# Check if we found a binary
 if [ -z "$mtserver" ]; then
-    echo "Error: minetestserver or minetest binary not found in PATH" >&2
+    echo "Error: minetest or luanti binary not found in PATH" >&2
     exit 1
 fi
 
@@ -75,12 +75,9 @@ echo "Binary version:"
 echo "=== End binary search debug ==="
 echo ""
 
-# If using minetest/luanti binary (not minetestserver), add --server flag
-server_flag=""
-if [[ "$mtserver" == *"minetest"* ]] && [[ "$mtserver" != *"minetestserver"* ]]; then
-    server_flag="--server"
-    echo "Detected minetest client binary, will use --server flag"
-fi
+# Always use --server flag for minetest/luanti
+server_flag="--server"
+echo "Will use --server flag for server mode"
 
 echo "Using server: $mtserver $server_flag"
 echo "Mod directory: $moddir"

@@ -53,15 +53,15 @@ jobs:
     
     - name: Verify server installation
       run: |
-        # Check for server binary - prefer minetestserver, fallback to minetest
-        if command -v minetestserver &> /dev/null; then
-          echo "Using minetestserver"
-          minetestserver --version
-        elif command -v minetest &> /dev/null; then
+        # Check for minetest or luanti binary
+        if command -v minetest &> /dev/null; then
           echo "Using minetest"
           minetest --version
+        elif command -v luanti &> /dev/null; then
+          echo "Using luanti"
+          luanti --version
         else
-          echo "Error: No minetest server binary found"
+          echo "Error: No minetest/luanti binary found"
           exit 1
         fi
     
