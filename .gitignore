@@ -3,3 +3,8 @@
 *\.blend*[0-9]
 *#*#
 *.bak
+
+# Lua testing artifacts
+luacov.*.out
+*.rock
+.luarocks/
