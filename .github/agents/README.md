@@ -165,9 +165,13 @@ pcmg.register_test(name, function)
 
 ### Server not found
 ```bash
-# Install manually:
-sudo apt-get install luanti-server  # Ubuntu/Debian
-sudo pacman -S luanti              # Arch Linux
+# Install manually (Ubuntu/Debian - Latest stable from PPA):
+sudo add-apt-repository ppa:luanti/luanti
+sudo apt-get update
+sudo apt-get install luanti-server
+
+# Or for Arch Linux:
+sudo pacman -S luanti
 ```
 
 ## Additional Resources

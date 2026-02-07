@@ -55,10 +55,17 @@ You need:
 
 ### Installing Luanti
 
-**Ubuntu/Debian:**
+**Ubuntu/Debian (Recommended - Latest Stable):**
 ```bash
+# Add the official Luanti PPA for the latest stable release
+sudo add-apt-repository ppa:luanti/luanti
+sudo apt-get update
 sudo apt-get install luanti-server
-# or for older versions
+```
+
+**Ubuntu/Debian (Older version from default repos):**
+```bash
+# This installs an older version (5.6.1) from Ubuntu repositories
 sudo apt-get install minetest-server
 ```
 

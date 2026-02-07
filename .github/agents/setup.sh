@@ -42,14 +42,25 @@ fi
 case "$OS" in
     ubuntu|debian)
         echo "Detected Ubuntu/Debian"
+        
+        # Install software-properties-common for add-apt-repository
+        if ! command -v add-apt-repository &> /dev/null; then
+            echo "Installing software-properties-common..."
+            $USE_SUDO apt-get update -qq
+            $USE_SUDO apt-get install -y software-properties-common
+        fi
+        
+        # Add Luanti PPA for latest stable version
+        echo "Adding Luanti PPA for latest stable release..."
+        $USE_SUDO add-apt-repository -y ppa:luanti/luanti
         $USE_SUDO apt-get update -qq
-        # Try luanti-server first (newer name), fall back to minetest-server
-        if $USE_SUDO apt-get install -y luanti-server 2>/dev/null; then
-            echo "✓ Installed luanti-server"
-        elif $USE_SUDO apt-get install -y minetest-server 2>/dev/null; then
-            echo "✓ Installed minetest-server"
+        
+        # Install luanti-server (newer name for minetest-server)
+        echo "Installing luanti-server from PPA..."
+        if $USE_SUDO apt-get install -y luanti-server; then
+            echo "✓ Installed luanti-server from PPA"
         else
-            echo "✗ Failed to install Luanti/Minetest server"
+            echo "✗ Failed to install Luanti server"
             exit 1
         fi
         ;;

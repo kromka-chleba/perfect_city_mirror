@@ -18,9 +18,16 @@ jobs:
     
     - name: Install Luanti/Minetest server
       run: |
+        # Install software-properties-common for PPA support
         sudo apt-get update
-        # Try to install luanti-server first, fall back to minetest-server for older versions
-        sudo apt-get install -y luanti-server || sudo apt-get install -y minetest-server
+        sudo apt-get install -y software-properties-common
+        
+        # Add Luanti PPA for latest stable version
+        sudo add-apt-repository -y ppa:luanti/luanti
+        sudo apt-get update
+        
+        # Install luanti-server from PPA
+        sudo apt-get install -y luanti-server
     
     - name: Verify server installation
       run: |
