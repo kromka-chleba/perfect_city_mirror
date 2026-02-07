@@ -6,6 +6,8 @@ Provides an API to allow multiple mods to set player models and textures.
 Also sets the default model, texture, and player flags.
 This mod is only for content related to the Player API and the player object.
 
+NOTE: This version contains modifications for Perfect City.
+
 Authors of source code
 ----------------------
 Originally by celeron55, Perttu Ahola <celeron55@gmail.com> (LGPLv2.1+)
@@ -18,6 +20,10 @@ Various alterations and fixes by kilbith, sofar, xunto, Rogier-5, TeTpaAka, Deso
 stujones11, An0n3m0us (CC BY-SA 3.0):
   character.b3d
   character.blend
+
+Modified for Perfect City by Jan Wielkiewicz (lord_of_the_dumpster) (CC BY-SA 3.0):
+  character.b3d - Modified scale/proportions for Perfect City
+  character.blend - Modified scale/proportions for Perfect City
 
 Jordach (CC BY-SA 3.0):
   character.png
