@@ -53,14 +53,14 @@ moddir=$(dirname "$moddir")  # Go up from tests/ to pcity_mapgen/
 mtserver=$(command -v minetestserver)
 [ -z "$mtserver" ] && mtserver=$(command -v minetest)
 
-# Check if we need to add --server flag (for minetest/luanti binary)
-server_flag=""
+# Check if we found a server binary
 if [ -z "$mtserver" ]; then
     echo "Error: minetestserver or minetest binary not found in PATH" >&2
     exit 1
 fi
 
 # If using minetest/luanti binary (not minetestserver), add --server flag
+server_flag=""
 if [[ "$mtserver" == *"minetest"* ]] && [[ "$mtserver" != *"minetestserver"* ]]; then
     server_flag="--server"
 fi
