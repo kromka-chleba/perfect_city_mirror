@@ -1,6 +1,7 @@
 #!/bin/bash
 # Test runner script for pcity_mapgen unit tests
 # This script runs busted tests in the correct directory with proper Lua paths
+# Uses LuaJIT (same as Luanti/Minetest)
 
 set -e
 
@@ -25,13 +26,26 @@ if ! command -v busted &> /dev/null; then
     exit 1
 fi
 
+# Print information about the Lua runtime
+if command -v luajit &> /dev/null; then
+    echo "Using LuaJIT: $(luajit -v)"
+else
+    echo "Note: LuaJIT not found. Using standard Lua interpreter."
+    echo "      For best compatibility with Luanti/Minetest, install LuaJIT."
+fi
+
 # Print busted version
 echo "Running tests with busted $(busted --version 2>&1 | head -1)"
 echo ""
 
 # Run busted with the tests directory as the working directory
 # This allows require("test_helper") to work correctly
-busted --pattern=_spec.lua "$@"
+# Explicitly specify test files if no arguments provided
+if [ $# -eq 0 ]; then
+    busted point_spec.lua path_spec.lua
+else
+    busted "$@"
+fi
 
 echo ""
 echo "All tests completed successfully!"

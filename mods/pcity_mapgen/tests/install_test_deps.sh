@@ -1,6 +1,7 @@
 #!/bin/bash
 # Installation script for Lua testing dependencies
-# This script installs Lua, LuaRocks, and busted for running unit tests
+# This script installs LuaJIT, LuaRocks, busted, and fetches Luanti for its built-in Lua modules
+# LuaJIT is used because Luanti/Minetest uses LuaJIT
 
 set -e
 
@@ -13,32 +14,47 @@ if command -v apt-get &> /dev/null; then
     # Update package list
     sudo apt-get update
     
-    # Install Lua 5.1 and LuaRocks
-    echo "Installing Lua 5.1 and LuaRocks..."
-    sudo apt-get install -y lua5.1 liblua5.1-0-dev luarocks
+    # Install LuaJIT, LuaRocks, and git
+    echo "Installing LuaJIT, LuaRocks, and git..."
+    sudo apt-get install -y luajit libluajit-5.1-dev luarocks git
+    
+    # Make LuaJIT the default Lua interpreter for LuaRocks if not already
+    if ! luarocks config | grep -q "luajit"; then
+        echo "Configuring LuaRocks to use LuaJIT..."
+        luarocks config lua_interpreter luajit 2>/dev/null || true
+    fi
     
 # Check if running on macOS
 elif command -v brew &> /dev/null; then
     echo "Detected macOS system"
     
-    # Install Lua and LuaRocks via Homebrew
-    echo "Installing Lua and LuaRocks..."
-    brew install lua@5.1 luarocks
+    # Install LuaJIT, LuaRocks, and git via Homebrew
+    echo "Installing LuaJIT, LuaRocks, and git..."
+    brew install luajit luarocks git
     
 # Check if running on Fedora/RHEL
 elif command -v dnf &> /dev/null; then
     echo "Detected Fedora/RHEL system"
     
-    # Install Lua and LuaRocks
-    echo "Installing Lua 5.1 and LuaRocks..."
-    sudo dnf install -y lua luarocks
+    # Install LuaJIT, LuaRocks, and git
+    echo "Installing LuaJIT, LuaRocks, and git..."
+    sudo dnf install -y luajit luajit-devel luarocks git
     
 else
-    echo "Warning: Unsupported operating system. Please install Lua 5.1 and LuaRocks manually."
-    echo "Visit: https://www.lua.org/download.html"
+    echo "Warning: Unsupported operating system. Please install LuaJIT, LuaRocks, and git manually."
+    echo "Visit: https://luajit.org/download.html"
     echo "       https://luarocks.org/"
+    echo "       https://git-scm.com/"
     exit 1
 fi
+
+# Verify LuaJIT is installed
+if ! command -v luajit &> /dev/null; then
+    echo "Error: LuaJIT installation failed or luajit command not found."
+    exit 1
+fi
+
+echo "LuaJIT version: $(luajit -v)"
 
 # Install busted via LuaRocks
 echo "Installing busted testing framework..."
@@ -64,10 +80,27 @@ else
     exit 1
 fi
 
+# Clone Luanti repository to get built-in Lua modules
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+LUANTI_DIR="$SCRIPT_DIR/luanti"
+
+if [ -d "$LUANTI_DIR" ]; then
+    echo ""
+    echo "Luanti directory already exists. Updating..."
+    cd "$LUANTI_DIR"
+    git pull
+    cd "$SCRIPT_DIR"
+else
+    echo ""
+    echo "Cloning Luanti repository for built-in Lua modules..."
+    git clone --depth=1 https://github.com/luanti-org/luanti.git "$LUANTI_DIR"
+fi
+
 echo ""
 echo "Installation complete!"
 echo ""
 echo "To verify installation, run:"
+echo "  luajit -v"
 echo "  busted --version"
 echo ""
 echo "To run tests, execute:"

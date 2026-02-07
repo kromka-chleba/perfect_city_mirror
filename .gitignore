@@ -8,3 +8,6 @@
 luacov.*.out
 *.rock
 .luarocks/
+
+# Test dependencies
+mods/pcity_mapgen/tests/luanti/

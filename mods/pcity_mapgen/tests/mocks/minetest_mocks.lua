@@ -22,13 +22,55 @@
 local M = {}
 
 -- Mock vector library (Minetest vector functions)
+-- Create a metatable for vectors that supports arithmetic operations
+local vector_mt = {}
+vector_mt.__add = function(a, b)
+    if type(b) == "number" then
+        return setmetatable({x = a.x + b, y = a.y + b, z = a.z + b}, getmetatable(a))
+    else
+        return setmetatable({x = a.x + b.x, y = a.y + b.y, z = a.z + b.z}, getmetatable(a))
+    end
+end
+vector_mt.__sub = function(a, b)
+    if type(b) == "number" then
+        return setmetatable({x = a.x - b, y = a.y - b, z = a.z - b}, getmetatable(a))
+    else
+        return setmetatable({x = a.x - b.x, y = a.y - b.y, z = a.z - b.z}, getmetatable(a))
+    end
+end
+vector_mt.__mul = function(a, b)
+    if type(a) == "number" then
+        return setmetatable({x = a * b.x, y = a * b.y, z = a * b.z}, getmetatable(b))
+    elseif type(b) == "number" then
+        return setmetatable({x = a.x * b, y = a.y * b, z = a.z * b}, getmetatable(a))
+    else
+        return setmetatable({x = a.x * b.x, y = a.y * b.y, z = a.z * b.z}, getmetatable(a))
+    end
+end
+vector_mt.__div = function(a, b)
+    if type(b) == "number" then
+        return setmetatable({x = a.x / b, y = a.y / b, z = a.z / b}, getmetatable(a))
+    else
+        return setmetatable({x = a.x / b.x, y = a.y / b.y, z = a.z / b.z}, getmetatable(a))
+    end
+end
+vector_mt.__unm = function(a)
+    return setmetatable({x = -a.x, y = -a.y, z = -a.z}, getmetatable(a))
+end
+
 M.vector = {
     new = function(x, y, z)
-        return {x = x or 0, y = y or 0, z = z or 0}
+        local v = {x = x or 0, y = y or 0, z = z or 0}
+        return setmetatable(v, vector_mt)
+    end,
+    
+    check = function(v)
+        return type(v) == "table" and type(v.x) == "number" and type(v.y) == "number" and type(v.z) == "number"
     end,
     
     copy = function(v)
-        return {x = v.x, y = v.y, z = v.z}
+        local cv = {x = v.x, y = v.y, z = v.z}
+        return setmetatable(cv, vector_mt)
     end,
     
     equals = function(a, b)
@@ -36,11 +78,13 @@ M.vector = {
     end,
     
     add = function(a, b)
-        return M.vector.new(a.x + b.x, a.y + b.y, a.z + b.z)
+        local v = M.vector.new(a.x + b.x, a.y + b.y, a.z + b.z)
+        return v
     end,
     
     subtract = function(a, b)
-        return M.vector.new(a.x - b.x, a.y - b.y, a.z - b.z)
+        local v = M.vector.new(a.x - b.x, a.y - b.y, a.z - b.z)
+        return v
     end,
     
     multiply = function(a, b)
@@ -137,6 +181,49 @@ M.vector = {
            and pos.y >= min_pos.y and pos.y <= max_pos.y
            and pos.z >= min_pos.z and pos.z <= max_pos.z
     end,
+    
+    angle = function(a, b)
+        -- Calculate angle between two vectors using dot product
+        local dot = M.vector.dot(a, b)
+        local len_a = M.vector.length(a)
+        local len_b = M.vector.length(b)
+        if len_a == 0 or len_b == 0 then
+            return 0
+        end
+        local cos_angle = dot / (len_a * len_b)
+        -- Clamp to [-1, 1] to avoid floating point errors
+        cos_angle = math.max(-1, math.min(1, cos_angle))
+        return math.acos(cos_angle)
+    end,
+    
+    sign = function(v)
+        local function sign_value(x)
+            if x > 0 then return 1
+            elseif x < 0 then return -1
+            else return 0
+            end
+        end
+        return M.vector.new(sign_value(v.x), sign_value(v.y), sign_value(v.z))
+    end,
+    
+    abs = function(v)
+        return M.vector.new(math.abs(v.x), math.abs(v.y), math.abs(v.z))
+    end,
+    
+    rotate = function(v, rot)
+        -- Simple Y-axis rotation for the perpendicular calculation
+        -- This is a simplified version - Minetest's rotate is more complex
+        if rot.y ~= 0 then
+            local cos_a = math.cos(rot.y)
+            local sin_a = math.sin(rot.y)
+            return M.vector.new(
+                v.x * cos_a - v.z * sin_a,
+                v.y,
+                v.x * sin_a + v.z * cos_a
+            )
+        end
+        return M.vector.copy(v)
+    end,
 }
 
 -- Mock core/minetest API
@@ -160,5 +247,21 @@ M.core = {
         end
     }
 }
+
+-- Mock global functions used by the modules
+_G.shallow_dump = function(value)
+    if type(value) == "table" then
+        local result = "{"
+        local first = true
+        for k, v in pairs(value) do
+            if not first then result = result .. ", " end
+            first = false
+            result = result .. tostring(k) .. "=" .. tostring(v)
+        end
+        return result .. "}"
+    else
+        return tostring(value)
+    end
+end
 
 return M

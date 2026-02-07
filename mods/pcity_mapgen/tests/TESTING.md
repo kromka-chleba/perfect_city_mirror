@@ -6,6 +6,8 @@ This document describes how to run unit tests for the `pcity_mapgen` module usin
 
 The unit tests for Perfect City have been migrated to use [busted](https://lunarmodules.github.io/busted/), a popular Lua testing framework. The tests can now run standalone without requiring Minetest/Luanti to be installed.
 
+**Important:** The tests use LuaJIT (not standard Lua) because Luanti/Minetest uses LuaJIT as its runtime. LuaJIT is a Just-In-Time compiler for Lua 5.1 that provides better performance.
+
 ## Test Structure
 
 The tests are organized as follows:
@@ -33,9 +35,11 @@ mods/pcity_mapgen/tests/
 ### Prerequisites
 
 You need to install:
-- Lua 5.1 (or LuaJIT)
+- LuaJIT (JIT compiler for Lua 5.1 - same runtime used by Luanti/Minetest)
 - LuaRocks (Lua package manager)
 - busted (testing framework)
+
+**Note:** While standard Lua 5.1 may work for tests, LuaJIT is recommended as it matches the actual runtime environment of Luanti/Minetest.
 
 ### Automated Installation
 
@@ -55,25 +59,27 @@ This script works on:
 
 If you prefer to install manually or are on a different system:
 
-#### 1. Install Lua 5.1
+#### 1. Install LuaJIT
 
 **Ubuntu/Debian:**
 ```bash
-sudo apt-get install lua5.1 liblua5.1-0-dev
+sudo apt-get install luajit libluajit-5.1-dev
 ```
 
 **macOS:**
 ```bash
-brew install lua@5.1
+brew install luajit
 ```
 
 **Fedora/RHEL:**
 ```bash
-sudo dnf install lua
+sudo dnf install luajit luajit-devel
 ```
 
 **Other systems:**
-Download from https://www.lua.org/download.html
+Download from https://luajit.org/download.html
+
+**Why LuaJIT?** Luanti/Minetest uses LuaJIT for better performance. LuaJIT is backwards compatible with Lua 5.1 but includes JIT compilation and some extensions.
 
 #### 2. Install LuaRocks
 
@@ -103,6 +109,11 @@ luarocks install busted
 
 # Or local installation (no sudo required)
 luarocks install --local busted
+```
+
+**Note:** If you have both Lua 5.1 and LuaJIT installed, make sure LuaRocks is configured to use LuaJIT:
+```bash
+luarocks config lua_interpreter luajit
 ```
 
 If you install locally, add these to your `~/.bashrc` or `~/.zshrc`:
@@ -191,7 +202,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y lua5.1 liblua5.1-0-dev luarocks
+        sudo apt-get install -y luajit libluajit-5.1-dev luarocks
         sudo luarocks install busted
     
     - name: Run tests
@@ -283,6 +294,21 @@ Make the scripts executable:
 chmod +x install_test_deps.sh run_tests.sh
 ```
 
+### Using LuaJIT vs Lua 5.1
+
+If you have both installed and want to ensure you're using LuaJIT:
+
+```bash
+# Check which Lua interpreter is being used
+lua -v        # Standard Lua
+luajit -v     # LuaJIT
+
+# Configure LuaRocks to use LuaJIT
+luarocks config lua_interpreter luajit
+```
+
+LuaJIT is preferred because it matches Luanti/Minetest's runtime environment.
+
 ## Comparison with Old Test System
 
 ### Old System (Minetest-dependent)
@@ -322,5 +348,7 @@ end)
 ## Resources
 
 - [busted documentation](https://lunarmodules.github.io/busted/)
+- [LuaJIT website](https://luajit.org/)
 - [Lua 5.1 reference manual](https://www.lua.org/manual/5.1/)
 - [LuaRocks package manager](https://luarocks.org/)
+- [Luanti/Minetest Lua API](https://github.com/minetest/minetest/blob/master/doc/lua_api.md)
