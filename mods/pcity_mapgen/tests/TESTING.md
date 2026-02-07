@@ -27,18 +27,20 @@ Our implementation is licensed under GNU General Public License v3+ (GPLv3+), wh
 ## Test Structure
 
 ```
+.util/
+└── run_tests.sh       # Shell script to automate test execution (run from repo root)
+
 mods/pcity_mapgen/tests/
 ├── init.lua           # Test runner - loads and executes tests
 ├── tests_point.lua    # Point class unit tests (25 tests)
 ├── tests_path.lua     # Path class unit tests (38 tests)
-├── run_tests.sh       # Shell script to automate test execution
 └── TESTING.md         # This documentation
 ```
 
 ### How It Works
 
-1. `run_tests.sh` creates a temporary world with `singlenode` mapgen
-2. Starts `luantiserver` with `pcity_run_tests=true` setting
+1. `.util/run_tests.sh` creates a temporary world with `singlenode` mapgen
+2. Starts `minetest` or `luanti` with `--server` flag and `pcity_run_tests=true` setting
 3. `tests/init.lua` loads test files and runs all registered tests
 4. Tests execute using real Luanti APIs (vector, minetest functions)
 5. Results are printed to console
@@ -49,44 +51,44 @@ mods/pcity_mapgen/tests/
 
 You need:
 - **Luanti 5.12 or newer** - Required for features used by Perfect City
-- **Luanti server** (`luantiserver`) or Minetest server (`minetestserver`) installed and in PATH
+- **Luanti/Minetest** binary (`minetest`, `luanti`, or `minetestserver`) installed and in PATH
 - That's it! No external dependencies required.
 
 **Important:** Perfect City requires Luanti 5.12+. Older versions will not work.
 
 ## Installation
 
-### Installing Luanti
+### Installing Luanti/Minetest
 
 **Ubuntu/Debian (Recommended - Latest Stable from PPA):**
 ```bash
-# Add the official Luanti PPA for the latest stable release (5.12+)
-sudo add-apt-repository ppa:luanti/luanti
+# Add the official Minetest PPA for the latest stable release
+sudo add-apt-repository ppa:minetestdevs/stable
 sudo apt-get update
-sudo apt-get install luanti-server
+sudo apt-get install minetest
 ```
 
 **Important:** The default Ubuntu repositories may contain older versions of Minetest (< 5.12) that are incompatible with Perfect City. Always use the PPA to get version 5.12 or newer.
 
 **Arch Linux:**
 ```bash
-sudo pacman -S luanti
+sudo pacman -S minetest
 ```
 
 **From source:**
 ```bash
-git clone https://github.com/luanti-org/luanti.git
-cd luanti
-cmake . -DBUILD_SERVER=TRUE -DBUILD_CLIENT=FALSE
+git clone https://github.com/minetest/minetest.git
+cd minetest
+cmake . -DBUILD_SERVER=TRUE
 make -j$(nproc)
 sudo make install
 ```
 
 **Check installation:**
 ```bash
-luantiserver --version
+minetest --version
 # or
-minetestserver --version
+luanti --version
 ```
 
 **Verify you have version 5.12 or newer:**
@@ -96,14 +98,16 @@ After installation, make sure the output shows version 5.12.0 or higher. If you 
 
 ### Using the Test Runner Script
 
-The easiest way to run tests:
+**The test runner must be run from the repository root:**
 
 ```bash
-cd mods/pcity_mapgen/tests
-./run_tests.sh
+cd /path/to/perfect_city_mirror
+./.util/run_tests.sh
 ```
 
 This will:
+- Verify you're in the repository root (checks for mod.conf)
+- Find minetest or luanti binary
 - Create a temporary test world
 - Start the server with tests enabled
 - Run all tests
@@ -113,11 +117,8 @@ This will:
 ### Example Output
 
 ```
-Using server: /usr/bin/luantiserver
-Mod directory: /home/user/perfect_city_mirror/mods/pcity_mapgen
-Temp directory: /tmp/tmp.XxXxXxXxXx
+Using binary: /usr/bin/minetest
 Starting test run...
----
 Running 63 tests for pcity_mapgen on Luanti 5.15.0
 ---- Point class ----------------------------------------------------
 point.new                                                    pass
@@ -130,7 +131,6 @@ path.check                                                   pass
 ...
 
 Results: 63 passed, 0 failed, 63 total
----
 ✓ All tests passed!
 ```
 
@@ -146,7 +146,7 @@ You can also run tests manually:
 3. Symlink or copy the mod to the world's `worldmods/` directory
 4. Start the server:
    ```bash
-   luantiserver --world /path/to/world --logfile /dev/null
+   minetest --server --world /path/to/world --logfile /dev/null
    ```
 5. Watch the console for test results
 
@@ -193,28 +193,39 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
     
-    - name: Install Luanti
+    - name: Install Minetest
       run: |
         sudo apt-get update
-        sudo apt-get install -y luanti-server || sudo apt-get install -y minetest-server
+        sudo apt-get install -y software-properties-common
+        sudo add-apt-repository -y ppa:minetestdevs/stable
+        sudo apt-get update
+        sudo apt-get install -y minetest
     
     - name: Run tests
-      run: |
-        cd mods/pcity_mapgen/tests
-        ./run_tests.sh
+      run: ./.util/run_tests.sh
 ```
 
 ## Troubleshooting
 
-### "luantiserver not found"
+### "Must be run from repository root"
 
-Make sure Luanti is installed and in your PATH:
+Make sure you're running `.util/run_tests.sh` from the repository root:
 ```bash
-which luantiserver
+cd /path/to/perfect_city_mirror
+./.util/run_tests.sh
+```
+
+### "minetest or luanti binary not found"
+
+Make sure Minetest/Luanti is installed and in your PATH:
+```bash
+which minetest
 # or
-which minetestserver
+which luanti
 ```
 
 ### Tests hang or don't complete
@@ -223,29 +234,6 @@ Check that:
 1. The mod loads correctly (no Lua syntax errors)
 2. `pcity_run_tests` setting is set to `true`
 3. The temporary world directory has proper permissions
-
-### "Could not find mod.conf"
-
-Make sure you're running `run_tests.sh` from the `tests/` directory:
-```bash
-cd mods/pcity_mapgen/tests
-./run_tests.sh
-```
-
-## Comparison with Previous Approach
-
-### Old Approach (Busted - Deprecated)
-- Used standalone busted testing framework
-- Required LuaJIT, LuaRocks, busted installation
-- Extracted Luanti built-in modules
-- Ran outside the engine
-
-### New Approach (In-Engine - Current)
-- Tests run inside Luanti/Minetest engine
-- Only requires Luanti server installation
-- Uses real Luanti APIs directly
-- Proper integration testing
-- Recommended by Luanti developers
 
 ## Resources
 
