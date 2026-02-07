@@ -83,18 +83,35 @@ fi
 # Clone Luanti repository to get built-in Lua modules
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 LUANTI_DIR="$SCRIPT_DIR/luanti"
+LUANTI_VERSION="5.10.0"
 
 if [ -d "$LUANTI_DIR" ]; then
     echo ""
-    echo "Luanti directory already exists. Updating..."
+    echo "Luanti directory already exists. Checking version..."
     cd "$LUANTI_DIR"
-    git pull
+    CURRENT_TAG=$(git describe --tags 2>/dev/null || echo "unknown")
+    if [ "$CURRENT_TAG" = "$LUANTI_VERSION" ]; then
+        echo "Luanti version $LUANTI_VERSION already installed."
+    else
+        echo "Updating to Luanti version $LUANTI_VERSION..."
+        git fetch --tags
+        git checkout "$LUANTI_VERSION"
+    fi
     cd "$SCRIPT_DIR"
 else
     echo ""
-    echo "Cloning Luanti repository for built-in Lua modules..."
-    git clone --depth=1 https://github.com/luanti-org/luanti.git "$LUANTI_DIR"
+    echo "Cloning Luanti repository version $LUANTI_VERSION for built-in Lua modules..."
+    git clone --depth=1 --branch="$LUANTI_VERSION" https://github.com/luanti-org/luanti.git "$LUANTI_DIR"
+    
+    # Verify the clone was successful
+    if [ ! -f "$LUANTI_DIR/builtin/common/vector.lua" ]; then
+        echo "Error: Failed to clone Luanti or vector.lua not found."
+        echo "Please check your internet connection and try again."
+        exit 1
+    fi
 fi
+
+echo "Luanti version: $LUANTI_VERSION"
 
 echo ""
 echo "Installation complete!"
