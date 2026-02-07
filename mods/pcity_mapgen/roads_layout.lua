@@ -216,6 +216,9 @@ local road_metastore = pcmg.metastore.new()
 -- ROAD BUILDING
 -- ============================================================
 
+-- Builds a simple road path between start and finish points.
+-- Note: Collision detection has been removed as part of simplification.
+-- The path is created with a single slant and no intersection handling.
 local function build_road(megapathpav, start, finish)
     local start_point = pcmg.point.new(start)
     local finish_point = pcmg.point.new(finish)
