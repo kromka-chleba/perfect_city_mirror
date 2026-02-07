@@ -83,7 +83,7 @@ fi
 # Clone Luanti repository to get built-in Lua modules
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 LUANTI_DIR="$SCRIPT_DIR/luanti"
-LUANTI_VERSION="5.10.0"
+LUANTI_VERSION="5.15.0"
 
 if [ -d "$LUANTI_DIR" ]; then
     echo ""

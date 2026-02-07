@@ -25,14 +25,14 @@ mods/pcity_mapgen/tests/
 
 ### Key Components
 
-- **luanti/**: Cloned from https://github.com/luanti-org/luanti (version 5.10.0) - provides the actual Luanti/Minetest built-in Lua implementations
+- **luanti/**: Cloned from https://github.com/luanti-org/luanti (version 5.15.0) - provides the actual Luanti/Minetest built-in Lua implementations
 - **test_helper.lua**: Bootstrap file that loads Luanti's built-in modules (vector.lua, math.lua) and sets up the test environment
 - **point_spec.lua**: Tests for the Point class (25 test cases)
 - **path_spec.lua**: Tests for the Path class (38 test cases)
 
-**Important**: Tests use the *actual* Luanti built-in modules (version 5.10.0), not mocks. This ensures perfect compatibility and catches any real incompatibilities with Luanti/Minetest.
+**Important**: Tests use the *actual* Luanti built-in modules (version 5.15.0), not mocks. This ensures perfect compatibility and catches any real incompatibilities with Luanti/Minetest.
 
-**Why version 5.10.0?** The tests are pinned to Luanti 5.10.0 to ensure reproducible test results across different environments and time periods. This version is known to be stable and compatible with the current codebase.
+**Why version 5.15.0?** The tests are pinned to Luanti 5.15.0 to ensure reproducible test results across different environments and time periods. This version is known to be stable and compatible with the current codebase.
 
 ## Installation
 
