@@ -1,6 +1,12 @@
 --[[
-    This is a part of "Perfect City".
+    Test infrastructure for "Perfect City" pcity_mapgen mod.
+    
+    Based on WorldEdit's test system:
+    https://github.com/Uberi/Minetest-WorldEdit
+    
+    Copyright © 2012 sfan5, Anthony Zhang (Uberi/Temperest), and Brett O'Donnell (cornernote)
     Copyright (C) 2026 Jan Wielkiewicz <tona_kosmicznego_smiecia@interia.pl>
+    
     SPDX-License-Identifier: AGPL-3.0-or-later
 
     This program is free software: you can redistribute it and/or modify
@@ -15,18 +21,13 @@
 
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+    
     ---
-
-    This test infrastructure is inspired by WorldEdit's test system:
-    https://github.com/Uberi/Minetest-WorldEdit
-
-    WorldEdit is licensed under GNU Affero General Public License v3 (AGPLv3)
-    Copyright © 2012 sfan5, Anthony Zhang (Uberi/Temperest), and Brett O'Donnell (cornernote)
-
+    
     The concept of running tests inside the Luanti engine, the test registration
     pattern, and the overall test runner structure are adapted from WorldEdit's
-    approach, specifically from worldedit/test/init.lua.
+    approach, specifically from worldedit/test/init.lua. This implementation has
+    been significantly modified and extended for Perfect City's needs.
 --]]
 
 -- Test runner for pcity_mapgen
