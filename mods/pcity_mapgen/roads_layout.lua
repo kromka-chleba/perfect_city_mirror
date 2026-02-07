@@ -218,8 +218,9 @@ local road_metastore = pcmg.metastore.new()
 
 -- Builds a simple road path between start and finish points.
 -- Note: Collision detection has been removed as part of simplification.
--- The path is created with a single slant and no intersection handling.
-local function build_road(megapathpav, start, finish)
+-- The path is created using make_slanted(), which creates a path with
+-- one diagonal bend (L-shaped) when start/finish are not axis-aligned.
+local function build_road(start, finish)
     local start_point = pcmg.point.new(start)
     local finish_point = pcmg.point.new(finish)
     local guide_path = pcmg.path.new(start_point, finish_point)
@@ -245,7 +246,7 @@ local function road_generator(megacanv, pathpaver_cache)
     for _, points in ipairs(connected_points) do
         local start = points[1]
         local finish = points[2]
-        local pth = build_road(megapathpav, start, finish)
+        local pth = build_road(start, finish)
         megapathpav:save_path(pth)
         table.insert(main_roads, pth)
         draw_points(megacanv, road_origins)
