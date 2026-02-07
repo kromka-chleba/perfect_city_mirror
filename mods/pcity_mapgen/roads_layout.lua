@@ -220,7 +220,7 @@ local road_metastore = pcmg.metastore.new()
 -- Note: Collision detection has been removed as part of simplification.
 -- The path is created using make_slanted(), which creates an L-shaped path
 -- with one horizontal segment and one vertical segment when start/finish
--- are not axis-aligned.
+-- are not axis-aligned, or a single straight segment when they are aligned.
 local function build_road(start, finish)
     local start_point = pcmg.point.new(start)
     local finish_point = pcmg.point.new(finish)
