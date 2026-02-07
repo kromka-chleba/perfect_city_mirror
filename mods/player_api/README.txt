@@ -24,8 +24,9 @@ stujones11, An0n3m0us (CC BY-SA 3.0):
 Modified for Perfect City by Jan Wielkiewicz (lord_of_the_dumpster) (CC BY-SA 3.0):
   character.b3d - Modified scale/proportions for Perfect City
   character.blend - Modified scale/proportions for Perfect City
+  character.png - Modified texture for Perfect City
 
-Jordach (CC BY-SA 3.0):
+Original texture by Jordach (CC BY-SA 3.0):
   character.png
 
 celeron55, Perttu Ahola <celeron55@gmail.com> (CC BY-SA 3.0):
