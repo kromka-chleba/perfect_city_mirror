@@ -47,9 +47,8 @@ jobs:
     
     - name: Run tests
       run: |
-        cd mods/pcity_mapgen/tests
-        chmod +x run_tests.sh
-        ./run_tests.sh
+        chmod +x mods/pcity_mapgen/tests/run_tests.sh
+        mods/pcity_mapgen/tests/run_tests.sh
     
     - name: Test results
       if: success()
