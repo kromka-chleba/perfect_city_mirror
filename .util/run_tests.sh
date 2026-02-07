@@ -33,7 +33,14 @@ ln -s "$(pwd)/mods" "$gamepath/"
 # Create world
 mkdir -p "$worldpath"
 printf '%s\n' 'mg_name = singlenode' '[end_of_params]' > "$worldpath/map_meta.txt"
-printf '%s\n' 'pcity_run_tests = true' 'max_forceloaded_blocks = 9999' > "$confpath"
+
+# Create minetest.conf with test settings and game path
+# Set path_user to tempdir so minetest looks for games in $tempdir/games
+cat > "$confpath" << CONFEOF
+pcity_run_tests = true
+max_forceloaded_blocks = 9999
+path_user = $tempdir
+CONFEOF
 
 echo "Starting test run..."
 $mtserver --server --gameid perfect_city --config "$confpath" --world "$worldpath" --logfile /dev/null
