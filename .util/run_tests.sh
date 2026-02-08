@@ -45,7 +45,8 @@ echo "Temp dir: $tempdir"
 echo "Game path: $gamepath"
 echo "World path: $worldpath"
 
-# Run with explicit paths
+# Run from tempdir (like Exile runs from WORKDIR) so minetest can find games at relative path
+cd "$tempdir"
 $mtserver --server --gameid "perfect_city" --config "$confpath" --world "$worldpath" --logfile /dev/null
 
 test -f "$worldpath/tests_ok" || exit 1
