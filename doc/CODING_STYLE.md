@@ -418,27 +418,6 @@ function canvas:draw_shape(shape)
 end
 ```
 
-### Iterators and Loops
-
-Use appropriate loop constructs:
-
-```lua
--- For sequential tables with indices
-for i = 1, #points do
-    points[i].next = points[i + 1]
-end
-
--- For tables with arbitrary keys
-for key, value in pairs(table) do
-    -- ...
-end
-
--- Custom iterators for linked structures
-for i, p in my_point:iterator() do
-    -- ...
-end
-```
-
 ---
 
 ## Error Handling
@@ -534,20 +513,6 @@ local point = pcmg.point or dofile(mod_path.."/point.lua")
 local path = pcmg.path or dofile(mod_path.."/path.lua")
 ```
 
-### Weak Tables
-
-Use weak tables for caching and avoiding memory leaks:
-
-```lua
--- Weak table: points are kept alive by the linked list,
--- not by this table.
-pth.points = setmetatable({}, {__mode = "kv"})
-
--- Weak table: attached points are kept alive by their own paths,
--- not by the attachment relationship itself.
-p.attached = setmetatable({}, {__mode = "kv"})
-```
-
 ### File Separation
 
 Organize code into focused files:
@@ -598,106 +563,6 @@ function tests.test_point_copy()
     assert(vector.equals(p_copy.pos, p_mid.pos), "Copy should have same position")
     assert(p_copy.id ~= p_mid.id, "Copy should have different ID")
     assert(p_copy.path == nil, "Copy should not belong to any path")
-end
-```
-
----
-
-## Examples
-
-### Good Code Example
-
-From `point.lua`:
-
-```lua
--- Creates a copy of point 'p' with the same position. The copy does
--- not inherit path, previous/next links, attachments, or branches -
--- it is a fresh, unlinked point. Use this when you need a new point
--- at the same location (e.g., when splitting a path).
-function point:copy()
-    return point.new(self.pos)
-end
-
--- Unlinks the current point from the previous point.
-function point:unlink_from_previous()
-    if self.previous and self.previous.next == self then
-        self.previous.next = nil
-    end
-    self.previous = nil
-end
-
--- Unlinks the current point from the next point.
-function point:unlink_from_next()
-    if self.next and self.next.previous == self then
-        self.next.previous = nil
-    end
-    self.next = nil
-end
-
--- Unlinks the point from both the previous and the next point.
-function point:unlink()
-    self:unlink_from_previous()
-    self:unlink_from_next()
-end
-```
-
-**Why this is good:**
-- Each function does one thing
-- Clear, descriptive names
-- Well-documented
-- Functions are small and focused
-- Reuse: `unlink()` composes two smaller functions
-
-### Code to Improve
-
-**Before:**
-```lua
-function do_everything(x, y, z, flag1, flag2, flag3)
-    if flag1 then
-        -- 50 lines of code
-        if flag2 then
-            -- 30 more lines
-            if flag3 then
-                -- 20 more lines
-            end
-        end
-    end
-    -- ... continues for 200 lines
-end
-```
-
-**After:**
-```lua
-function validate_inputs(x, y, z)
-    checks.check_coordinates(x, y, z)
-end
-
-function process_step_one(x, y)
-    -- 10-15 lines focused on step one
-end
-
-function process_step_two(y, z)
-    -- 10-15 lines focused on step two
-end
-
-function process_step_three(x, z)
-    -- 10-15 lines focused on step three
-end
-
-function do_processing(x, y, z, options)
-    validate_inputs(x, y, z)
-    
-    if options.step_one then
-        process_step_one(x, y)
-    end
-    
-    if options.step_two then
-        process_step_two(y, z)
-    end
-    
-    if options.step_three then
-        process_step_three(x, z)
-    end
 end
 ```
 
