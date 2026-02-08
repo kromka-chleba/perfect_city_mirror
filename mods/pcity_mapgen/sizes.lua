@@ -18,61 +18,44 @@
 --]]
 
 --[[
-    Size definitions and constants for Perfect City map divisions.
+    DEPRECATED: This file is kept for backward compatibility.
     
-    For unit conversion functions, see units.lua.
+    The sizes table is now part of the units module.
+    Please use: local units = dofile(mod_path.."/units.lua")
+    Then access:
+      - Unit conversion functions directly on units
+      - Size constants as units.sizes
+    
+    This file will be removed in a future version.
 --]]
 
 local mod_path = core.get_modpath("pcity_mapgen")
 
-local sizes = {}
+-- Load the units module which contains sizes
+local units = dofile(mod_path.."/units.lua")
 
--- Load unit conversion functions
-sizes.units = dofile(mod_path.."/units.lua")
+-- For backward compatibility, create a wrapper table that:
+-- 1. Has all the size properties from units.sizes
+-- 2. Has a .units property that points to the units module
+local sizes_wrapper = {}
 
--- By default chunksize is 5
-local blocks_per_chunk = tonumber(core.get_mapgen_setting("chunksize"))
--- By default 80
-local mapchunk_size = blocks_per_chunk * 16
--- By default -32
-local mapchunk_offset = -16 * math.floor(blocks_per_chunk / 2)
--- Citychunk size in mapchunks
-local citychunk_size = tonumber(core.settings:get("pcity_citychunk_size")) or 10
-
-
--- Map divisions
-
-sizes.node = {
-    in_mapchunks = 1 / mapchunk_size,
-    in_citychunks = 1 / (mapchunk_size * citychunk_size),
-}
-local mapchunk_max = mapchunk_size - 1
-sizes.mapchunk = {
-    in_nodes = mapchunk_size,
-    in_citychunks = 1 / citychunk_size,
-    pos_min = vector.zero(),
-    pos_max = vector.new(mapchunk_max, mapchunk_max, mapchunk_max),
-}
-local citychunk_in_nodes = citychunk_size * mapchunk_size
-local citychunk_max = citychunk_in_nodes - 1
-sizes.citychunk = {
-    in_nodes = citychunk_in_nodes,
-    in_mapchunks = citychunk_size,
-    pos_min = vector.zero(),
-    pos_max = vector.new(citychunk_max, citychunk_max, citychunk_max),
-    overgen_margin = 2 * sizes.mapchunk.in_nodes or
-        citychunk_size < 3 and sizes.mapchunk.in_nodes
+-- Set up metatable to forward reads to units.sizes
+local wrapper_mt = {
+    __index = function(t, k)
+        if k == "units" then
+            -- Return the units module for backward compatibility
+            return units
+        else
+            -- Forward to units.sizes for size constants
+            return units.sizes[k]
+        end
+    end,
+    __newindex = function(t, k, v)
+        error("Attempt to modify read-only sizes table (key: " .. tostring(k) .. ")", 2)
+    end,
+    __metatable = false  -- Hide the metatable
 }
 
--- Height of most rooms
-sizes.room_height = 7
+setmetatable(sizes_wrapper, wrapper_mt)
 
--- Levels of the layers of the city
-sizes.ground_level = core.settings:get("mgflat_ground_level") or 8
-sizes.city_max = sizes.ground_level + 20 * sizes.room_height -- 148
-sizes.city_min = sizes.ground_level -- 8
-sizes.basement_max = sizes.ground_level - 1 -- 7
-sizes.basement_max = -12
-sizes.hell_max_level = -13
-
-return sizes
+return sizes_wrapper

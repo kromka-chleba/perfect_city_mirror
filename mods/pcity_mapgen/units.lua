@@ -18,7 +18,11 @@
 --]]
 
 --[[
-    Unit conversion functions for Perfect City coordinate systems.
+    Master module for Perfect City coordinate systems and size definitions.
+    
+    This module provides:
+    - Unit conversion functions between coordinate systems
+    - Size definitions and constants (in units.sizes, read-only)
     
     Perfect City uses three coordinate systems:
     - Node: Individual block positions (1x1x1)
@@ -81,5 +85,60 @@ function units.citychunk_to_node(citychunk_pos)
     local mapchunk_pos = units.citychunk_to_mapchunk(citychunk_pos)
     return units.mapchunk_to_node(mapchunk_pos)
 end
+
+-- ============================================================
+-- SIZE DEFINITIONS
+-- ============================================================
+
+-- Create the sizes table with all size constants
+local sizes_table = {}
+
+-- Map divisions
+sizes_table.node = {
+    in_mapchunks = 1 / mapchunk_size,
+    in_citychunks = 1 / (mapchunk_size * citychunk_size),
+}
+
+local mapchunk_max = mapchunk_size - 1
+sizes_table.mapchunk = {
+    in_nodes = mapchunk_size,
+    in_citychunks = 1 / citychunk_size,
+    pos_min = vector.zero(),
+    pos_max = vector.new(mapchunk_max, mapchunk_max, mapchunk_max),
+}
+
+local citychunk_in_nodes = citychunk_size * mapchunk_size
+local citychunk_max = citychunk_in_nodes - 1
+sizes_table.citychunk = {
+    in_nodes = citychunk_in_nodes,
+    in_mapchunks = citychunk_size,
+    pos_min = vector.zero(),
+    pos_max = vector.new(citychunk_max, citychunk_max, citychunk_max),
+    overgen_margin = 2 * sizes_table.mapchunk.in_nodes or
+        citychunk_size < 3 and sizes_table.mapchunk.in_nodes
+}
+
+-- Height of most rooms
+sizes_table.room_height = 7
+
+-- Levels of the layers of the city
+sizes_table.ground_level = core.settings:get("mgflat_ground_level") or 8
+sizes_table.city_max = sizes_table.ground_level + 20 * sizes_table.room_height -- 148
+sizes_table.city_min = sizes_table.ground_level -- 8
+sizes_table.basement_max = sizes_table.ground_level - 1 -- 7
+sizes_table.basement_max = -12
+sizes_table.hell_max_level = -13
+
+-- Make the sizes table read-only using LuaJIT metamethods
+local sizes_metatable = {
+    __index = sizes_table,
+    __newindex = function(t, k, v)
+        error("Attempt to modify read-only sizes table (key: " .. tostring(k) .. ")", 2)
+    end,
+    __metatable = false  -- Hide the metatable
+}
+
+-- Create read-only proxy for sizes
+units.sizes = setmetatable({}, sizes_metatable)
 
 return units
