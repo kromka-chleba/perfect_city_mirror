@@ -10,6 +10,7 @@ The unit tests for Perfect City run **inside the Luanti/Minetest engine**, follo
 - Tests must run inside the engine to have access to all Luanti APIs and ensure proper integration.
 - **Perfect City is a game**, not just a mod. The `pcity_mapgen` mod is tested within the Perfect City game context.
 - The test runner automatically sets up the game environment and runs tests with `--gameid perfect_city`.
+- The `pcity_run_tests` setting is **global** - it enables testing for all Perfect City mods. Currently only `pcity_mapgen` has tests, but other mods will use this same setting in the future.
 
 ## Attribution and License
 

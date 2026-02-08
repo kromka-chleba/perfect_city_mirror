@@ -32,11 +32,13 @@
 
 -- Test runner for pcity_mapgen
 -- Runs tests inside the Luanti engine when pcity_run_tests setting is enabled
+-- Note: pcity_run_tests is a global setting for all Perfect City mods
 
 local mod_name = core.get_current_modname()
 local mod_path = core.get_modpath("pcity_mapgen")
 
 -- Only run tests if enabled in settings
+-- This global setting will be used by other Perfect City mods in the future
 if not core.settings:get_bool("pcity_run_tests") then
     return
 end
