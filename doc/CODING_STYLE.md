@@ -45,7 +45,7 @@ Every Lua file must start with the AGPL-3.0-or-later license header:
 ```lua
 --[[
     This is a part of "Perfect City".
-    Copyright (C) YYYY-YYYY Author Name <email@example.com>
+    Copyright (C) 2024-2025 Author Name <email@example.com>
     SPDX-License-Identifier: AGPL-3.0-or-later
 
     This program is free software: you can redistribute it and/or modify
@@ -265,7 +265,7 @@ function point.check(p)
 end
 
 function canvas:read_cell(x, z)
-    local new_x, new_z = x + 1 + canvas_margin , z + 1 + canvas_margin
+    local new_x, new_z = x + 1 + canvas_margin, z + 1 + canvas_margin
     if self.array[new_x] then
         return self.array[new_x][new_z] or blank_id
     end
