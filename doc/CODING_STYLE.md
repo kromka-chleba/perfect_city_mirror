@@ -2,37 +2,33 @@
 
 This document describes the coding style used throughout the Perfect City game project. The guidelines are based on the `pcity_mapgen` module, which serves as the reference implementation for clean, maintainable code.
 
+## Key Principles
+
+The key principles for Perfect City code:
+
+1. **Functions should be small** (under 30 lines typically)
+2. **Each function does one thing well** (Single Responsibility)
+3. **Use clear, descriptive names** for variables and functions
+4. **Document public APIs** with clear comments
+5. **Validate inputs** at function boundaries
+6. **Organize code into focused modules** (one class per file)
+7. **Write testable code** with clear inputs and outputs
+8. **Keep it simple** - clarity over cleverness
+
+Follow clean code principles: **Single Responsibility**, **DRY (Don't Repeat Yourself)**, and **Separation of Concerns**. Code should be readable, maintainable, testable, and clear. Optimize only when necessary; clarity comes first.
+
+When in doubt, refer to the `pcity_mapgen` module for examples of good coding practices.
+
 ## Table of Contents
 
-1. [General Principles](#general-principles)
-2. [File Organization](#file-organization)
-3. [Naming Conventions](#naming-conventions)
-4. [Function Design](#function-design)
-5. [Comments and Documentation](#comments-and-documentation)
-6. [Code Structure](#code-structure)
-7. [Error Handling](#error-handling)
-8. [Module Organization](#module-organization)
-
----
-
-## General Principles
-
-### Clean Code Philosophy
-
-Follow these clean code principles throughout the codebase:
-
-1. **Single Responsibility**: Each function should do one thing and do it well
-2. **Small Functions**: Keep functions focused and concise (typically under 30 lines)
-3. **Clear Intent**: Code should be self-documenting through good naming
-4. **DRY (Don't Repeat Yourself)**: Extract common patterns into reusable functions
-5. **Separation of Concerns**: Separate validation, logic, and data manipulation
-
-### Code Quality Goals
-
-- **Readability**: Code should be easy to read and understand
-- **Maintainability**: Changes should be localized and predictable
-- **Testability**: Functions should be easy to test in isolation
-- **Performance**: Optimize only when necessary; clarity first
+1. [File Organization](#file-organization)
+2. [Naming Conventions](#naming-conventions)
+3. [Function Design](#function-design)
+4. [Comments and Documentation](#comments-and-documentation)
+5. [Code Structure](#code-structure)
+6. [Error Handling](#error-handling)
+7. [Module Organization](#module-organization)
+8. [Testing](#testing)
 
 ---
 
@@ -565,23 +561,6 @@ function tests.test_point_copy()
     assert(p_copy.path == nil, "Copy should not belong to any path")
 end
 ```
-
----
-
-## Summary
-
-The key principles for Perfect City code:
-
-1. **Functions should be small** (under 30 lines typically)
-2. **Each function does one thing well** (Single Responsibility)
-3. **Use clear, descriptive names** for variables and functions
-4. **Document public APIs** with clear comments
-5. **Validate inputs** at function boundaries
-6. **Organize code into focused modules** (one class per file)
-7. **Write testable code** with clear inputs and outputs
-8. **Keep it simple** - clarity over cleverness
-
-When in doubt, refer to the `pcity_mapgen` module for examples of good coding practices.
 
 ---
 
