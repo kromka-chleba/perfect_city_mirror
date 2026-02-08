@@ -21,8 +21,7 @@ local mod_name = core.get_current_modname()
 local mod_path = core.get_modpath("pcity_mapgen")
 pcity_mapgen = {}
 local pcmg = pcity_mapgen
-local sizes = dofile(mod_path.."/sizes.lua")
-local units = sizes.units
+local units = dofile(mod_path.."/units.lua")
 
 dofile(mod_path.."/metastore.lua")
 dofile(mod_path.."/utils.lua")

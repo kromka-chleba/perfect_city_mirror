@@ -26,19 +26,23 @@
     
     Perfect City uses three coordinate systems:
     - Node: Individual block positions (1x1x1)
-    - Mapchunk: Minetest's native chunks (typically 80x80x80 nodes)
+    - Mapchunk: Minetest's native chunks (can be non-cubic, specified in blocks)
     - Citychunk: Perfect City's larger chunks (typically 10x10 mapchunks)
 --]]
 
 local units = {}
 
--- By default chunksize is 5
-local blocks_per_chunk = tonumber(core.get_mapgen_setting("chunksize"))
--- By default 80
-local mapchunk_size = blocks_per_chunk * 16
--- By default -32
-local mapchunk_offset = -16 * math.floor(blocks_per_chunk / 2)
--- Citychunk size in mapchunks
+-- Get mapchunk size using the new API (returns a vector in blocks)
+local chunksize_blocks = core.get_mapgen_chunksize()
+-- Convert blocks to nodes (each block is 16 nodes)
+local mapchunk_size = vector.multiply(chunksize_blocks, 16)
+-- Calculate offset for chunk alignment (center alignment)
+local mapchunk_offset = vector.new(
+    -16 * math.floor(chunksize_blocks.x / 2),
+    -16 * math.floor(chunksize_blocks.y / 2),
+    -16 * math.floor(chunksize_blocks.z / 2)
+)
+-- Citychunk size in mapchunks (same in all directions for now)
 local citychunk_size = tonumber(core.settings:get("pcity_citychunk_size")) or 10
 
 -- ============================================================
@@ -48,13 +52,21 @@ local citychunk_size = tonumber(core.settings:get("pcity_citychunk_size")) or 10
 -- Translates node position into mapchunk position.
 function units.node_to_mapchunk(pos)
     local mapchunk_pos = vector.subtract(vector.floor(pos), mapchunk_offset)
-    mapchunk_pos = vector.divide(mapchunk_pos, mapchunk_size)
+    mapchunk_pos = vector.new(
+        mapchunk_pos.x / mapchunk_size.x,
+        mapchunk_pos.y / mapchunk_size.y,
+        mapchunk_pos.z / mapchunk_size.z
+    )
     return mapchunk_pos
 end
 
 -- Translates mapchunk position into node position (returns origin corner).
 function units.mapchunk_to_node(mapchunk_pos)
-    local pos = vector.multiply(mapchunk_pos, mapchunk_size)
+    local pos = vector.new(
+        mapchunk_pos.x * mapchunk_size.x,
+        mapchunk_pos.y * mapchunk_size.y,
+        mapchunk_pos.z * mapchunk_size.z
+    )
     pos = vector.add(pos, mapchunk_offset)
     pos = vector.round(pos) -- round to avoid fp garbage
     return pos
@@ -95,27 +107,43 @@ local sizes_table = {}
 
 -- Map divisions
 sizes_table.node = {
-    in_mapchunks = 1 / mapchunk_size,
-    in_citychunks = 1 / (mapchunk_size * citychunk_size),
+    in_mapchunks = vector.new(
+        1 / mapchunk_size.x,
+        1 / mapchunk_size.y,
+        1 / mapchunk_size.z
+    ),
+    in_citychunks = vector.new(
+        1 / (mapchunk_size.x * citychunk_size),
+        1 / (mapchunk_size.y * citychunk_size),
+        1 / (mapchunk_size.z * citychunk_size)
+    ),
 }
 
-local mapchunk_max = mapchunk_size - 1
+local mapchunk_max = vector.new(
+    mapchunk_size.x - 1,
+    mapchunk_size.y - 1,
+    mapchunk_size.z - 1
+)
 sizes_table.mapchunk = {
     in_nodes = mapchunk_size,
-    in_citychunks = 1 / citychunk_size,
+    in_citychunks = vector.new(
+        1 / citychunk_size,
+        1 / citychunk_size,
+        1 / citychunk_size
+    ),
     pos_min = vector.zero(),
-    pos_max = vector.new(mapchunk_max, mapchunk_max, mapchunk_max),
+    pos_max = mapchunk_max,
 }
 
-local citychunk_in_nodes = citychunk_size * mapchunk_size
-local citychunk_max = citychunk_in_nodes - 1
+local citychunk_in_nodes = vector.multiply(mapchunk_size, citychunk_size)
+local citychunk_max = vector.subtract(citychunk_in_nodes, 1)
 sizes_table.citychunk = {
     in_nodes = citychunk_in_nodes,
     in_mapchunks = citychunk_size,
     pos_min = vector.zero(),
-    pos_max = vector.new(citychunk_max, citychunk_max, citychunk_max),
-    overgen_margin = 2 * sizes_table.mapchunk.in_nodes or
-        citychunk_size < 3 and sizes_table.mapchunk.in_nodes
+    pos_max = citychunk_max,
+    -- Use 2x the largest mapchunk dimension for overgen margin
+    overgen_margin = 2 * math.max(mapchunk_size.x, mapchunk_size.y, mapchunk_size.z)
 }
 
 -- Height of most rooms

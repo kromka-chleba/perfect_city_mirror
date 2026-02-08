@@ -19,7 +19,7 @@
 
 local mod_name = core.get_current_modname()
 local mod_path = core.get_modpath("pcity_mapgen")
-local pc_sizes = dofile(mod_path.."/sizes.lua")
+local units = dofile(mod_path.."/units.lua")
 
 core.register_biome({
         name = "city",
@@ -29,8 +29,8 @@ core.register_biome({
         depth_filler = 3,
         node_stone = "pcity_nodes:asphalt",
         vertical_blend = 0,
-        y_max = pc_sizes.city_max,
-        y_min = pc_sizes.ground_level - 5,
+        y_max = units.sizes.city_max,
+        y_min = units.sizes.ground_level - 5,
         heat_point = 50,
         humidity_point = 50,
 })

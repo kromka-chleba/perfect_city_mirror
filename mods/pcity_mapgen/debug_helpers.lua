@@ -20,16 +20,15 @@
 local mod_name = core.get_current_modname()
 local mod_path = core.get_modpath("pcity_mapgen")
 local pcmg = pcity_mapgen
-local sizes = dofile(mod_path.."/sizes.lua")
-local units = sizes.units
+local units = dofile(mod_path.."/units.lua")
 local math = math
 
 pcmg.debug = {}
 
 -- Sizes of map division units
-local node = sizes.node
-local mapchunk = sizes.mapchunk
-local citychunk = sizes.citychunk
+local node = units.sizes.node
+local mapchunk = units.sizes.mapchunk
+local citychunk = units.sizes.citychunk
 
 -- Node IDs
 local grass_id = core.get_content_id("pcity_nodes:grass")
