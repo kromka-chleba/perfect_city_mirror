@@ -19,8 +19,8 @@ This directory contains comprehensive documentation for the Perfect City mapgen 
 
 ### Coordinate Systems and Utilities
 
-- **[units.md](units.md)** - Unit conversion functions between coordinate systems
-- **[sizes.md](sizes.md)** - Size constants and map division definitions
+- **[units.md](units.md)** - **Master module** for unit conversions and size constants
+- **[sizes.md](sizes.md)** - Deprecated wrapper (use units.md instead)
 - **[utils.md](utils.md)** - High-level coordinate utilities and helper functions
 - **[metastore.md](metastore.md)** - Metadata storage with weak tables
 
@@ -34,7 +34,18 @@ Perfect City uses three coordinate systems:
 2. **Mapchunk** - Minetest chunks (80x80x80 nodes default)
 3. **Citychunk** - Perfect City chunks (800x800x800 nodes default)
 
-See [units.md](units.md) for conversion functions and [sizes.md](sizes.md) for size constants.
+**Module Structure:**
+```lua
+local units = dofile(mod_path.."/units.lua")
+
+-- Conversion functions (top-level)
+local origin = units.citychunk_to_node(coords)
+
+-- Size constants (read-only)
+local chunk_size = units.sizes.citychunk.in_nodes
+```
+
+See [units.md](units.md) for complete documentation.
 
 ### Material Priority System
 

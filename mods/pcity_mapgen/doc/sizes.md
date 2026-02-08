@@ -1,19 +1,50 @@
-# Sizes Module
+# Sizes Module (DEPRECATED)
+
+> **⚠️ DEPRECATED**: This module is kept for backward compatibility only.
+> 
+> **Use [units.md](units.md) instead.**
+> 
+> The sizes module now just wraps the units module. All size constants are in `units.sizes`.
 
 ## Overview
 
-The sizes module defines the size constants for Perfect City's coordinate system hierarchy: nodes, mapchunks, and citychunks.
+The sizes module is now a **backward compatibility wrapper** around the units module. The actual size definitions have moved to `units.sizes` in the units module.
 
-**Note:** For unit conversion functions, see [units.md](units.md) and the `units.lua` module.
+**For new code, please use:**
+```lua
+local units = dofile(mod_path.."/units.lua")
+-- Access sizes as: units.sizes.citychunk.in_nodes
+-- Access conversions as: units.node_to_mapchunk(pos)
+```
 
-## Purpose
+## Purpose (Historical)
 
-This module provides:
-- Size definitions for all map division units
-- Configuration-dependent size calculations
-- Height level constants for city layers
+This module originally provided size definitions for all map division units. It has been refactored so that units is now the master module.
 
-Unit conversion functions have been extracted to a separate `units.lua` module for better organization.
+## Current Behavior
+
+When you load sizes.lua, you get a wrapper that:
+1. Loads the units module internally
+2. Returns a proxy table that forwards reads to `units.sizes`
+3. Provides `sizes.units` for backward compatibility (points to the units module)
+4. Is read-only (attempts to modify will cause an error)
+
+## Usage (Backward Compatible)
+
+```lua
+-- This still works for backward compatibility
+local sizes = dofile(mod_path.."/sizes.lua")
+local units = sizes.units
+local chunk_size = sizes.citychunk.in_nodes
+```
+
+But this is equivalent to and should be replaced with:
+
+```lua
+-- Recommended approach
+local units = dofile(mod_path.."/units.lua")
+local chunk_size = units.sizes.citychunk.in_nodes
+```
 
 ## Map Division Hierarchy
 
