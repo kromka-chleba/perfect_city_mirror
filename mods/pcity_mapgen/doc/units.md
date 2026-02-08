@@ -8,8 +8,8 @@ The units module is the **master module** for Perfect City's coordinate systems 
 
 Perfect City uses a hierarchical coordinate system:
 - **Nodes**: Individual block positions (1x1x1) - the base unit
-- **Mapchunks**: Minetest's native chunks (typically 80x80x80 nodes)
-- **Citychunks**: Perfect City's larger chunks (typically 10x10 mapchunks = 800x800x800 nodes)
+- **Mapchunks**: Minetest's native chunks (can be non-cubic, specified in blocks)
+- **Citychunks**: Perfect City's larger chunks (typically 10x10 mapchunks)
 
 This module provides:
 - **Conversion functions** between coordinate systems (top-level functions)
@@ -26,9 +26,9 @@ units = {
     
     -- Size constants (read-only table)
     sizes = {
-        node = { in_mapchunks = ..., in_citychunks = ... },
-        mapchunk = { in_nodes = ..., in_citychunks = ... },
-        citychunk = { in_nodes = ..., in_mapchunks = ... },
+        node = { in_mapchunks = vector(...), in_citychunks = vector(...) },
+        mapchunk = { in_nodes = vector(...), in_citychunks = vector(...) },
+        citychunk = { in_nodes = vector(...), in_mapchunks = number },
         room_height = 7,
         ground_level = 8,
         -- ... more constants ...
@@ -57,24 +57,18 @@ local units = dofile(mod_path.."/units.lua")
 -- Use conversion functions
 local mapchunk_pos = units.node_to_mapchunk(node_pos)
 
--- Access size constants
-local chunk_size = units.sizes.citychunk.in_nodes
+-- Access size constants (note: many are now vectors!)
+local chunk_size = units.sizes.citychunk.in_nodes  -- This is a vector
 ```
 
-### Backward Compatibility
+## Non-Cubic Mapchunks
 
-For backward compatibility, `sizes.lua` still exists as a wrapper:
+**Important:** Mapchunks can now be non-cubic! The chunksize is retrieved using `core.get_mapgen_chunksize()` which returns a vector.
 
-```lua
--- Old way (still works)
-local sizes = dofile(mod_path.."/sizes.lua")
-local units = sizes.units
-local chunk_size = sizes.citychunk.in_nodes
-
--- New way (recommended)
-local units = dofile(mod_path.."/units.lua")
-local chunk_size = units.sizes.citychunk.in_nodes
-```
+This means:
+- `mapchunk_size` is a vector (x, y, z can be different)
+- Many size constants are now vectors instead of scalars
+- Conversion functions handle per-axis calculations
 
 ## Configuration
 

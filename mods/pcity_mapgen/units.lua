@@ -34,13 +34,13 @@ local units = {}
 
 -- Get mapchunk size using the new API (returns a vector in blocks)
 local chunksize_blocks = core.get_mapgen_chunksize()
--- Convert blocks to nodes (each block is 16 nodes)
-local mapchunk_size = vector.multiply(chunksize_blocks, 16)
+-- Convert blocks to nodes (each block is core.MAP_BLOCKSIZE nodes)
+local mapchunk_size = vector.multiply(chunksize_blocks, core.MAP_BLOCKSIZE)
 -- Calculate offset for chunk alignment (center alignment)
 local mapchunk_offset = vector.new(
-    -16 * math.floor(chunksize_blocks.x / 2),
-    -16 * math.floor(chunksize_blocks.y / 2),
-    -16 * math.floor(chunksize_blocks.z / 2)
+    -core.MAP_BLOCKSIZE * math.floor(chunksize_blocks.x / 2),
+    -core.MAP_BLOCKSIZE * math.floor(chunksize_blocks.y / 2),
+    -core.MAP_BLOCKSIZE * math.floor(chunksize_blocks.z / 2)
 )
 -- Citychunk size in mapchunks (same in all directions for now)
 local citychunk_size = tonumber(core.settings:get("pcity_citychunk_size")) or 10

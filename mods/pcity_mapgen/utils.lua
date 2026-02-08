@@ -24,15 +24,15 @@ local math = math
 local pcmg = pcity_mapgen
 local units = dofile(mod_path.."/units.lua")
 
--- By default chunksize is 5
+-- Get mapchunk size using the new API
 local chunksize_blocks = core.get_mapgen_chunksize()
--- By default 80
-local mapchunk_size = vector.multiply(chunksize_blocks, 16)
--- By default -32
+-- Convert blocks to nodes
+local mapchunk_size = vector.multiply(chunksize_blocks, core.MAP_BLOCKSIZE)
+-- Calculate offset
 local mapchunk_offset = vector.new(
-    -16 * math.floor(chunksize_blocks.x / 2),
-    -16 * math.floor(chunksize_blocks.y / 2),
-    -16 * math.floor(chunksize_blocks.z / 2)
+    -core.MAP_BLOCKSIZE * math.floor(chunksize_blocks.x / 2),
+    -core.MAP_BLOCKSIZE * math.floor(chunksize_blocks.y / 2),
+    -core.MAP_BLOCKSIZE * math.floor(chunksize_blocks.z / 2)
 )
 
 -- Sizes of map division units
