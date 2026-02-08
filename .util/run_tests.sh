@@ -1,13 +1,15 @@
 #!/bin/bash
 # Test runner script for pcity_mapgen
-# Based on WorldEdit's test runner
+# Based on WorldEdit's test runner and minetest_game test patterns
 # https://github.com/Uberi/Minetest-WorldEdit/blob/master/.util/run_tests.sh
+# https://github.com/luanti-org/minetest_game/blob/master/utils/test/run.sh
 
 set -e
 
+gamedir="$(pwd)"
 tempdir=$(mktemp -d)
-confpath=$tempdir/minetest.conf
-worldpath=$tempdir/world
+confpath="$tempdir/minetest.conf"
+worldpath="$tempdir/worlds/world"
 gamepath="$tempdir/games/perfect_city"
 
 trap 'rm -rf "$tempdir"' EXIT
@@ -22,29 +24,28 @@ mtserver=$(command -v minetest)
 
 echo "Using binary: $mtserver"
 
-# Set up the game directory structure
-mkdir -p "$gamepath"
-# Symlink essential game files and directories
-ln -s "$(pwd)/game.conf" "$gamepath/"
-ln -s "$(pwd)/mods" "$gamepath/"
-[ -f settingtypes.txt ] && ln -s "$(pwd)/settingtypes.txt" "$gamepath/"
-[ -d menu ] && ln -s "$(pwd)/menu" "$gamepath/"
-[ -f minetest.conf ] && ln -s "$(pwd)/minetest.conf" "$gamepath/"
+# Set up the game directory structure - use symlink to entire game directory
+mkdir -p "$tempdir/games"
+ln -s "$gamedir" "$gamepath"
 
-# Create world
+# Create world directory
 mkdir -p "$worldpath"
 printf '%s\n' 'mg_name = singlenode' '[end_of_params]' > "$worldpath/map_meta.txt"
 
-# Create minetest.conf with test settings and game path
-# Set path_user to tempdir so minetest looks for games in $tempdir/games
+# Create minetest.conf with test settings
 cat > "$confpath" << CONFEOF
 pcity_run_tests = true
 max_forceloaded_blocks = 9999
-path_user = $tempdir
 CONFEOF
 
 echo "Starting test run..."
-$mtserver --server --gameid "perfect_city" --config "$confpath" --world "$worldpath" --logfile /dev/null
+echo "Game dir: $gamedir"
+echo "Temp dir: $tempdir"
+echo "Game path: $gamepath"
+echo "World path: $worldpath"
+
+# Run with explicit paths - set HOME to tempdir so .minetest is created there
+HOME="$tempdir" $mtserver --server --gameid "perfect_city" --config "$confpath" --world "$worldpath" --logfile /dev/null
 
 test -f "$worldpath/tests_ok" || exit 1
 exit 0
