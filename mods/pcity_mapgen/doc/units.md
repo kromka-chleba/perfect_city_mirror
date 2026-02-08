@@ -202,27 +202,30 @@ Converts citychunk coordinates directly to node position (returns origin corner)
 
 The `units.sizes` table contains all size definitions and constants for the mapgen system. This table is **read-only** and cannot be modified.
 
+**Important:** Many size values are now **vectors** rather than scalars to support non-cubic mapchunks.
+
 ### Size Definitions
 
 ```lua
+-- Note: Many values are vectors to support non-cubic chunks
 units.sizes.node = {
-    in_mapchunks = 1/80,      -- Fraction of a mapchunk
-    in_citychunks = 1/8000,   -- Fraction of a citychunk
+    in_mapchunks = vector(...),      -- Fraction of a mapchunk (per-axis)
+    in_citychunks = vector(...),     -- Fraction of a citychunk (per-axis)
 }
 
 units.sizes.mapchunk = {
-    in_nodes = 80,            -- Size in nodes
-    in_citychunks = 1/10,     -- Fraction of a citychunk
-    pos_min = (0, 0, 0),      -- Minimum corner (relative)
-    pos_max = (79, 79, 79),   -- Maximum corner (relative)
+    in_nodes = vector(...),          -- Size in nodes (can be non-cubic!)
+    in_citychunks = vector(...),     -- Fraction of a citychunk (per-axis)
+    pos_min = (0, 0, 0),            -- Minimum corner (relative)
+    pos_max = vector(...),          -- Maximum corner (relative, depends on chunksize)
 }
 
 units.sizes.citychunk = {
-    in_nodes = 800,           -- Size in nodes (default)
-    in_mapchunks = 10,        -- Size in mapchunks (default)
-    pos_min = (0, 0, 0),      -- Minimum corner (relative)
-    pos_max = (799, 799, 799),-- Maximum corner (relative)
-    overgen_margin = 160,     -- Margin for overgeneration (2 mapchunks)
+    in_nodes = vector(...),          -- Size in nodes (depends on mapchunk size)
+    in_mapchunks = 10,               -- Size in mapchunks (same in all directions)
+    pos_min = (0, 0, 0),            -- Minimum corner (relative)
+    pos_max = vector(...),          -- Maximum corner (relative)
+    overgen_margin = number,         -- Margin for overgeneration (2x largest axis)
 }
 ```
 
@@ -263,8 +266,8 @@ local citychunk_origin = units.citychunk_to_node(citychunk_coords)
 ```lua
 local units = dofile(mod_path.."/units.lua")
 
--- Get chunk dimensions
-local chunk_size = units.sizes.citychunk.in_nodes  -- 800
+-- Get chunk dimensions (note: this is a vector!)
+local chunk_size = units.sizes.citychunk.in_nodes  -- vector(...)
 
 -- Check height levels
 if pos.y >= units.sizes.ground_level then
@@ -274,6 +277,21 @@ elseif pos.y >= units.sizes.basement_max then
 else
     -- In hell layer
 end
+```
+
+### Working with Non-Cubic Chunks
+
+```lua
+local units = dofile(mod_path.."/units.lua")
+
+-- Mapchunk size is a vector
+local mapchunk_size = units.sizes.mapchunk.in_nodes
+print("Mapchunk dimensions:", mapchunk_size.x, mapchunk_size.y, mapchunk_size.z)
+
+-- Access individual dimensions
+local width = mapchunk_size.x
+local height = mapchunk_size.y
+local depth = mapchunk_size.z
 ```
 
 ### Read-Only Protection
@@ -290,6 +308,13 @@ units.sizes.citychunk = {}        -- ERROR!
 ```
 
 ## Important Notes
+
+### Non-Cubic Mapchunks
+
+**Critical:** Mapchunks can now be non-cubic! Always treat size values as vectors:
+- `units.sizes.mapchunk.in_nodes` is a vector, not a number
+- `units.sizes.citychunk.in_nodes` is a vector
+- Access individual dimensions: `size.x`, `size.y`, `size.z`
 
 ### Coordinate Rounding
 
@@ -314,24 +339,16 @@ The sizes table is protected against modification:
 - Attempts to modify existing fields will raise an error
 - The metatable is hidden to prevent bypassing protection
 
-## Migration Guide
+### Constants Used
 
-### From Old Pattern (sizes.lua)
+- `core.MAP_BLOCKSIZE` (=16) - Size of a mapblock in nodes
+- `core.get_mapgen_chunksize()` - Returns chunksize as a vector in blocks
 
-```lua
--- Old code
-local sizes = dofile(mod_path.."/sizes.lua")
-local units = sizes.units
-local origin = units.citychunk_to_node(coords)
-local chunk_size = sizes.citychunk.in_nodes
+## Related Modules
 
--- New code (recommended)
-local units = dofile(mod_path.."/units.lua")
-local origin = units.citychunk_to_node(coords)
-local chunk_size = units.sizes.citychunk.in_nodes
-```
-
-**Note:** The old pattern still works for backward compatibility, but using `units.lua` directly is recommended.
+- **utils.lua** - Uses units for higher-level coordinate operations
+- **mapgen.lua** - Uses units for chunk-based generation
+- **canvas.lua** - Uses size constants for canvas dimensions
 
 ## Related Modules
 
