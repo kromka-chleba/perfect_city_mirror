@@ -70,7 +70,7 @@ local blank_id = 1
     is partially outside the canvas.
     This means overgeneration will only work for nodes in that area.
 --]]
-local canvas_margin = sizes.citychunk.overgen_margin
+local canvas_margin = units.sizes.citychunk.overgen_margin
 local canvas_size = citychunk.in_nodes
 local margin_vector = vector.new(1, 1, 1) * canvas_margin
 local margin_min = citychunk.pos_min - margin_vector
