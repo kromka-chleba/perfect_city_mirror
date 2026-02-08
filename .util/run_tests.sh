@@ -36,6 +36,7 @@ printf '%s\n' 'mg_name = singlenode' '[end_of_params]' > "$worldpath/map_meta.tx
 cat > "$confpath" << CONFEOF
 pcity_run_tests = true
 max_forceloaded_blocks = 9999
+path_share = $tempdir
 CONFEOF
 
 echo "Starting test run..."
@@ -44,8 +45,8 @@ echo "Temp dir: $tempdir"
 echo "Game path: $gamepath"
 echo "World path: $worldpath"
 
-# Run with explicit paths - set HOME to tempdir so .minetest is created there
-HOME="$tempdir" $mtserver --server --gameid "perfect_city" --config "$confpath" --world "$worldpath" --logfile /dev/null
+# Run with explicit paths
+$mtserver --server --gameid "perfect_city" --config "$confpath" --world "$worldpath" --logfile /dev/null
 
 test -f "$worldpath/tests_ok" || exit 1
 exit 0
