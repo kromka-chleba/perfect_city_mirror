@@ -82,7 +82,7 @@ function pcmg.write_roads(mapgen_args, canv)
             local cell_id = canv.array[x][z]
             if cell_id ~= blank_id then
                 local abs_pos = pos_min + vector.new(x, 0, z) - array_min
-                abs_pos.y = sizes.ground_level
+                abs_pos.y = units.sizes.ground_level
                 local i = va:indexp(abs_pos)
                 if cell_id == road_asphalt_id then
                     data[i] = asphalt_id

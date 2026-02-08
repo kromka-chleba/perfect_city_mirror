@@ -53,7 +53,7 @@ function pcmg.debug.helper_grid(mapgen_args)
         local y = chunk_pos.y
         if x >= 0 and x < mapchunk.in_nodes and
             z >= 0 and z < mapchunk.in_nodes and
-            pos.y == sizes.ground_level
+            pos.y == units.sizes.ground_level
         then
             if (x == 0 or x == mapchunk.in_nodes - 1 or
                 z == 0 or z == mapchunk.in_nodes - 1) and

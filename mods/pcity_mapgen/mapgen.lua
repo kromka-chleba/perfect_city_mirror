@@ -56,9 +56,9 @@ dofile(mod_path.."/debug_helpers.lua")
 --]]
 
 -- Sizes of map division units
-local node = sizes.node
-local mapchunk = sizes.mapchunk
-local citychunk = sizes.citychunk
+local node = units.sizes.node
+local mapchunk = units.sizes.mapchunk
+local citychunk = units.sizes.citychunk
 
 -- Get mapgen seed for deterministic generation
 local mapgen_seed = core.get_mapgen_setting("seed")
@@ -81,7 +81,7 @@ local function mapgen(vm, pos_min, pos_max, blockseed)
     local mapgen_args = {vm, pos_min, pos_max, blockseed}
     
     -- Only generate at ground level (roads are horizontal)
-    if pos_max.y >= sizes.ground_level and sizes.ground_level >= pos_min.y then
+    if pos_max.y >= units.sizes.ground_level and units.sizes.ground_level >= pos_min.y then
         -- Draw debug grid to visualize chunk boundaries
         pcmg.debug.helper_grid(mapgen_args)
         
