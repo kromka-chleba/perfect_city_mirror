@@ -28,7 +28,7 @@ units = {
     sizes = {
         node = { in_mapchunks = vector(...), in_citychunks = vector(...) },
         mapchunk = { in_nodes = vector(...), in_citychunks = vector(...) },
-        citychunk = { in_nodes = vector(...), in_mapchunks = number },
+        citychunk = { in_nodes = vector(...), in_mapchunks = vector(...) },
         room_height = 7,
         ground_level = 8,
         -- ... more constants ...
@@ -222,10 +222,10 @@ units.sizes.mapchunk = {
 
 units.sizes.citychunk = {
     in_nodes = vector(...),          -- Size in nodes (depends on mapchunk size)
-    in_mapchunks = 10,               -- Size in mapchunks (same in all directions)
+    in_mapchunks = vector(...),      -- Size in mapchunks (can be non-cubic)
     pos_min = (0, 0, 0),            -- Minimum corner (relative)
     pos_max = vector(...),          -- Maximum corner (relative)
-    overgen_margin = number,         -- Margin for overgeneration (2x largest axis)
+    overgen_margin = vector(...),    -- Margin for overgeneration (2x mapchunk size)
 }
 ```
 

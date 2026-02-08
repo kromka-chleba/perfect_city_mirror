@@ -26,8 +26,8 @@ local cpml = pcity_cpml_proxy
 local units = dofile(mod_path.."/units.lua")
 local path_utils = pcmg.path_utils
 
-local pathpaver_margin = units.sizes.citychunk.overgen_margin
-local margin_vector = vector.new(1, 1, 1) * pathpaver_margin
+local pathpaver_margin = units.sizes.citychunk.overgen_margin  -- Now a vector
+local margin_vector = pathpaver_margin  -- Already a vector
 local margin_min = units.sizes.citychunk.pos_min - margin_vector
 local margin_max = units.sizes.citychunk.pos_max + margin_vector
 
