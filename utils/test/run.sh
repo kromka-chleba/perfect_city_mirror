@@ -4,7 +4,8 @@
 # https://github.com/luanti-org/minetest_game/blob/master/utils/test/run.sh
 
 tmpdir=$(mktemp -d)
-trap 'rm -rf "$tmpdir" || :' EXIT
+# Use || : to ignore errors on cleanup (e.g., permission denied on symlinks)
+trap 'rm -rf "$tmpdir" 2>/dev/null || :' EXIT
 
 [ -f game.conf ] || { echo "Must be run in game root folder." >&2; exit 1; }
 [ -n "$DOCKER_IMAGE" ] || { echo "Specify a docker image." >&2; exit 1; }
