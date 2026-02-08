@@ -65,9 +65,9 @@ end
 -- Get all grid-aligned points along a citychunk border
 local function get_grid_points_on_border(citychunk_origin, border_edge)
     local min_x = citychunk_origin.x
-    local max_x = citychunk_origin.x + citychunk.in_nodes - 1
+    local max_x = citychunk_origin.x + citychunk.in_nodes.x - 1
     local min_z = citychunk_origin.z
-    local max_z = citychunk_origin.z + citychunk.in_nodes - 1
+    local max_z = citychunk_origin.z + citychunk.in_nodes.z - 1
     local y = citychunk_origin.y
     
     local points = {}
@@ -103,9 +103,9 @@ local function get_road_origin_on_border(citychunk_origin, border_edge, salt)
     
     if #grid_points == 0 then
         local min_x = citychunk_origin.x
-        local max_x = citychunk_origin.x + citychunk.in_nodes - 1
+        local max_x = citychunk_origin.x + citychunk.in_nodes.x - 1
         local min_z = citychunk_origin.z
-        local max_z = citychunk_origin.z + citychunk.in_nodes - 1
+        local max_z = citychunk_origin.z + citychunk.in_nodes.z - 1
         local y = citychunk_origin.y
         
         if border_edge == "x_min" then
@@ -123,11 +123,11 @@ local function get_road_origin_on_border(citychunk_origin, border_edge, salt)
     if border_edge == "x_min" then
         border_coord = citychunk_origin.x
     elseif border_edge == "x_max" then
-        border_coord = citychunk_origin.x + citychunk.in_nodes - 1
+        border_coord = citychunk_origin.x + citychunk.in_nodes.x - 1
     elseif border_edge == "z_min" then
         border_coord = citychunk_origin.z
     else
-        border_coord = citychunk_origin.z + citychunk.in_nodes - 1
+        border_coord = citychunk_origin.z + citychunk.in_nodes.z - 1
     end
     
     local border_seed = mapgen_seed + border_coord * 73856093 + salt * 83492791

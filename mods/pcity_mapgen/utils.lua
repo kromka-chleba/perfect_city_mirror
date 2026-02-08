@@ -81,7 +81,7 @@ end
 function pcmg.citychunk_terminus(pos)
     local origin = pcmg.citychunk_origin(pos)
     local t = citychunk.in_nodes - 1
-    return origin + vector.new(t, t, t)
+    return origin + t
 end
 
 -- Returns mapchunk hash for a given position
@@ -197,7 +197,12 @@ function vector.average(...)
 end
 
 function pcmg.random_pos_in_citychunk(citychunk_origin)
-    local point = citychunk_origin + vector.random(0, citychunk.in_nodes - 1)
+    local max_offset = citychunk.in_nodes - 1
+    local point = citychunk_origin + vector.new(
+        math.random(0, max_offset.x),
+        math.random(0, max_offset.y),
+        math.random(0, max_offset.z)
+    )
     return point
 end
 
