@@ -17,6 +17,13 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
+--[[
+    ** Perfect City Mapgen Module **
+    This is the initialization file for the pcity_mapgen module.
+    It sets up the mapgen environment, registers biomes, and loads
+    the main mapgen script.
+--]]
+
 -- This mod name and path
 local mod_name = core.get_current_modname()
 local mod_path = core.get_modpath(mod_name)
@@ -27,18 +34,31 @@ pcity_mapgen = {}
 -- Cirno's Perfect Math Library
 local CPML_mod_path = core.get_modpath("pcity_cpml")
 
--- These are necessary so the mapgen works at all lol
+-- Register node aliases to replace default mapgen nodes with city nodes
+-- This ensures the mapgen uses our custom nodes instead of default stone/water
 core.register_alias("mapgen_stone", "pcity_nodes:asphalt")
 core.register_alias("mapgen_water_source", "pcity_nodes:pavement")
 core.register_alias("mapgen_river_water_source", "pcity_nodes:pavement")
 
+-- Configure mapgen flags for city generation
+-- nocaves: no cave generation (cities don't have natural caves)
+-- nodungeons: no dungeon generation
+-- light: calculate lighting (important for city atmosphere)
+-- decorations: allow decorations
+-- biomes: use biome system
 core.set_mapgen_setting("mg_flags", "nocaves, nodungeons, light, decorations, biomes", true)
 
+-- Optionally enable hills for varied terrain
 if core.settings:get("pcity_enable_hills") == "true" then
     core.set_mapgen_setting("mgflat_spflags", "nolakes, hills, nocaverns", true)
 end
 
+-- Load biome definitions
 dofile(mod_path.."/biomes.lua")
+
+-- Load test suite
 dofile(mod_path.."/tests/init.lua")
+
+-- Register math library and main mapgen script
 core.register_mapgen_script(CPML_mod_path.."/init.lua")
 core.register_mapgen_script(mod_path.."/mapgen.lua")
