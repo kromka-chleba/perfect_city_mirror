@@ -23,13 +23,13 @@ local math = math
 local vector = vector
 local pcmg = pcity_mapgen
 local cpml = pcity_cpml_proxy
-local sizes = dofile(mod_path.."/sizes.lua")
+local units = dofile(mod_path.."/units.lua")
 local path_utils = pcmg.path_utils
 
-local pathpaver_margin = sizes.citychunk.overgen_margin
+local pathpaver_margin = units.sizes.citychunk.overgen_margin
 local margin_vector = vector.new(1, 1, 1) * pathpaver_margin
-local margin_min = sizes.citychunk.pos_min - margin_vector
-local margin_max = sizes.citychunk.pos_max + margin_vector
+local margin_min = units.sizes.citychunk.pos_min - margin_vector
+local margin_max = units.sizes.citychunk.pos_max + margin_vector
 
 --[[
     Pathpaver
@@ -62,7 +62,7 @@ end
 -- overgeneration area. Returns a boolean.
 function pathpaver:pos_in_citychunk(pos)
     return vector.in_area(pos, self.origin, self.origin +
-                          sizes.citychunk.pos_max)
+                          units.sizes.citychunk.pos_max)
 end
 
 function pathpaver.check(p)

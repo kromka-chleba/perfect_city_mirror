@@ -21,14 +21,13 @@ local mod_name = core.get_current_modname()
 local mod_path = core.get_modpath("pcity_mapgen")
 local pcmg = pcity_mapgen
 local math = math
-local sizes = dofile(mod_path.."/sizes.lua")
+local units = dofile(mod_path.."/units.lua")
 local _, materials_by_name = dofile(mod_path.."/canvas_ids.lua")
-local units = sizes.units
 
 -- Sizes of map division units
-local node = sizes.node
-local mapchunk = sizes.mapchunk
-local citychunk = sizes.citychunk
+local node = units.sizes.node
+local mapchunk = units.sizes.mapchunk
+local citychunk = units.sizes.citychunk
 
 -- Road/Street widths in Poland:
 -- https://moto.infor.pl/prawo-na-drodze/ciekawostki/5472448,Jaka-szerokosc-maja-drogi-w-Polsce.html

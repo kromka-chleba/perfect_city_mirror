@@ -22,13 +22,12 @@ local mod_path = core.get_modpath("pcity_mapgen")
 local math = math
 local vector = vector
 local pcmg = pcity_mapgen
-local sizes = dofile(mod_path.."/sizes.lua")
-local units = sizes.units
+local units = dofile(mod_path.."/units.lua")
 
 -- Sizes of map division units
-local node = sizes.node
-local mapchunk = sizes.mapchunk
-local citychunk = sizes.citychunk
+local node = units.sizes.node
+local mapchunk = units.sizes.mapchunk
+local citychunk = units.sizes.citychunk
 
 -------------------------------------------------------------------------
 -- Canvas Shapes/Brushes

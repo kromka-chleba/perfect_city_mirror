@@ -22,7 +22,7 @@ local mod_path = core.get_modpath("pcity_mapgen")
 local math = math
 local vector = vector
 local pcmg = pcity_mapgen
-local sizes = dofile(mod_path.."/sizes.lua")
+local units = dofile(mod_path.."/units.lua")
 
 pcmg.megapathpaver = {}
 local megapathpaver = pcmg.megapathpaver

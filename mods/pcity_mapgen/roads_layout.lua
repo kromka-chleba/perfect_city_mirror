@@ -20,11 +20,9 @@
 local mod_name = core.get_current_modname()
 local mod_path = core.get_modpath("pcity_mapgen")
 local pcmg = pcity_mapgen
-local units = pcmg.units
 local math = math
-local sizes = dofile(mod_path.."/sizes.lua")
+local units = dofile(mod_path.."/units.lua")
 local _, materials_by_name = dofile(mod_path.."/canvas_ids.lua")
-local units = sizes.units
 local canvas_shapes = pcmg.canvas_shapes
 local canvas_brush = pcmg.canvas_brush
 local path_utils = pcmg.path_utils
@@ -33,9 +31,9 @@ local path_utils = pcmg.path_utils
 local mapgen_seed = tonumber(core.get_mapgen_setting("seed")) or 0
 
 -- Sizes of map division units
-local node = sizes.node
-local mapchunk = sizes.mapchunk
-local citychunk = sizes.citychunk
+local node = units.sizes.node
+local mapchunk = units.sizes.mapchunk
+local citychunk = units.sizes.citychunk
 
 -- Grid spacing for all road/street points (1 mapchunk = 80 nodes)
 local grid_spacing = 80

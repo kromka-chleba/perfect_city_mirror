@@ -22,20 +22,23 @@ local mod_path = core.get_modpath("pcity_mapgen")
 
 local math = math
 local pcmg = pcity_mapgen
-local sizes = dofile(mod_path.."/sizes.lua")
-local units = sizes.units
+local units = dofile(mod_path.."/units.lua")
 
--- By default chunksize is 5
-local blocks_per_chunk = tonumber(core.get_mapgen_setting("chunksize"))
--- By default 80
-local mapchunk_size = blocks_per_chunk * 16
--- By default -32
-local mapchunk_offset = -16 * math.floor(blocks_per_chunk / 2)
+-- Get mapchunk size using the new API
+local chunksize_blocks = core.get_mapgen_chunksize()
+-- Convert blocks to nodes
+local mapchunk_size = vector.multiply(chunksize_blocks, core.MAP_BLOCKSIZE)
+-- Calculate offset
+local mapchunk_offset = vector.new(
+    -core.MAP_BLOCKSIZE * math.floor(chunksize_blocks.x / 2),
+    -core.MAP_BLOCKSIZE * math.floor(chunksize_blocks.y / 2),
+    -core.MAP_BLOCKSIZE * math.floor(chunksize_blocks.z / 2)
+)
 
 -- Sizes of map division units
-local node = sizes.node
-local mapchunk = sizes.mapchunk
-local citychunk = sizes.citychunk
+local node = units.sizes.node
+local mapchunk = units.sizes.mapchunk
+local citychunk = units.sizes.citychunk
 
 -- Returns mapchunk coordinates of the mapchunk in mapchunk units.
 -- Takes node position as pos.
