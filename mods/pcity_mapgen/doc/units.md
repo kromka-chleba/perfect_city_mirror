@@ -28,7 +28,7 @@ units = {
     sizes = {
         node = { in_mapchunks = vector(...), in_citychunks = vector(...) },
         mapchunk = { in_nodes = vector(...), in_citychunks = vector(...) },
-        citychunk = { in_nodes = vector(...), in_mapchunks = number },
+        citychunk = { in_nodes = vector(...), in_mapchunks = vector(...) },
         room_height = 7,
         ground_level = 8,
         -- ... more constants ...
@@ -74,12 +74,14 @@ This means:
 
 The module reads configuration values directly:
 - `chunksize` mapgen setting (default: 5 blocks)
-- `pcity_citychunk_size` setting (default: 10 mapchunks)
+- `pcity_citychunk_size_x` setting (default: 10 mapchunks)
+- `pcity_citychunk_size_y` setting (default: 2 mapchunks)
+- `pcity_citychunk_size_z` setting (default: 10 mapchunks)
 
 These determine:
 - `mapchunk_size` = 80 nodes (5 blocks * 16 nodes/block)
 - `mapchunk_offset` = -32 nodes (offset for chunk alignment)
-- `citychunk_size` = 10 mapchunks
+- `citychunk_size` = vector(10, 2, 10) mapchunks (configurable per axis)
 
 ## Conversion Functions
 
@@ -131,12 +133,14 @@ Converts citychunk coordinates to mapchunk coordinates (returns origin corner).
 
 The module reads configuration values directly:
 - `chunksize` mapgen setting (default: 5 blocks)
-- `pcity_citychunk_size` setting (default: 10 mapchunks)
+- `pcity_citychunk_size_x` setting (default: 10 mapchunks)
+- `pcity_citychunk_size_y` setting (default: 2 mapchunks)
+- `pcity_citychunk_size_z` setting (default: 10 mapchunks)
 
 These determine:
 - `mapchunk_size` = 80 nodes (5 blocks * 16 nodes/block)
 - `mapchunk_offset` = -32 nodes (offset for chunk alignment)
-- `citychunk_size` = 10 mapchunks
+- `citychunk_size` = vector(10, 2, 10) mapchunks (configurable per axis)
 
 ## Conversion Functions
 
@@ -222,10 +226,10 @@ units.sizes.mapchunk = {
 
 units.sizes.citychunk = {
     in_nodes = vector(...),          -- Size in nodes (depends on mapchunk size)
-    in_mapchunks = 10,               -- Size in mapchunks (same in all directions)
+    in_mapchunks = vector(...),      -- Size in mapchunks (can be non-cubic)
     pos_min = (0, 0, 0),            -- Minimum corner (relative)
     pos_max = vector(...),          -- Maximum corner (relative)
-    overgen_margin = number,         -- Margin for overgeneration (2x largest axis)
+    overgen_margin = vector(...),    -- Margin for overgeneration (2x mapchunk size)
 }
 ```
 

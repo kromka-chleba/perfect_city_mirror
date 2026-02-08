@@ -70,18 +70,21 @@ local blank_id = 1
     is partially outside the canvas.
     This means overgeneration will only work for nodes in that area.
 --]]
-local canvas_margin = units.sizes.citychunk.overgen_margin
-local canvas_size = citychunk.in_nodes
-local margin_vector = vector.new(1, 1, 1) * canvas_margin
+local canvas_margin = units.sizes.citychunk.overgen_margin  -- Now a vector
+local canvas_size = citychunk.in_nodes  -- A vector
+local margin_vector = canvas_margin  -- Already a vector, no need to multiply
 local margin_min = citychunk.pos_min - margin_vector
 local margin_max = citychunk.pos_max + margin_vector
 
 -- Creates a blank citychunk array
+-- Note: Canvas is 2D (x, z), so we use .x and .z components
 local function new_blank()
     local blank_template = {}
-    for x = 1, canvas_size + 2 * canvas_margin do
+    local size_x = canvas_size.x + 2 * canvas_margin.x
+    local size_z = canvas_size.z + 2 * canvas_margin.z
+    for x = 1, size_x do
         blank_template[x] = {}
-        for z = 1, canvas_size + 2 * canvas_margin do
+        for z = 1, size_z do
             blank_template[x][z] = blank_id
         end
     end
@@ -134,7 +137,7 @@ end
 -- Returns material ID of the cell or blank_id if the position
 -- is out of bounds of the canvas
 function canvas:read_cell(x, z)
-    local new_x, new_z = x + 1 + canvas_margin , z + 1 + canvas_margin
+    local new_x, new_z = x + 1 + canvas_margin.x, z + 1 + canvas_margin.z
     if self.array[new_x] then
         return self.array[new_x][new_z] or blank_id
     end
@@ -156,7 +159,7 @@ end
 -- When the position is out of bounds, no data is written.
 function canvas:write_cell(x, z, material_id)
     local priority = materials_by_id[material_id].priority
-    local new_x, new_z = x + 1 + canvas_margin, z + 1 + canvas_margin
+    local new_x, new_z = x + 1 + canvas_margin.x, z + 1 + canvas_margin.z
     if self.array[new_x] and self.array[new_x][new_z] and
         priority >= self:cell_priority(x, z) then
         self.array[new_x][new_z] = material_id
@@ -166,7 +169,7 @@ end
 -- A function that combines functions of 'read_cell', 'write_cell' and
 -- 'cell_priority'. It likely makes it faster.
 function canvas:read_write_cell(x, z, material_id)
-    local new_x, new_z = x + 1 + canvas_margin, z + 1 + canvas_margin
+    local new_x, new_z = x + 1 + canvas_margin.x, z + 1 + canvas_margin.z
     if not self.array[new_x] then
         return
     end

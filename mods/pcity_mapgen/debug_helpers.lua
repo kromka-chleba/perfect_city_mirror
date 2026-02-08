@@ -51,18 +51,18 @@ function pcmg.debug.helper_grid(mapgen_args)
         local x = chunk_pos.x
         local z = chunk_pos.z
         local y = chunk_pos.y
-        if x >= 0 and x < mapchunk.in_nodes and
-            z >= 0 and z < mapchunk.in_nodes and
+        if x >= 0 and x < mapchunk.in_nodes.x and
+            z >= 0 and z < mapchunk.in_nodes.z and
             pos.y == units.sizes.ground_level
         then
-            if (x == 0 or x == mapchunk.in_nodes - 1 or
-                z == 0 or z == mapchunk.in_nodes - 1) and
+            if (x == 0 or x == mapchunk.in_nodes.x - 1 or
+                z == 0 or z == mapchunk.in_nodes.z - 1) and
                 data[i] == grass_id then
                 -- draw mapchunk borders
                 data[i] = concrete_id
             end
-            if (x == 16 or x == mapchunk.in_nodes - 16 - 1 or
-                z == 16 or z == mapchunk.in_nodes - 16 - 1) then
+            if (x == 16 or x == mapchunk.in_nodes.x - 16 - 1 or
+                z == 16 or z == mapchunk.in_nodes.z - 16 - 1) then
                 -- draw mapchunk overgeneration area
                 data[i] = bricks_id
             end

@@ -64,11 +64,11 @@ function pcmg.mapchunk_origin(pos)
     return units.mapchunk_to_node(coords)
 end
 
--- Returs terminus point of a mapchunk stated in absolute node position.
+-- Returns terminus point of a mapchunk stated in absolute node position.
 function pcmg.mapchunk_terminus(pos)
     local origin = pcmg.citychunk_origin(pos)
-    local t = mapchunk.in_nodes
-    return origin + vector.new(t, t, t)
+    local t = vector.subtract(mapchunk.in_nodes, 1)
+    return origin + t
 end
 
 -- Returs origin point of a citychunk stated in absolute node position.
@@ -77,11 +77,11 @@ function pcmg.citychunk_origin(pos)
     return units.citychunk_to_node(coords)
 end
 
--- Returs terminus point of a citychunk stated in absolute node position.
+-- Returns terminus point of a citychunk stated in absolute node position.
 function pcmg.citychunk_terminus(pos)
     local origin = pcmg.citychunk_origin(pos)
-    local t = citychunk.in_nodes - 1
-    return origin + vector.new(t, t, t)
+    local t = vector.subtract(citychunk.in_nodes, 1)
+    return origin + t
 end
 
 -- Returns mapchunk hash for a given position
@@ -197,7 +197,12 @@ function vector.average(...)
 end
 
 function pcmg.random_pos_in_citychunk(citychunk_origin)
-    local point = citychunk_origin + vector.random(0, citychunk.in_nodes - 1)
+    local max_offset = vector.subtract(citychunk.in_nodes, 1)
+    local point = citychunk_origin + vector.new(
+        math.random(0, max_offset.x),
+        math.random(0, max_offset.y),
+        math.random(0, max_offset.z)
+    )
     return point
 end
 

@@ -42,8 +42,12 @@ local mapchunk_offset = vector.new(
     -core.MAP_BLOCKSIZE * math.floor(chunksize_blocks.y / 2),
     -core.MAP_BLOCKSIZE * math.floor(chunksize_blocks.z / 2)
 )
--- Citychunk size in mapchunks (same in all directions for now)
-local citychunk_size = tonumber(core.settings:get("pcity_citychunk_size")) or 10
+-- Citychunk size in mapchunks (stored as vector for API consistency)
+-- Three separate settings allow independent control of X, Y, and Z dimensions
+local citychunk_size_x = tonumber(core.settings:get("pcity_citychunk_size_x")) or 10
+local citychunk_size_y = tonumber(core.settings:get("pcity_citychunk_size_y")) or 2
+local citychunk_size_z = tonumber(core.settings:get("pcity_citychunk_size_z")) or 10
+local citychunk_size = vector.new(citychunk_size_x, citychunk_size_y, citychunk_size_z)
 
 -- ============================================================
 -- NODE <-> MAPCHUNK CONVERSIONS
@@ -78,13 +82,23 @@ end
 
 -- Translates mapchunk position to citychunk position.
 function units.mapchunk_to_citychunk(mapchunk_pos)
-    local citychunk_pos = vector.divide(mapchunk_pos, citychunk_size)
+    -- Component-wise division since citychunk_size is now a vector
+    local citychunk_pos = vector.new(
+        mapchunk_pos.x / citychunk_size.x,
+        mapchunk_pos.y / citychunk_size.y,
+        mapchunk_pos.z / citychunk_size.z
+    )
     return citychunk_pos
 end
 
 -- Translates citychunk position to mapchunk position (returns origin corner).
 function units.citychunk_to_mapchunk(citychunk_pos)
-    local mapchunk_pos = vector.multiply(citychunk_pos, citychunk_size)
+    -- Component-wise multiplication since citychunk_size is now a vector
+    local mapchunk_pos = vector.new(
+        citychunk_pos.x * citychunk_size.x,
+        citychunk_pos.y * citychunk_size.y,
+        citychunk_pos.z * citychunk_size.z
+    )
     return mapchunk_pos
 end
 
@@ -113,9 +127,9 @@ sizes_table.node = {
         1 / mapchunk_size.z
     ),
     in_citychunks = vector.new(
-        1 / (mapchunk_size.x * citychunk_size),
-        1 / (mapchunk_size.y * citychunk_size),
-        1 / (mapchunk_size.z * citychunk_size)
+        1 / (mapchunk_size.x * citychunk_size.x),
+        1 / (mapchunk_size.y * citychunk_size.y),
+        1 / (mapchunk_size.z * citychunk_size.z)
     ),
 }
 
@@ -127,23 +141,27 @@ local mapchunk_max = vector.new(
 sizes_table.mapchunk = {
     in_nodes = mapchunk_size,
     in_citychunks = vector.new(
-        1 / citychunk_size,
-        1 / citychunk_size,
-        1 / citychunk_size
+        1 / citychunk_size.x,
+        1 / citychunk_size.y,
+        1 / citychunk_size.z
     ),
     pos_min = vector.zero(),
     pos_max = mapchunk_max,
 }
 
-local citychunk_in_nodes = vector.multiply(mapchunk_size, citychunk_size)
+local citychunk_in_nodes = vector.new(
+    mapchunk_size.x * citychunk_size.x,
+    mapchunk_size.y * citychunk_size.y,
+    mapchunk_size.z * citychunk_size.z
+)
 local citychunk_max = vector.subtract(citychunk_in_nodes, 1)
 sizes_table.citychunk = {
     in_nodes = citychunk_in_nodes,
-    in_mapchunks = citychunk_size,
+    in_mapchunks = citychunk_size,  -- Now a vector!
     pos_min = vector.zero(),
     pos_max = citychunk_max,
-    -- Use 2x the largest mapchunk dimension for overgen margin
-    overgen_margin = 2 * math.max(mapchunk_size.x, mapchunk_size.y, mapchunk_size.z)
+    -- Overgen margin as a vector (use 2x the mapchunk dimensions)
+    overgen_margin = vector.multiply(mapchunk_size, 2)
 }
 
 -- Height of most rooms
