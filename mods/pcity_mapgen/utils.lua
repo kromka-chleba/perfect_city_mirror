@@ -67,7 +67,7 @@ end
 -- Returs terminus point of a mapchunk stated in absolute node position.
 function pcmg.mapchunk_terminus(pos)
     local origin = pcmg.citychunk_origin(pos)
-    local t = mapchunk.in_nodes
+    local t = mapchunk.in_nodes - 1
     return origin + t
 end
 
