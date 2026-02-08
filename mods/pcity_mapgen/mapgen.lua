@@ -35,16 +35,8 @@ dofile(mod_path.."/canvas_brushes.lua")
 dofile(mod_path.."/canvas.lua")
 dofile(mod_path.."/megacanvas.lua")
 dofile(mod_path.."/roads_layout.lua")
--- TODO: roads_mapgen.lua file is missing - needs to be created with write_roads function
--- dofile(mod_path.."/roads_mapgen.lua")
+dofile(mod_path.."/roads_mapgen.lua")
 dofile(mod_path.."/debug_helpers.lua")
-
--- Temporary stub for missing write_roads function
-function pcmg.write_roads(mapgen_args, canvas)
-    -- TODO: Implement road writing to mapgen
-    -- This function should take the canvas and write it to the VoxelManip
-    core.log("warning", "pcmg.write_roads is not implemented yet - roads will not be generated")
-end
 
 --[[
     ** Mapgen **
