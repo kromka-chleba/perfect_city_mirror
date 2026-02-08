@@ -9,6 +9,11 @@ pcity_enable_hills (Enables hills for the flat mapgen) bool false
 # Sizes smaller than 3 are not recommended and will slow down map generation.
 pcity_citychunk_size (Citychunk size) int 10 1
 
+# Citychunk size in the Y dimension (height) stated in mapchunks.
+# This allows for different vertical scaling of city chunks compared to horizontal.
+# A smaller value means shorter vertical chunks (faster generation but less vertical variation).
+pcity_citychunk_size_y (Citychunk height) int 2 1
+
 # Enable automated testing for Perfect City mods.
 # When enabled, mods will run their unit tests on startup and shut down after completion.
 # This should be disabled for normal gameplay and only enabled for development/testing.
