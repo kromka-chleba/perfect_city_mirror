@@ -2,15 +2,18 @@
 
 ## Overview
 
-The sizes module defines the size constants and unit conversion functions for Perfect City's coordinate system hierarchy: nodes, mapchunks, and citychunks.
+The sizes module defines the size constants for Perfect City's coordinate system hierarchy: nodes, mapchunks, and citychunks.
+
+**Note:** For unit conversion functions, see [units.md](units.md) and the `units.lua` module.
 
 ## Purpose
 
 This module provides:
 - Size definitions for all map division units
-- Conversion functions between coordinate systems
-- Height level constants for city layers
 - Configuration-dependent size calculations
+- Height level constants for city layers
+
+Unit conversion functions have been extracted to a separate `units.lua` module for better organization.
 
 ## Map Division Hierarchy
 
@@ -34,9 +37,21 @@ The module reads these settings:
 
 ## Unit Conversion Functions
 
-### sizes.units
+**Unit conversion functions have been moved to `units.lua`.**
 
-The `units` table contains all conversion functions:
+Access them through `sizes.units`:
+
+```lua
+local sizes = dofile(mod_path.."/sizes.lua")
+local units = sizes.units
+
+-- Convert coordinates
+local node_pos = vector.new(100, 8, 100)
+local mapchunk_pos = units.node_to_mapchunk(node_pos)
+local citychunk_pos = units.mapchunk_to_citychunk(mapchunk_pos)
+```
+
+See [units.md](units.md) for detailed documentation of all conversion functions.
 
 #### Node ↔ Mapchunk
 
@@ -130,18 +145,6 @@ Y = -13   : Start of hell layer
 
 ## Usage Examples
 
-### Converting Coordinates
-
-```lua
--- Node to citychunk
-local node_pos = vector.new(1234, 8, 5678)
-local citychunk_pos = sizes.units.node_to_mapchunk(node_pos)
-citychunk_pos = sizes.units.mapchunk_to_citychunk(citychunk_pos)
-
--- Or directly (via utils.lua)
-local citychunk_origin = pcmg.citychunk_origin(node_pos)
-```
-
 ### Using Size Constants
 
 ```lua
@@ -175,9 +178,11 @@ end
 2. **Default Values**: Defaults are provided but can be overridden
 3. **Relative Coordinates**: pos_min and pos_max are relative to chunk origins
 4. **Overgeneration**: The margin determines how far canvas can draw outside its citychunk
+5. **Unit Conversions**: See [units.md](units.md) for coordinate conversion functions
 
 ## Related Modules
 
+- **units.lua** - Unit conversion functions (extracted from this module)
 - **utils.lua** - Uses these sizes for coordinate conversion functions
 - **canvas.lua** - Uses citychunk sizes and margins
 - **mapgen.lua** - Uses all size constants for generation

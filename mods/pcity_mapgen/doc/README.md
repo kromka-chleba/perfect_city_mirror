@@ -17,10 +17,11 @@ This directory contains comprehensive documentation for the Perfect City mapgen 
 - **[path_utils.md](path_utils.md)** - 2D geometric utilities for path operations
 - **[pathpaver.md](pathpaver.md)** - Point and path storage for citychunks
 
-### Utilities
+### Coordinate Systems and Utilities
 
-- **[utils.md](utils.md)** - Coordinate conversions and utility functions
-- **[sizes.md](sizes.md)** - Size constants and unit definitions
+- **[units.md](units.md)** - Unit conversion functions between coordinate systems
+- **[sizes.md](sizes.md)** - Size constants and map division definitions
+- **[utils.md](utils.md)** - High-level coordinate utilities and helper functions
 - **[metastore.md](metastore.md)** - Metadata storage with weak tables
 
 ## Quick Reference
@@ -33,7 +34,7 @@ Perfect City uses three coordinate systems:
 2. **Mapchunk** - Minetest chunks (80x80x80 nodes default)
 3. **Citychunk** - Perfect City chunks (800x800x800 nodes default)
 
-See [sizes.md](sizes.md) for conversion functions.
+See [units.md](units.md) for conversion functions and [sizes.md](sizes.md) for size constants.
 
 ### Material Priority System
 

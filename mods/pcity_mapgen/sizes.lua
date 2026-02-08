@@ -17,10 +17,18 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 --]]
 
-local sizes = {
-    units = {},
-}
-local units = sizes.units
+--[[
+    Size definitions and constants for Perfect City map divisions.
+    
+    For unit conversion functions, see units.lua.
+--]]
+
+local mod_path = core.get_modpath("pcity_mapgen")
+
+local sizes = {}
+
+-- Load unit conversion functions
+sizes.units = dofile(mod_path.."/units.lua")
 
 -- By default chunksize is 5
 local blocks_per_chunk = tonumber(core.get_mapgen_setting("chunksize"))
@@ -30,39 +38,6 @@ local mapchunk_size = blocks_per_chunk * 16
 local mapchunk_offset = -16 * math.floor(blocks_per_chunk / 2)
 -- Citychunk size in mapchunks
 local citychunk_size = tonumber(core.settings:get("pcity_citychunk_size")) or 10
-
--- Translates node position into mapchunk position.
-function units.node_to_mapchunk(pos)
-    local mapchunk_pos = vector.subtract(vector.floor(pos), mapchunk_offset)
-    mapchunk_pos = vector.divide(mapchunk_pos, mapchunk_size)
-    return mapchunk_pos
-end
-
--- Translates mapchunk position into node position.
-function units.mapchunk_to_node(mapchunk_pos)
-    local pos = vector.multiply(mapchunk_pos, mapchunk_size)
-    pos = vector.add(pos, mapchunk_offset)
-    pos = vector.round(pos) -- round to avoid fp garbage
-    return pos
-end
-
--- Translates mapchunk position to citychunk position.
-function units.mapchunk_to_citychunk(mapchunk_pos)
-    local citychunk_pos = vector.divide(mapchunk_pos, citychunk_size)
-    return citychunk_pos
-end
-
--- Translates citychunk position to mapchunk position.
-function units.citychunk_to_mapchunk(citychunk_pos)
-    local mapchunk_pos = vector.multiply(citychunk_pos, citychunk_size)
-    return mapchunk_pos
-end
-
--- Translates citychunk position to node position.
-function units.citychunk_to_node(citychunk_pos)
-    local mapchunk_pos = units.citychunk_to_mapchunk(citychunk_pos)
-    return units.mapchunk_to_node(mapchunk_pos)
-end
 
 
 -- Map divisions
