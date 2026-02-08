@@ -39,16 +39,21 @@ dofile(mod_path.."/roads_mapgen.lua")
 dofile(mod_path.."/debug_helpers.lua")
 
 --[[
-    ** Mapgen **
+    ** Mapgen Script **
+    This is the main mapgen script that runs when chunks are generated.
+    
     The map is divided into regions called citychunks. Each citychunk
-    is a square with a side of (by default) 10 mapchunks - 800 nodes,
-    this value can be however changed with the "pcity_citychunk_size"
-    setting (see sizes.lua for details). The citychunk is a basic unit
-    of map generation, which means everything from roads, through
-    streets to buildings is planned on this level which allows
-    localizing mapgen to relatively small pieces of map.
-    The citychunk grid is aligned with the mapchunk grid and starts at
-    xyz: -32.
+    is a square with a side of (by default) 10 mapchunks - 800 nodes.
+    This value can be changed with the "pcity_citychunk_size" setting
+    (see sizes.lua for details).
+    
+    The citychunk is the basic unit of map generation, which means
+    everything from roads through streets to buildings is planned at
+    this level. This allows localizing mapgen to relatively small
+    pieces of map for better performance and organization.
+    
+    The citychunk grid is aligned with the mapchunk grid and starts
+    at xyz: -32 (the default mapgen offset).
 --]]
 
 -- Sizes of map division units
@@ -56,29 +61,49 @@ local node = sizes.node
 local mapchunk = sizes.mapchunk
 local citychunk = sizes.citychunk
 
+-- Get mapgen seed for deterministic generation
 local mapgen_seed = core.get_mapgen_setting("seed")
 
+-- Log seed for debugging (TODO: remove or make conditional)
 core.log("error", mapgen_seed)
 
--- Cache for canvas and paths
+-- Cache for canvas and pathpaver objects to improve performance
+-- These caches prevent regenerating the same citychunks
 local road_canvas_cache = pcmg.megacanvas.cache.new()
 local pathpaver_cache = pcmg.megapathpaver.cache.new()
 
+-- Main mapgen function called by Minetest for each generated mapchunk
+-- vm: VoxelManip object for reading/writing nodes
+-- pos_min, pos_max: Bounds of the mapchunk being generated
+-- blockseed: Seed for this specific block (not currently used)
 local function mapgen(vm, pos_min, pos_max, blockseed)
+    -- Track generation time for performance monitoring
     local t1 = core.get_us_time()
     local mapgen_args = {vm, pos_min, pos_max, blockseed}
+    
+    -- Only generate at ground level (roads are horizontal)
     if pos_max.y >= sizes.ground_level and sizes.ground_level >= pos_min.y then
+        -- Draw debug grid to visualize chunk boundaries
         pcmg.debug.helper_grid(mapgen_args)
+        
+        -- Get citychunk coordinates for this mapchunk
         local citychunk_origin = pcmg.citychunk_origin(pos_min)
         local hash = pcmg.citychunk_hash(pos_min)
+        
+        -- Generate roads if not already cached
         if not road_canvas_cache.complete[hash] then
             local megacanv = pcmg.megacanvas.new(citychunk_origin, road_canvas_cache)
             pcmg.generate_roads(megacanv, pathpaver_cache)
         end
+        
+        -- Write roads to the voxel manipulator
         local canvas = road_canvas_cache.citychunks[hash]
         pcmg.write_roads(mapgen_args, canvas)
+        
+        -- Log generation time (commented out for production)
         --core.log("error", string.format("elapsed time: %g ms", (core.get_us_time() - t1) / 1000))
     end
 end
 
+-- Register the mapgen function to be called by Minetest
 core.register_on_generated(mapgen)
