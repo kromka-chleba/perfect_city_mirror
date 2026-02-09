@@ -38,56 +38,31 @@ function megapathpaver.cache.new(c)
     if not cache.pathpavers then
         cache.pathpavers = {}
     end
-    -- LRU tracking
-    if not cache.access_order then
-        cache.access_order = {}
-    end
-    -- Get cache size limit from settings or use default
-    if not cache.max_entries then
+    
+    -- Initialize LRU cache if not already present
+    if not cache.lru then
+        -- Get cache size limit from settings or use default
         local setting = core.settings:get("pcity_pathpaver_cache_size")
-        cache.max_entries = tonumber(setting) or DEFAULT_MAX_CACHE_ENTRIES
+        local max_entries = tonumber(setting) or DEFAULT_MAX_CACHE_ENTRIES
+        
+        -- Create LRU cache with eviction callback
+        cache.lru = pcmg.lru_cache.new({
+            max_entries = max_entries,
+            on_evict = function(hash, data)
+                -- Clean up data associated with this hash
+                cache.pathpavers[hash] = nil
+            end
+        })
     end
+    
     return cache
-end
-
--- Remove the oldest entry from the cache
-local function evict_oldest_entry(cache)
-    if #cache.access_order == 0 then
-        return
-    end
-    
-    -- Remove the oldest hash (first in the list)
-    local oldest_hash = table.remove(cache.access_order, 1)
-    
-    -- Clean up data associated with this hash
-    cache.pathpavers[oldest_hash] = nil
-end
-
--- Update access order for a hash (move to end if exists, add if new)
--- Note: Uses O(n) linear search for removal. This is acceptable for cache
--- sizes < 1000. For larger caches, consider using a doubly-linked list with
--- a hash table for O(1) updates.
-local function update_access_order(cache, hash)
-    -- Remove hash if it already exists in access_order
-    for i, h in ipairs(cache.access_order) do
-        if h == hash then
-            table.remove(cache.access_order, i)
-            break
-        end
-    end
-    
-    -- Add hash to the end (most recently used)
-    table.insert(cache.access_order, hash)
-    
-    -- Evict oldest entries if cache is too large
-    while #cache.access_order > cache.max_entries do
-        evict_oldest_entry(cache)
-    end
 end
 
 -- Public function to update cache access (exported for external use)
 function megapathpaver.cache.update_access(cache, hash)
-    update_access_order(cache, hash)
+    if cache.lru then
+        cache.lru:touch(hash)
+    end
 end
 
 local function make_method(method)
@@ -121,7 +96,7 @@ local function neighboring_pathpavers(citychunk_origin, cache)
         local hash = pcmg.citychunk_hash(origin)
         local pathpav = cache.pathpavers[hash] or pcmg.pathpaver.new(origin)
         cache.pathpavers[hash] = pathpav
-        update_access_order(cache, hash)
+        cache.lru:touch(hash)
         table.insert(pathpavers, pathpav)
     end
     return pathpavers
@@ -134,7 +109,7 @@ function megapathpaver.new(citychunk_origin, cache)
     mpp.cache = megapathpaver.cache.new(cache)
     local hash = pcmg.citychunk_hash(citychunk_origin)
     mpp.central = cache.pathpavers[hash] or pcmg.pathpaver.new(citychunk_origin)
-    update_access_order(cache, hash)
+    cache.lru:touch(hash)
     mpp.neighbors = neighboring_pathpavers(mpp.origin, cache)
     mpp.paths = mpp.central.paths
     return setmetatable(mpp, megapathpaver)
