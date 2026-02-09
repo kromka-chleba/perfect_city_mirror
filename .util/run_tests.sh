@@ -1,5 +1,11 @@
 #!/bin/bash
-# Test runner script for pcity_mapgen
+# Test runner script for pcity_mapgen - LOCAL DEVELOPMENT VERSION
+# 
+# This script is designed for LOCAL DEVELOPMENT and requires Luanti/Minetest
+# to be installed on your system (in PATH).
+#
+# For CI/Docker-based testing, see utils/test/run.sh instead.
+#
 # Based on WorldEdit's test runner and minetest_game test patterns
 # https://github.com/Uberi/Minetest-WorldEdit/blob/master/.util/run_tests.sh
 # https://github.com/luanti-org/minetest_game/blob/master/utils/test/run.sh

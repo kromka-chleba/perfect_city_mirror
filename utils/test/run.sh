@@ -1,5 +1,11 @@
 #!/bin/bash -e
-# Test runner for Perfect City game using Luanti Docker images
+# Test runner for Perfect City game - CI/DOCKER VERSION
+#
+# This script is designed for CI/CD pipelines (GitHub Actions) and requires
+# Docker with a Luanti image (e.g., ghcr.io/luanti-org/luanti:master).
+#
+# For LOCAL DEVELOPMENT testing, use .util/run_tests.sh instead.
+#
 # Based on minetest_game test pattern
 # https://github.com/luanti-org/minetest_game/blob/master/utils/test/run.sh
 
