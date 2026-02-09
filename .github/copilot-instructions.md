@@ -3,6 +3,8 @@
 ## Project Type
 Minetest/Luanti game written in Lua (AGPL-3.0-or-later license)
 
+Uses the Luanti API - see [Lua API documentation](https://github.com/luanti-org/luanti/blob/master/doc/lua_api.md)
+
 ## Key Principles
 1. **Functions should be small** (under 30 lines)
 2. **Single Responsibility** - each function does one thing well
