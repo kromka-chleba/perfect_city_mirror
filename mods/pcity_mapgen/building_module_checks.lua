@@ -1,0 +1,133 @@
+--[[
+    This is a part of "Perfect City".
+    Copyright (C) 2024-2026 Perfect City Team
+    SPDX-License-Identifier: AGPL-3.0-or-later
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+--]]
+
+--[[
+    Validation functions for building_module
+--]]
+
+local vector = vector
+local pcmg = pcity_mapgen
+
+pcmg.building_module_checks = pcmg.building_module_checks or {}
+local checks = pcmg.building_module_checks
+
+-- Valid face names (Luanti coordinate system)
+local VALID_FACES = {
+    ["y+"] = true,
+    ["y-"] = true,
+    ["z-"] = true,
+    ["z+"] = true,
+    ["x+"] = true,
+    ["x-"] = true,
+}
+
+-- Helper function to create readable error messages
+local function dump_value(val)
+    if type(val) == "table" then
+        if vector.check(val) then
+            return string.format("vector(%s, %s, %s)",
+                tostring(val.x), tostring(val.y), tostring(val.z))
+        end
+        return "table"
+    end
+    return tostring(val)
+end
+
+-- Validates arguments for building_module.new
+function checks.check_new_arguments(pos, size)
+    if not vector.check(pos) then
+        error("Building module: pos '" .. dump_value(pos) ..
+            "' is not a vector.")
+    end
+    
+    if not vector.check(size) then
+        error("Building module: size '" .. dump_value(size) ..
+            "' is not a vector.")
+    end
+    
+    if size.x <= 0 or size.y <= 0 or size.z <= 0 then
+        error("Building module: size components must be positive, got " ..
+            dump_value(size))
+    end
+end
+
+-- Validates that the object is a building module
+function checks.check_module(obj)
+    if not pcmg.building_module.check(obj) then
+        error("Building module: object '" .. dump_value(obj) ..
+            "' is not a building module.")
+    end
+end
+
+-- Validates face name
+function checks.check_face_name(face)
+    if type(face) ~= "string" then
+        error("Building module: face name '" .. dump_value(face) ..
+            "' is not a string.")
+    end
+    
+    if not VALID_FACES[face] then
+        error("Building module: invalid face name '" .. face ..
+            "'. Must be one of: y+, y-, z-, z+, x+, x-.")
+    end
+end
+
+-- Validates schematic
+function checks.check_schematic(schematic)
+    if type(schematic) ~= "table" then
+        error("Building module: schematic '" .. dump_value(schematic) ..
+            "' is not a table.")
+    end
+end
+
+-- Validates string argument
+function checks.check_string(value, name)
+    if type(value) ~= "string" then
+        error("Building module: " .. name .. " '" .. dump_value(value) ..
+            "' is not a string.")
+    end
+end
+
+-- Validates vector argument
+function checks.check_vector(value, name)
+    if not vector.check(value) then
+        error("Building module: " .. name .. " '" .. dump_value(value) ..
+            "' is not a vector.")
+    end
+end
+
+-- Validates number argument
+function checks.check_number(value, name)
+    if type(value) ~= "number" then
+        error("Building module: " .. name .. " '" .. dump_value(value) ..
+            "' is not a number.")
+    end
+end
+
+-- Validates rotation angle
+function checks.check_rotation_angle(angle)
+    checks.check_number(angle, "rotation angle")
+    
+    if angle % 90 ~= 0 then
+        error("Building module: rotation angle must be a multiple of 90, " ..
+            "got " .. tostring(angle))
+    end
+end
+
+return pcmg.building_module_checks
