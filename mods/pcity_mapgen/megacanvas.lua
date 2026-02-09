@@ -180,6 +180,9 @@ local function evict_oldest_entry(cache)
 end
 
 -- Update access order for a hash (move to end if exists, add if new)
+-- Note: Uses O(n) linear search for removal. This is acceptable for cache
+-- sizes < 1000. For larger caches, consider using a doubly-linked list with
+-- a hash table for O(1) updates.
 local function update_access_order(cache, hash)
     -- Remove hash if it already exists in access_order
     for i, h in ipairs(cache.access_order) do
