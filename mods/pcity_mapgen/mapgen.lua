@@ -37,6 +37,8 @@ dofile(mod_path.."/canvas3d.lua")
 dofile(mod_path.."/megacanvas3d.lua")
 dofile(mod_path.."/roads_layout.lua")
 dofile(mod_path.."/roads_mapgen.lua")
+dofile(mod_path.."/roads_layout_3d.lua")
+dofile(mod_path.."/roads_mapgen_3d.lua")
 dofile(mod_path.."/debug_helpers.lua")
 
 --[[
@@ -71,7 +73,11 @@ core.log("error", mapgen_seed)
 -- Cache for canvas and pathpaver objects to improve performance
 -- These caches prevent regenerating the same citychunks
 local road_canvas_cache = pcmg.megacanvas.cache.new()
+local road_canvas_3d_cache = pcmg.megacanvas3d.cache.new()
 local pathpaver_cache = pcmg.megapathpaver.cache.new()
+
+-- Check if 3D roads are enabled (for testing)
+local use_3d_roads = core.settings:get_bool("pcity_use_3d_roads") or false
 
 -- Main mapgen function called by Minetest for each generated mapchunk
 -- vm: VoxelManip object for reading/writing nodes
@@ -82,8 +88,8 @@ local function mapgen(vm, pos_min, pos_max, blockseed)
     local t1 = core.get_us_time()
     local mapgen_args = {vm, pos_min, pos_max, blockseed}
     
-    -- Only generate at ground level (roads are horizontal)
-    if pos_max.y >= units.sizes.ground_level and units.sizes.ground_level >= pos_min.y then
+    if use_3d_roads then
+        -- Use 3D roads that can have varying y levels
         -- Draw debug grid to visualize chunk boundaries
         pcmg.debug.helper_grid(mapgen_args)
         
@@ -91,19 +97,40 @@ local function mapgen(vm, pos_min, pos_max, blockseed)
         local citychunk_origin = pcmg.citychunk_origin(pos_min)
         local hash = pcmg.citychunk_hash(pos_min)
         
-        -- Generate roads if not already cached
-        if not road_canvas_cache.complete[hash] then
-            local megacanv = pcmg.megacanvas.new(citychunk_origin, road_canvas_cache)
-            pcmg.generate_roads(megacanv, pathpaver_cache)
+        -- Generate 3D roads if not already cached
+        if not road_canvas_3d_cache.complete[hash] then
+            local megacanv3d = pcmg.megacanvas3d.new(citychunk_origin, road_canvas_3d_cache)
+            pcmg.generate_roads_3d(megacanv3d, pathpaver_cache)
         end
         
-        -- Write roads to the voxel manipulator
-        local canvas = road_canvas_cache.citychunks[hash]
-        pcmg.write_roads(mapgen_args, canvas)
-        
-        -- Log generation time (commented out for production)
-        --core.log("error", string.format("elapsed time: %g ms", (core.get_us_time() - t1) / 1000))
+        -- Write 3D roads to the voxel manipulator
+        local canvas3d = road_canvas_3d_cache.citychunks[hash]
+        pcmg.write_roads_3d(mapgen_args, canvas3d)
+    else
+        -- Use original 2D roads at ground level
+        -- Only generate at ground level (roads are horizontal)
+        if pos_max.y >= units.sizes.ground_level and units.sizes.ground_level >= pos_min.y then
+            -- Draw debug grid to visualize chunk boundaries
+            pcmg.debug.helper_grid(mapgen_args)
+            
+            -- Get citychunk coordinates for this mapchunk
+            local citychunk_origin = pcmg.citychunk_origin(pos_min)
+            local hash = pcmg.citychunk_hash(pos_min)
+            
+            -- Generate roads if not already cached
+            if not road_canvas_cache.complete[hash] then
+                local megacanv = pcmg.megacanvas.new(citychunk_origin, road_canvas_cache)
+                pcmg.generate_roads(megacanv, pathpaver_cache)
+            end
+            
+            -- Write roads to the voxel manipulator
+            local canvas = road_canvas_cache.citychunks[hash]
+            pcmg.write_roads(mapgen_args, canvas)
+        end
     end
+    
+    -- Log generation time (commented out for production)
+    --core.log("error", string.format("elapsed time: %g ms", (core.get_us_time() - t1) / 1000))
 end
 
 -- Register the mapgen function to be called by Minetest
