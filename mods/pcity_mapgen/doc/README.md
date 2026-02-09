@@ -23,6 +23,7 @@ This directory contains comprehensive documentation for the Perfect City mapgen 
 - **[units.md](units.md)** - **Master module** for unit conversions and size constants
 - **[utils.md](utils.md)** - High-level coordinate utilities and helper functions
 - **[metastore.md](metastore.md)** - Metadata storage with weak tables
+- **[lru_cache.md](lru_cache.md)** - Generic LRU cache implementation
 
 ## Quick Reference
 

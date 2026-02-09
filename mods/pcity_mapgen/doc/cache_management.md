@@ -78,6 +78,10 @@ Example: 100 citychunks × 100 KB = ~10 MB
 
 ## Implementation Details
 
+### Architecture
+
+The LRU cache has been abstracted into a reusable module (`lru_cache.lua`) that provides a generic cache implementation. Both `megacanvas` and `megapathpaver` use this module.
+
 ### Data Structures
 
 Each cache maintains:
@@ -91,10 +95,46 @@ cache = {
     complete = {},            -- [hash] = bool
     citychunk_meta = {},      -- [hash] = metadata
     
-    -- LRU tracking
-    access_order = {},        -- Array of hashes (oldest first)
-    max_entries = 100,        -- Size limit
+    -- LRU tracking (managed by lru_cache module)
+    lru = lru_cache.new({
+        max_entries = 100,
+        on_evict = function(hash, data)
+            -- Cleanup callback
+        end
+    })
 }
+```
+
+### LRU Cache Module
+
+The `lru_cache.lua` module provides a generic LRU cache implementation:
+
+```lua
+-- Create a new LRU cache
+local lru = pcmg.lru_cache.new({
+    max_entries = 100,              -- Size limit
+    on_evict = function(key, data)  -- Optional cleanup callback
+        -- Called when an entry is evicted
+    end
+})
+
+-- Store data
+lru:set(key, value)
+
+-- Retrieve data (marks as recently used)
+local value = lru:get(key)
+
+-- Check if key exists
+if lru:has(key) then ... end
+
+-- Mark as accessed without retrieving
+lru:touch(key)
+
+-- Get current size
+local size = lru:size()
+
+-- Clear all entries
+lru:clear()
 ```
 
 ### Access Tracking
@@ -136,11 +176,15 @@ local pathpaver_cache = pcmg.megapathpaver.cache.new()
 
 ### Custom Cache Size
 
+Configuration is handled through `minetest.conf` settings. The cache size is read when the cache is initialized.
+
 ```lua
--- Create cache with custom size
-local canvas_cache = pcmg.megacanvas.cache.new({
-    max_entries = 200
-})
+-- The cache reads settings automatically
+local canvas_cache = pcmg.megacanvas.cache.new()
+-- Uses pcity_canvas_cache_size setting or default (100)
+
+local pathpaver_cache = pcmg.megapathpaver.cache.new()
+-- Uses pcity_pathpaver_cache_size setting or default (100)
 ```
 
 ### Manual Access Tracking (Advanced)
