@@ -74,12 +74,14 @@ This means:
 
 The module reads configuration values directly:
 - `chunksize` mapgen setting (default: 5 blocks)
-- `pcity_citychunk_size` setting (default: 10 mapchunks)
+- `pcity_citychunk_size_x` setting (default: 10 mapchunks)
+- `pcity_citychunk_size_y` setting (default: 2 mapchunks)
+- `pcity_citychunk_size_z` setting (default: 10 mapchunks)
 
 These determine:
 - `mapchunk_size` = 80 nodes (5 blocks * 16 nodes/block)
 - `mapchunk_offset` = -32 nodes (offset for chunk alignment)
-- `citychunk_size` = 10 mapchunks
+- `citychunk_size` = vector(10, 2, 10) mapchunks (configurable per axis)
 
 ## Conversion Functions
 
@@ -131,12 +133,14 @@ Converts citychunk coordinates to mapchunk coordinates (returns origin corner).
 
 The module reads configuration values directly:
 - `chunksize` mapgen setting (default: 5 blocks)
-- `pcity_citychunk_size` setting (default: 10 mapchunks)
+- `pcity_citychunk_size_x` setting (default: 10 mapchunks)
+- `pcity_citychunk_size_y` setting (default: 2 mapchunks)
+- `pcity_citychunk_size_z` setting (default: 10 mapchunks)
 
 These determine:
 - `mapchunk_size` = 80 nodes (5 blocks * 16 nodes/block)
 - `mapchunk_offset` = -32 nodes (offset for chunk alignment)
-- `citychunk_size` = 10 mapchunks
+- `citychunk_size` = vector(10, 2, 10) mapchunks (configurable per axis)
 
 ## Conversion Functions
 

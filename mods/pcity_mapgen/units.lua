@@ -43,10 +43,11 @@ local mapchunk_offset = vector.new(
     -core.MAP_BLOCKSIZE * math.floor(chunksize_blocks.z / 2)
 )
 -- Citychunk size in mapchunks (stored as vector for API consistency)
--- The setting is a single value applied to X and Z, but Y can be different
-local citychunk_size_setting = tonumber(core.settings:get("pcity_citychunk_size")) or 10
+-- Three separate settings allow independent control of X, Y, and Z dimensions
+local citychunk_size_x = tonumber(core.settings:get("pcity_citychunk_size_x")) or 10
 local citychunk_size_y = tonumber(core.settings:get("pcity_citychunk_size_y")) or 2
-local citychunk_size = vector.new(citychunk_size_setting, citychunk_size_y, citychunk_size_setting)
+local citychunk_size_z = tonumber(core.settings:get("pcity_citychunk_size_z")) or 10
+local citychunk_size = vector.new(citychunk_size_x, citychunk_size_y, citychunk_size_z)
 
 -- ============================================================
 -- NODE <-> MAPCHUNK CONVERSIONS

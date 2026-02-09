@@ -43,7 +43,7 @@ dofile(mod_path.."/debug_helpers.lua")
     
     The map is divided into regions called citychunks. Each citychunk
     is a square with a side of (by default) 10 mapchunks - 800 nodes.
-    This value can be changed with the "pcity_citychunk_size" setting
+    These values can be changed with the "pcity_citychunk_size_x", "pcity_citychunk_size_y", and "pcity_citychunk_size_z" settings
     (see sizes.lua for details).
     
     The citychunk is the basic unit of map generation, which means
