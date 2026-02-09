@@ -71,14 +71,14 @@ local lru_cache = {}
 -- Default maximum number of cache entries
 local DEFAULT_MAX_ENTRIES = 100
 
---[[
-    Create a new LRU cache instance
-    
-    Parameters:
-    - config (optional): Configuration table with:
-      - max_entries: Maximum number of entries (default: 100)
-      - on_evict: Callback function(key, cache_data) called when entry is evicted
---]]
+-- ============================================================
+-- LRU CACHE CLASS
+-- ============================================================
+
+-- Creates a new LRU cache instance. The cache automatically evicts
+-- the oldest entries when it exceeds max_entries. Optional config
+-- table accepts max_entries (default 100) and on_evict callback
+-- function(key, cache_data) that is called when an entry is evicted.
 function lru_cache.new(config)
     config = config or {}
     
@@ -97,9 +97,7 @@ function lru_cache.new(config)
     return cache
 end
 
---[[
-    Remove the oldest entry from the cache
---]]
+-- Removes the oldest entry from the cache.
 local function evict_oldest(cache)
     if #cache._access_order == 0 then
         return
@@ -120,13 +118,10 @@ local function evict_oldest(cache)
     end
 end
 
---[[
-    Update access order for a key (move to end if exists, add if new)
-    
-    Note: Uses O(n) linear search for removal. This is acceptable for cache
-    sizes < 1000. For larger caches, consider using a doubly-linked list with
-    a hash table for O(1) updates.
---]]
+-- Updates access order for a key (moves to end if exists, adds if new).
+-- Note: Uses O(n) linear search for removal. This is acceptable for cache
+-- sizes < 1000. For larger caches, consider using a doubly-linked list with
+-- a hash table for O(1) updates.
 local function update_access_order(cache, key)
     -- Remove key if it already exists in access_order
     for i, k in ipairs(cache._access_order) do
@@ -145,29 +140,19 @@ local function update_access_order(cache, key)
     end
 end
 
---[[
-    Store a value in the cache
-    
-    Parameters:
-    - key: Cache key (any hashable value)
-    - value: Value to store
---]]
+-- ============================================================
+-- PUBLIC API
+-- ============================================================
+
+-- Stores a value in the cache. If the key already exists, it updates
+-- the value and marks it as recently used.
 function lru_cache:set(key, value)
     self._data[key] = value
     update_access_order(self, key)
 end
 
---[[
-    Retrieve a value from the cache
-    
-    Parameters:
-    - key: Cache key
-    
-    Returns:
-    - The cached value, or nil if not found
-    
-    Note: Automatically updates the access order (marks as recently used)
---]]
+-- Retrieves a value from the cache. Returns nil if not found.
+-- Automatically updates the access order (marks as recently used).
 function lru_cache:get(key)
     local value = self._data[key]
     if value ~= nil then
@@ -176,44 +161,26 @@ function lru_cache:get(key)
     return value
 end
 
---[[
-    Check if a key exists in the cache without updating access order
-    
-    Parameters:
-    - key: Cache key
-    
-    Returns:
-    - true if key exists, false otherwise
---]]
+-- Checks if a key exists in the cache without updating access order.
+-- Returns true if key exists, false otherwise.
 function lru_cache:has(key)
     return self._data[key] ~= nil
 end
 
---[[
-    Mark a key as accessed (update LRU order) without retrieving the value
-    
-    Parameters:
-    - key: Cache key
---]]
+-- Marks a key as accessed (updates LRU order) without retrieving
+-- the value. Does nothing if the key doesn't exist.
 function lru_cache:touch(key)
     if self._data[key] ~= nil then
         update_access_order(self, key)
     end
 end
 
---[[
-    Get the current number of entries in the cache
-    
-    Returns:
-    - Number of cached entries
---]]
+-- Returns the current number of entries in the cache.
 function lru_cache:size()
     return #self._access_order
 end
 
---[[
-    Clear all entries from the cache
---]]
+-- Clears all entries from the cache.
 function lru_cache:clear()
     self._data = {}
     self._access_order = {}
