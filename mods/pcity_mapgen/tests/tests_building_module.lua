@@ -23,6 +23,7 @@ local pcmg = pcity_mapgen
 
 local building_module = pcmg.building_module or
     dofile(mod_path.."/building_module.lua")
+local junction = pcmg.junction or dofile(mod_path.."/junction.lua")
 
 pcmg.tests = pcmg.tests or {}
 pcmg.tests.building_module = {}
@@ -131,6 +132,49 @@ function tests.test_can_connect()
     m2:remove_junction_surface("y-")
     assert(m1:can_connect(m2, "y+", "y-") == false,
         "Modules with missing surfaces should not be connectable")
+end
+
+-- Tests Junction object API
+function tests.test_junction_objects()
+    local m1 = building_module.new(vector.new(0, 0, 0),
+        vector.new(6, 6, 6))
+    local m2 = building_module.new(vector.new(0, 7, 0),
+        vector.new(6, 13, 6))
+    
+    -- Create junctions with specific positions
+    local j1 = junction.new("corridor",
+        vector.new(1, 5, 1),  -- pos_min relative to module origin
+        vector.new(4, 5, 4),  -- pos_max
+        "y+")
+    
+    local j2 = junction.new("corridor",
+        vector.new(1, 0, 1),
+        vector.new(4, 0, 4),
+        "y-")
+    
+    -- Add junctions to modules
+    m1:add_junction(j1)
+    m2:add_junction(j2)
+    
+    -- Get junction
+    local retrieved = m1:get_junction("y+")
+    assert(retrieved ~= nil, "Should retrieve junction")
+    assert(retrieved.type == "corridor", "Junction type should match")
+    assert(junction.check(retrieved), "Retrieved object should be a Junction")
+    
+    -- Test connection
+    assert(m1:can_connect(m2, "y+", "y-") == true,
+        "Modules with matching junction objects should be connectable")
+    
+    -- Test get_all_junctions
+    local all = m1:get_all_junctions()
+    assert(all["y+"] ~= nil, "Should have y+ junction")
+    assert(all["y+"].type == "corridor", "Junction should have correct type")
+    
+    -- Remove junction
+    m1:remove_junction("y+")
+    assert(m1:get_junction("y+") == nil,
+        "Junction should be nil after removal")
 end
 
 -- Tests schematic management
@@ -252,6 +296,8 @@ register_test("building_module:get_center", tests.test_get_center)
 register_test("building_module junction surfaces",
     tests.test_junction_surfaces)
 register_test("building_module:can_connect", tests.test_can_connect)
+register_test("building_module junction objects",
+    tests.test_junction_objects)
 register_test("building_module schematic management",
     tests.test_schematic_management)
 register_test("building_module:rotate_y", tests.test_rotate_y)

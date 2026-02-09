@@ -13,15 +13,21 @@ The Building Module system provides a modular building framework for Perfect Cit
 - Simple representation for positioning and sizing
 
 ### 2. Junction Surfaces
-- Each module can have junction surfaces on any of its 6 faces:
+- Junctions are defined as areas on module faces with specific types and positions
+- Each module can have junctions on any of its 6 faces:
   - `y+` - positive Y direction (up)
   - `y-` - negative Y direction (down)
   - `z-` - negative Z direction
   - `z+` - positive Z direction
   - `x+` - positive X direction
   - `x-` - negative X direction
-- Junction surfaces have identifiers that must match for modules to connect
-- Allows for flexible building composition
+- Junctions have:
+  - **Type**: e.g., "corridor", "hall", "staircase"
+  - **Position bounds**: `pos_min` and `pos_max` (relative to module origin)
+  - **Face**: which face the junction is on
+- Junctions must lie on a face plane (one coordinate constant)
+- Modules can connect if their junctions have matching types and compatible dimensions
+- Allows for precise, position-aware building composition
 
 ### 3. Schematic Storage
 - Modules can store multiple Luanti schematics
@@ -43,6 +49,8 @@ The Building Module system provides a modular building framework for Perfect Cit
 
 ## Usage Example
 
+### Basic Usage with Legacy API
+
 ```lua
 local building_module = pcity_mapgen.building_module
 
@@ -52,10 +60,58 @@ local room = building_module.new(
     vector.new(11, 6, 11)  -- size (dimensions)
 )
 
--- Set junction surfaces for connection
+-- Set junction surfaces for connection (legacy API)
 room:set_junction_surface("y+", "standard_ceiling")
 room:set_junction_surface("y-", "standard_floor")
 room:set_junction_surface("z-", "door_wall")
+
+-- Check if modules can connect
+local hallway = building_module.new(vector.new(0, 0, 11), vector.new(11, 6, 5))
+hallway:set_junction_surface("z+", "door_wall")
+
+if room:can_connect(hallway, "z-", "z+") then
+    -- These modules can be connected
+end
+```
+
+### Advanced Usage with Junction Objects
+
+```lua
+local building_module = pcity_mapgen.building_module
+local junction = pcity_mapgen.junction
+
+-- Create a module
+local room = building_module.new(
+    vector.new(0, 0, 0),
+    vector.new(11, 6, 11)
+)
+
+-- Create a junction with specific position bounds
+-- This corridor junction is a 3x3 area on the north (z-) face
+local corridor_junction = junction.new(
+    "corridor",                    -- type
+    vector.new(4, 0, 0),          -- pos_min (relative to module origin)
+    vector.new(6, 2, 0),          -- pos_max
+    "z-"                          -- face
+)
+
+room:add_junction(corridor_junction)
+
+-- Create another module with matching junction
+local hallway = building_module.new(vector.new(0, 0, 11), vector.new(11, 6, 5))
+local hallway_junction = junction.new(
+    "corridor",
+    vector.new(4, 0, 4),          -- matching dimensions
+    vector.new(6, 2, 4),
+    "z+"
+)
+
+hallway:add_junction(hallway_junction)
+
+-- Modules can connect because junctions match
+if room:can_connect(hallway, "z-", "z+") then
+    -- Junctions are compatible!
+end
 
 -- Add schematics
 local schematic = {
@@ -65,16 +121,8 @@ local schematic = {
 -- Position relative to module's origin (0,0,0 in module-local space)
 room:add_schematic(schematic, vector.new(0, 0, 0), "default_variant")
 
--- Rotate for variety (size updates automatically)
+-- Rotate for variety (size and junctions update automatically)
 room:rotate_y(90)  -- Rotate 90 degrees around Y axis
-
--- Check if modules can connect
-local hallway = building_module.new(vector.new(0, 0, 11), vector.new(11, 6, 5))
-hallway:set_junction_surface("z+", "door_wall")
-
-if room:can_connect(hallway, "z-", "z+") then
-    -- These modules can be connected
-end
 ```
 
 ## API Reference
@@ -93,11 +141,42 @@ end
 - `:get_min_pos()` - Returns minimum corner position
 - `:get_max_pos()` - Returns maximum corner position
 
-### Junction Surfaces
-- `:set_junction_surface(face, surface_id)` - Set a junction surface
-- `:get_junction_surface(face)` - Get a junction surface ID
-- `:remove_junction_surface(face)` - Remove a junction surface
-- `:can_connect(other, this_face, other_face)` - Check connection compatibility
+### Junction Management (New API)
+- `:add_junction(junction)` - Add a Junction object to the module
+- `:get_junction(face)` - Get Junction object for specified face
+- `:remove_junction(face)` - Remove junction from specified face
+- `:get_all_junctions()` - Get all Junction objects on this module
+- `:can_connect(other, this_face, other_face)` - Check if junctions are compatible
+
+### Junction Surfaces (Legacy API - Deprecated)
+- `:set_junction_surface(face, surface_type)` - Creates simple junction covering entire face
+- `:get_junction_surface(face)` - Returns junction type (for backward compatibility)
+- `:remove_junction_surface(face)` - Remove junction surface
+
+**Note**: Legacy API is maintained for backward compatibility but new code should use Junction objects for position-aware junctions.
+
+## Junction Class
+
+### Constructor
+- `junction.new(junction_type, pos_min, pos_max, face)` - Create a new junction
+  - `junction_type`: string - e.g., "corridor", "hall", "staircase"
+  - `pos_min`: vector - minimum corner (relative to module origin)
+  - `pos_max`: vector - maximum corner (relative to module origin)
+  - `face`: string - which face this junction is on
+
+### Type Checking
+- `junction.check(obj)` - Check if object is a Junction
+
+### Methods
+- `:get_size()` - Returns size vector of the junction area
+- `:get_center()` - Returns center position of the junction
+- `:get_area()` - Returns area in voxels
+- `:can_connect_with(other)` - Check if this junction can connect with another
+
+### Validation
+- Positions must lie on the specified face (one coordinate constant)
+- pos_min must be <= pos_max for all coordinates
+- Throws error if positions define a volume instead of an area
 
 ### Schematics
 - `:add_schematic(schematic, relative_pos, name)` - Add a schematic with position relative to min_pos
