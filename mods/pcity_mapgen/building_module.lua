@@ -197,26 +197,28 @@ end
 -- Helper to get face bounds for legacy API
 function building_module:_get_face_bounds(face)
     local size = self.size
+    -- Maximum indices (size - 1 for each dimension)
+    local max_idx = vector.new(size.x - 1, size.y - 1, size.z - 1)
     local pos_min, pos_max
     
     if face == "y+" then
-        pos_min = vector.new(0, size.y - 1, 0)
-        pos_max = vector.new(size.x - 1, size.y - 1, size.z - 1)
+        pos_min = vector.new(0, max_idx.y, 0)
+        pos_max = vector.new(max_idx.x, max_idx.y, max_idx.z)
     elseif face == "y-" then
         pos_min = vector.new(0, 0, 0)
-        pos_max = vector.new(size.x - 1, 0, size.z - 1)
+        pos_max = vector.new(max_idx.x, 0, max_idx.z)
     elseif face == "z-" then
         pos_min = vector.new(0, 0, 0)
-        pos_max = vector.new(size.x - 1, size.y - 1, 0)
+        pos_max = vector.new(max_idx.x, max_idx.y, 0)
     elseif face == "z+" then
-        pos_min = vector.new(0, 0, size.z - 1)
-        pos_max = vector.new(size.x - 1, size.y - 1, size.z - 1)
+        pos_min = vector.new(0, 0, max_idx.z)
+        pos_max = vector.new(max_idx.x, max_idx.y, max_idx.z)
     elseif face == "x+" then
-        pos_min = vector.new(size.x - 1, 0, 0)
-        pos_max = vector.new(size.x - 1, size.y - 1, size.z - 1)
+        pos_min = vector.new(max_idx.x, 0, 0)
+        pos_max = vector.new(max_idx.x, max_idx.y, max_idx.z)
     elseif face == "x-" then
         pos_min = vector.new(0, 0, 0)
-        pos_max = vector.new(0, size.y - 1, size.z - 1)
+        pos_max = vector.new(0, max_idx.y, max_idx.z)
     end
     
     return pos_min, pos_max
@@ -332,8 +334,20 @@ function _rotate_junctions_y(module, angle_degrees)
         pos_min_rel = vector.rotate(pos_min_rel, rotation)
         pos_max_rel = vector.rotate(pos_max_rel, rotation)
         
-        local new_pos_min = vector.add(pos_min_rel, center)
-        local new_pos_max = vector.add(pos_max_rel, center)
+        local rotated_min = vector.add(pos_min_rel, center)
+        local rotated_max = vector.add(pos_max_rel, center)
+        
+        -- Normalize positions (min/max can flip after rotation)
+        local new_pos_min = vector.new(
+            math.min(rotated_min.x, rotated_max.x),
+            math.min(rotated_min.y, rotated_max.y),
+            math.min(rotated_min.z, rotated_max.z)
+        )
+        local new_pos_max = vector.new(
+            math.max(rotated_min.x, rotated_max.x),
+            math.max(rotated_min.y, rotated_max.y),
+            math.max(rotated_min.z, rotated_max.z)
+        )
         
         -- Determine new face after rotation
         local new_face = _rotate_face_y(face, rotations)
