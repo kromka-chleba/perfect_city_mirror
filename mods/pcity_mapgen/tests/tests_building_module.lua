@@ -166,8 +166,16 @@ function tests.test_schematic_management()
     -- Get all schematics
     local all = m:get_all_schematics()
     assert(all[1] ~= nil, "All schematics should include index 1")
+    assert(all[1].schematic == schematic1,
+        "Entry 1 should contain correct schematic")
+    assert(vector.equals(all[1].relative_pos, pos1),
+        "Entry 1 should have correct position")
     assert(all["variant_a"] ~= nil,
         "All schematics should include named variant")
+    assert(all["variant_a"].schematic == schematic2,
+        "Named entry should contain correct schematic")
+    assert(vector.equals(all["variant_a"].relative_pos, pos2),
+        "Named entry should have correct position")
     
     -- Remove schematic
     m:remove_schematic("variant_a")
