@@ -78,14 +78,16 @@ local margin_max = citychunk.pos_max + margin_vector
 
 -- Creates a blank citychunk array
 -- Note: Canvas is 2D (x, z), so we use .x and .z components
+-- Pre-calculate sizes for performance
+local blank_size_x = canvas_size.x + 2 * canvas_margin.x
+local blank_size_z = canvas_size.z + 2 * canvas_margin.z
 local function new_blank()
     local blank_template = {}
-    local size_x = canvas_size.x + 2 * canvas_margin.x
-    local size_z = canvas_size.z + 2 * canvas_margin.z
-    for x = 1, size_x do
-        blank_template[x] = {}
-        for z = 1, size_z do
-            blank_template[x][z] = blank_id
+    for x = 1, blank_size_x do
+        local row = {}
+        blank_template[x] = row
+        for z = 1, blank_size_z do
+            row[z] = blank_id
         end
     end
     return blank_template
@@ -133,13 +135,18 @@ function canvas:move_cursor(vec)
     self:set_cursor(self.cursor + vec)
 end
 
+-- Cache margin offset calculations
+local margin_offset_x = 1 + canvas_margin.x
+local margin_offset_z = 1 + canvas_margin.z
+
 -- Reads a cell for a citychunk-relative position given by x, z
 -- Returns material ID of the cell or blank_id if the position
 -- is out of bounds of the canvas
 function canvas:read_cell(x, z)
-    local new_x, new_z = x + 1 + canvas_margin.x, z + 1 + canvas_margin.z
-    if self.array[new_x] then
-        return self.array[new_x][new_z] or blank_id
+    local new_x, new_z = x + margin_offset_x, z + margin_offset_z
+    local row = self.array[new_x]
+    if row then
+        return row[new_z] or blank_id
     end
     return blank_id
 end
@@ -149,8 +156,7 @@ end
 -- Returns the lowest priority if the position is out of bounds
 function canvas:cell_priority(x, z)
     local id = self:read_cell(x, z)
-    local material = materials_by_id[id]
-    return material.priority
+    return materials_by_id[id].priority
 end
 
 -- Writes material ID to the cell at the citychunk-relative position x, z
@@ -158,29 +164,34 @@ end
 -- higher than the priority of the old material.
 -- When the position is out of bounds, no data is written.
 function canvas:write_cell(x, z, material_id)
-    local priority = materials_by_id[material_id].priority
-    local new_x, new_z = x + 1 + canvas_margin.x, z + 1 + canvas_margin.z
-    if self.array[new_x] and self.array[new_x][new_z] and
-        priority >= self:cell_priority(x, z) then
-        self.array[new_x][new_z] = material_id
+    local new_x, new_z = x + margin_offset_x, z + margin_offset_z
+    local row = self.array[new_x]
+    if row and row[new_z] then
+        local old_id = row[new_z]
+        local old_priority = materials_by_id[old_id].priority
+        local priority = materials_by_id[material_id].priority
+        if priority >= old_priority then
+            row[new_z] = material_id
+        end
     end
 end
 
 -- A function that combines functions of 'read_cell', 'write_cell' and
 -- 'cell_priority'. It likely makes it faster.
 function canvas:read_write_cell(x, z, material_id)
-    local new_x, new_z = x + 1 + canvas_margin.x, z + 1 + canvas_margin.z
-    if not self.array[new_x] then
+    local new_x, new_z = x + margin_offset_x, z + margin_offset_z
+    local row = self.array[new_x]
+    if not row then
         return
     end
-    local old_id = self.array[new_x][new_z]
+    local old_id = row[new_z]
     if not old_id then
         return
     end
     local old_priority = materials_by_id[old_id].priority
     local priority = materials_by_id[material_id].priority
     if priority >= old_priority then
-        self.array[new_x][new_z] = material_id
+        row[new_z] = material_id
     end
 end
 
@@ -213,9 +224,11 @@ function canvas:draw_shape(shape)
         return
     end
     local cursor_pos = vector.round(self.cursor)
-    for _, cell in pairs(shape) do
-        local point = cell.pos + cursor_pos
-        self:read_write_cell(point.x, point.z, cell.material)
+    local cursor_x, cursor_z = cursor_pos.x, cursor_pos.z
+    for i = 1, #shape do
+        local cell = shape[i]
+        local pos = cell.pos
+        self:read_write_cell(pos.x + cursor_x, pos.z + cursor_z, cell.material)
     end
 end
 
