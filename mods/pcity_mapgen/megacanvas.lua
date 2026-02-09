@@ -129,7 +129,7 @@ megacanvas.cache = {}
 
 -- Default maximum number of cached citychunks
 -- Can be overridden by setting pcity_canvas_cache_size in minetest.conf
-local DEFAULT_MAX_CACHE_ENTRIES = 100
+local DEFAULT_MAX_CACHE_ENTRIES = 250
 
 function megacanvas.cache.new(c)
     local cache = c or {}

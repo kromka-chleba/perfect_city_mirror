@@ -53,10 +53,9 @@ This script will:
 
 ### Running Tests
 
-**Quick test run:**
+**Quick test run (from repository root):**
 ```bash
-cd mods/pcity_mapgen/tests
-./run_tests.sh
+./.util/run_tests.sh
 ```
 
 **What it does:**
@@ -99,7 +98,7 @@ pcmg.register_test("test_something", tests.test_something)
 When making code changes:
 
 1. **Make changes** to Lua files in `mods/`
-2. **Run tests** to verify: `cd mods/pcity_mapgen/tests && ./run_tests.sh`
+2. **Run tests** to verify: `./.util/run_tests.sh`
 3. **Check results** - All 63 tests should pass
 4. **If tests fail** - Review the failure output and fix the issue
 
@@ -108,12 +107,12 @@ When making code changes:
 ### Modifying Point class
 - Edit: `mods/pcity_mapgen/point.lua`
 - Tests: `mods/pcity_mapgen/tests/tests_point.lua` (25 tests)
-- Run: `cd mods/pcity_mapgen/tests && ./run_tests.sh`
+- Run: `./.util/run_tests.sh`
 
 ### Modifying Path class
 - Edit: `mods/pcity_mapgen/path.lua`
 - Tests: `mods/pcity_mapgen/tests/tests_path.lua` (38 tests)
-- Run: `cd mods/pcity_mapgen/tests && ./run_tests.sh`
+- Run: `./.util/run_tests.sh`
 
 ### Adding new nodes
 - Edit: `mods/pcity_nodes/*.lua`

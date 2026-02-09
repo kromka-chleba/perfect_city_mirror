@@ -31,7 +31,7 @@ megapathpaver.cache = {}
 
 -- Default maximum number of cached pathpavers
 -- Can be overridden by setting pcity_pathpaver_cache_size in minetest.conf
-local DEFAULT_MAX_CACHE_ENTRIES = 100
+local DEFAULT_MAX_CACHE_ENTRIES = 250
 
 function megapathpaver.cache.new(c)
     local cache = c or {}

@@ -25,13 +25,13 @@ pcity_citychunk_size_z (Citychunk size Z) int 10 1
 # Higher values use more memory but reduce regeneration when revisiting areas.
 # Each cached citychunk uses approximately 50-100 KB of RAM.
 # Recommended: 50-100 for low RAM systems, 100-200 for medium, 200-500 for high RAM.
-pcity_canvas_cache_size (Canvas cache size) int 100 10 10000
+pcity_canvas_cache_size (Canvas cache size) int 250 10 10000
 
 # Maximum number of pathpaver objects to keep in memory (LRU cache).
 # Higher values use more memory but improve performance for path operations.
 # Each cached pathpaver uses approximately 10-50 KB of RAM.
 # Recommended: 50-100 for low RAM systems, 100-200 for medium, 200-500 for high RAM.
-pcity_pathpaver_cache_size (Pathpaver cache size) int 100 10 10000
+pcity_pathpaver_cache_size (Pathpaver cache size) int 250 10 10000
 
 ## Testing
 
