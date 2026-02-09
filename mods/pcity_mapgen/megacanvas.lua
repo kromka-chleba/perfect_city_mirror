@@ -118,9 +118,24 @@ local blank_id = 1
     * 'complete': bool values, true means the citychunk was both overgenerated
     and generated.
     * 'citychunk_meta': arbitrary user-provided data
+    
+    **Cache Expiration Strategy**:
+    The cache uses an LRU (Least Recently Used) eviction policy to prevent OOM.
+    When the cache exceeds 'max_entries', the oldest entries are removed.
+    
+    * 'access_order': array tracking hash keys in order of access (oldest first)
+    * 'max_entries': maximum number of citychunks to cache (default: 100)
+    
+    The LRU implementation tracks access order and removes the least recently
+    used entries when the limit is reached. This ensures memory usage stays
+    bounded while keeping frequently accessed citychunks in memory.
 --]]
 
 megacanvas.cache = {}
+
+-- Default maximum number of cached citychunks
+-- Can be overridden by setting pcity_canvas_cache_size in minetest.conf
+local DEFAULT_MAX_CACHE_ENTRIES = 100
 
 function megacanvas.cache.new(c)
     local cache = c or {}
@@ -136,7 +151,56 @@ function megacanvas.cache.new(c)
     if not cache.citychunk_meta then
         cache.citychunk_meta = {}
     end
+    -- LRU tracking
+    if not cache.access_order then
+        cache.access_order = {}
+    end
+    -- Get cache size limit from settings or use default
+    if not cache.max_entries then
+        local setting = core.settings:get("pcity_canvas_cache_size")
+        cache.max_entries = tonumber(setting) or DEFAULT_MAX_CACHE_ENTRIES
+    end
     return cache
+end
+
+-- Remove the oldest entry from the cache
+local function evict_oldest_entry(cache)
+    if #cache.access_order == 0 then
+        return
+    end
+    
+    -- Remove the oldest hash (first in the list)
+    local oldest_hash = table.remove(cache.access_order, 1)
+    
+    -- Clean up all data associated with this hash
+    cache.citychunks[oldest_hash] = nil
+    cache.partially_complete[oldest_hash] = nil
+    cache.complete[oldest_hash] = nil
+    cache.citychunk_meta[oldest_hash] = nil
+end
+
+-- Update access order for a hash (move to end if exists, add if new)
+local function update_access_order(cache, hash)
+    -- Remove hash if it already exists in access_order
+    for i, h in ipairs(cache.access_order) do
+        if h == hash then
+            table.remove(cache.access_order, i)
+            break
+        end
+    end
+    
+    -- Add hash to the end (most recently used)
+    table.insert(cache.access_order, hash)
+    
+    -- Evict oldest entries if cache is too large
+    while #cache.access_order > cache.max_entries do
+        evict_oldest_entry(cache)
+    end
+end
+
+-- Public function to update cache access (exported for external use)
+function megacanvas.cache.update_access(cache, hash)
+    update_access_order(cache, hash)
 end
 
 local function neighboring_canvases(citychunk_origin, cache)
@@ -146,6 +210,7 @@ local function neighboring_canvases(citychunk_origin, cache)
         local hash = pcmg.citychunk_hash(origin)
         local canv = cache.citychunks[hash] or pcmg.canvas.new(origin)
         cache.citychunks[hash] = canv
+        update_access_order(cache, hash)
         table.insert(canvases, canv)
     end
     return canvases
@@ -159,6 +224,7 @@ function megacanvas.new(citychunk_origin, cache)
     local hash = pcmg.citychunk_hash(citychunk_origin)
     megacanv.central = cache.citychunks[hash] or pcmg.canvas.new(citychunk_origin)
     cache.citychunks[hash] = megacanv.central
+    update_access_order(cache, hash)
     megacanv.neighbors = neighboring_canvases(megacanv.origin, cache)
     megacanv.metastore = pcmg.metastore.new()
     setmetatable(megacanv, megacanvas)
@@ -191,11 +257,13 @@ function megacanvas:mark_complete()
     local hash = pcmg.citychunk_hash(self.central.origin)
     self.cache.complete[hash] = true
     self.cache.partially_complete[hash] = nil
+    update_access_order(self.cache, hash)
 end
 
 function megacanvas:mark_partially_complete()
     local hash = pcmg.citychunk_hash(self.central.origin)
     self.cache.partially_complete[hash] = true
+    update_access_order(self.cache, hash)
 end
 
 --[[
