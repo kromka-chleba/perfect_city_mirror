@@ -23,8 +23,10 @@ The Building Module system provides a modular building framework for Perfect Cit
 
 ### 3. Schematic Storage
 - Modules can store multiple Luanti schematics
+- Each schematic has a position relative to the module's min_pos
 - Schematics can be stored by name or numeric index
 - Allows for variations within the same module type
+- Position enables proper placement within the module bounds
 
 ### 4. Rotation Support
 - **Y-axis rotation** (primary): Rotate modules around the vertical axis
@@ -57,7 +59,8 @@ local schematic = {
     size = {x = 11, y = 6, z = 11},
     data = {...}
 }
-room:add_schematic(schematic, "default_variant")
+-- Position relative to module's min_pos (0,0,0)
+room:add_schematic(schematic, vector.new(0, 0, 0), "default_variant")
 
 -- Rotate for variety
 room:rotate_y(90)  -- Rotate 90 degrees around Y axis
@@ -90,9 +93,9 @@ end
 - `:can_connect(other, this_face, other_face)` - Check connection compatibility
 
 ### Schematics
-- `:add_schematic(schematic, name)` - Add a schematic
-- `:get_schematic(identifier)` - Get a schematic by name or index
-- `:get_all_schematics()` - Get all schematics
+- `:add_schematic(schematic, relative_pos, name)` - Add a schematic with position relative to min_pos
+- `:get_schematic(identifier)` - Get a schematic entry by name or index (returns {schematic, relative_pos})
+- `:get_all_schematics()` - Get all schematic entries
 - `:remove_schematic(identifier)` - Remove a schematic
 
 ### Rotation

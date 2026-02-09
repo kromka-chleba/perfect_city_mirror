@@ -141,20 +141,32 @@ function tests.test_schematic_management()
     local schematic1 = {size = {x = 5, y = 5, z = 5}, data = {}}
     local schematic2 = {size = {x = 3, y = 3, z = 3}, data = {}}
     
-    -- Add schematics
-    m:add_schematic(schematic1)
-    m:add_schematic(schematic2, "variant_a")
+    local pos1 = vector.new(0, 0, 0)
+    local pos2 = vector.new(1, 1, 1)
     
-    -- Get schematics
-    assert(m:get_schematic(1) == schematic1,
-        "Should get schematic by numeric index")
-    assert(m:get_schematic("variant_a") == schematic2,
-        "Should get schematic by name")
+    -- Add schematics with positions
+    m:add_schematic(schematic1, pos1)
+    m:add_schematic(schematic2, pos2, "variant_a")
+    
+    -- Get schematic entries
+    local entry1 = m:get_schematic(1)
+    assert(entry1 ~= nil, "Should get schematic entry by numeric index")
+    assert(entry1.schematic == schematic1,
+        "Schematic entry should contain correct schematic")
+    assert(vector.equals(entry1.relative_pos, pos1),
+        "Schematic entry should have correct position")
+    
+    local entry2 = m:get_schematic("variant_a")
+    assert(entry2 ~= nil, "Should get schematic entry by name")
+    assert(entry2.schematic == schematic2,
+        "Named schematic entry should contain correct schematic")
+    assert(vector.equals(entry2.relative_pos, pos2),
+        "Named schematic entry should have correct position")
     
     -- Get all schematics
     local all = m:get_all_schematics()
-    assert(all[1] == schematic1, "All schematics should include index 1")
-    assert(all["variant_a"] == schematic2,
+    assert(all[1] ~= nil, "All schematics should include index 1")
+    assert(all["variant_a"] ~= nil,
         "All schematics should include named variant")
     
     -- Remove schematic

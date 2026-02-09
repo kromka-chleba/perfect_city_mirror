@@ -142,28 +142,36 @@ end
 -- SCHEMATIC MANAGEMENT
 -- ============================================================
 
--- Adds a schematic to the module
+-- Adds a schematic to the module with a position relative to min_pos
 -- schematic: table - luanti schematic data
+-- relative_pos: vector - position relative to module's min_pos
 -- name: string (optional) - name identifier for the schematic
-function building_module:add_schematic(schematic, name)
+function building_module:add_schematic(schematic, relative_pos, name)
     checks.check_schematic(schematic)
+    checks.check_vector(relative_pos, "schematic relative position")
+    
+    local schematic_entry = {
+        schematic = schematic,
+        relative_pos = vector.copy(relative_pos)
+    }
     
     if name ~= nil then
         checks.check_string(name, "schematic name")
-        self._schematics[name] = schematic
+        self._schematics[name] = schematic_entry
     else
-        table.insert(self._schematics, schematic)
+        table.insert(self._schematics, schematic_entry)
     end
 end
 
--- Gets a schematic by name or index
+-- Gets a schematic entry by name or index
 -- identifier: string or number - name or numeric index
--- Returns the schematic or nil if not found
+-- Returns the schematic entry {schematic=..., relative_pos=...}
+-- or nil if not found
 function building_module:get_schematic(identifier)
     return self._schematics[identifier]
 end
 
--- Returns all schematics as a table
+-- Returns all schematic entries as a table
 function building_module:get_all_schematics()
     local result = {}
     for k, v in pairs(self._schematics) do
