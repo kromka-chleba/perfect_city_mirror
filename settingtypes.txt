@@ -19,6 +19,12 @@ pcity_citychunk_size_y (Citychunk size Y) int 2 1
 # Sizes smaller than 3 are not recommended and will slow down map generation.
 pcity_citychunk_size_z (Citychunk size Z) int 10 1
 
+# Use 3D roads with varying elevation levels (experimental).
+# When enabled, roads are generated using the Canvas 3D system and can have different y levels.
+# This is a test/demonstration feature to showcase 3D canvas capabilities.
+# Default is false for backwards compatibility with standard flat roads.
+pcity_use_3d_roads (Use 3D roads with elevation) bool false
+
 # Enable automated testing for Perfect City mods.
 # When enabled, mods will run their unit tests on startup and shut down after completion.
 # This should be disabled for normal gameplay and only enabled for development/testing.
