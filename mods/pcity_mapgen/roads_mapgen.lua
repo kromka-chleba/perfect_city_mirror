@@ -76,13 +76,21 @@ function pcmg.write_roads(mapgen_args, canv)
     local emin, emax = vm:get_emerged_area()
     local va = VoxelArea(emin, emax)
 
+    -- Cache frequently used values
+    local ground_level = units.sizes.ground_level
+    local canvas_array = canv.array
+    
     local array_min, array_max = canv:mapchunk_indices(pos_min, pos_max)
-    for x = array_min.x, array_max.x do
-        for z = array_min.z, array_max.z do
-            local cell_id = canv.array[x][z]
+    local min_x, min_z = array_min.x, array_min.z
+    local base_x, base_z = pos_min.x - min_x, pos_min.z - min_z
+    
+    for x = min_x, array_max.x do
+        local canvas_row = canvas_array[x]
+        local abs_x = base_x + x
+        for z = min_z, array_max.z do
+            local cell_id = canvas_row[z]
             if cell_id ~= blank_id then
-                local abs_pos = pos_min + vector.new(x, 0, z) - array_min
-                abs_pos.y = units.sizes.ground_level
+                local abs_pos = vector.new(abs_x, ground_level, base_z + z)
                 local i = va:indexp(abs_pos)
                 if cell_id == road_asphalt_id then
                     data[i] = asphalt_id

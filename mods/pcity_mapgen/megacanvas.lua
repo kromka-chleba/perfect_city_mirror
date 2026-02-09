@@ -63,25 +63,27 @@ local function make_method(method)
     return function (self, ...)
         -- products are stuff returned by each function
         local products = {}
-        local central_hash = pcmg.citychunk_hash(self.central.origin)
-        products[central_hash] = method(self.central, ...)
-        for _, neighbor in pairs(self.neighbors) do
+        local central = self.central
+        local central_hash = pcmg.citychunk_hash(central.origin)
+        local central_result = method(central, ...)
+        products[central_hash] = central_result
+        
+        local neighbors = self.neighbors
+        for i = 1, #neighbors do
+            local neighbor = neighbors[i]
             local hash = pcmg.citychunk_hash(neighbor.origin)
             products[hash] = method(neighbor, ...)
         end
-        local product_type
-        for _, product in pairs(products) do
-            if type(product) ~= nil then
-                product_type = type(product)
-                break
-            end
-        end
+        
         -- For functions that return a boolean, the returned
         -- value is a logical OR of products from all canvases
-        if product_type == "boolean" then
-            local r
-            for _, product in pairs(products) do
-                r = product or r
+        if type(central_result) == "boolean" then
+            local r = central_result
+            for i = 1, #neighbors do
+                local neighbor = neighbors[i]
+                local hash = pcmg.citychunk_hash(neighbor.origin)
+                r = r or products[hash]
+                if r then break end  -- Early exit optimization
             end
             return r
         end
