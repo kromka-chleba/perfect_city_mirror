@@ -151,6 +151,71 @@ local pth = path
 local pt = point
 ```
 
+### Private-ish Fields and Methods (Underscore Prefix Convention)
+
+Fields and methods that start with an underscore (`_`) indicate they are **internal implementation details** and follow a social contract in Lua:
+
+**"This is internal."**  
+Fields prefixed with `_` are meant for the module's or object's own use, not part of the public API.
+
+**"You can access it, but you probably shouldn't."**  
+Lua doesn't enforce privacy like other languages. The underscore is a social contract signaling that direct access is discouraged.
+
+**"This may change without warning."**  
+Authors use `_name` to warn users that the field is unstable or not guaranteed to remain consistent across versions. Code depending on these fields may break in future updates.
+
+**Examples:**
+
+```lua
+-- Good: Using a private field internally
+function animation:_initialize()
+    self._state = "idle"
+    self._frame_count = 0
+end
+
+function animation:start()
+    self:_initialize()  -- Internal method called internally
+    self._state = "playing"
+end
+
+-- Bad: External code accessing private fields
+local anim = animation.new()
+anim:start()
+print(anim._state)  -- Discouraged: accessing internal state
+anim._frame_count = 10  -- Discouraged: modifying internal state
+```
+
+**When to use underscore prefix:**
+
+- Internal helper methods not intended for external use
+- Implementation details that may change
+- State variables that should only be modified through the public API
+- Cached or computed values managed internally
+
+**Public API vs. Internal:**
+
+```lua
+-- Public API - stable, documented, for external use
+function player:get_position()
+    return self._position:copy()  -- Returns copy of internal state
+end
+
+function player:set_position(pos)
+    self._validate_position(pos)  -- Internal validation
+    self._position = pos
+    self._update_cache()  -- Internal cache management
+end
+
+-- Internal implementation - may change
+function player:_validate_position(pos)
+    assert(vector.check(pos), "Invalid position")
+end
+
+function player:_update_cache()
+    self._cached_distance = vector.length(self._position)
+end
+```
+
 ---
 
 ## Function Design
