@@ -265,26 +265,6 @@ function tests.test_rotate_y_updates_size()
         "After Y rotation, Z size should match original X size")
 end
 
--- Tests arbitrary axis rotation
-function tests.test_rotate_axis()
-    local m = building_module.new(vector.new(0, 0, 0),
-        vector.new(6, 5, 4))
-    
-    local orig_size = m:get_size()
-    
-    -- Rotate around X axis - Y and Z should swap
-    local x_axis = vector.new(1, 0, 0)
-    m:rotate_axis(x_axis, 90)
-    
-    local new_size = m:get_size()
-    assert(new_size.x == orig_size.x,
-        "After X rotation, X size should remain unchanged")
-    assert(new_size.y == orig_size.z,
-        "After X rotation, Y size should match original Z size")
-    assert(new_size.z == orig_size.y,
-        "After X rotation, Z size should match original Y size")
-end
-
 -- Register all tests
 local register_test = pcmg.register_test
 
@@ -303,6 +283,5 @@ register_test("building_module schematic management",
 register_test("building_module:rotate_y", tests.test_rotate_y)
 register_test("building_module:rotate_y updates size",
     tests.test_rotate_y_updates_size)
-register_test("building_module:rotate_axis", tests.test_rotate_axis)
 
 return tests

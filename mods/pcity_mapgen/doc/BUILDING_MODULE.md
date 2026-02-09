@@ -38,14 +38,11 @@ The Building Module system provides a modular building framework for Perfect Cit
 - Position enables proper placement within the module bounds
 
 ### 4. Rotation Support
-- **Y-axis rotation** (primary): Rotate modules around the vertical axis
+- **Y-axis rotation**: Rotate modules around the vertical axis
   - Supports 90, 180, 270 degree rotations
-  - Junction surfaces rotate accordingly
+  - Junction positions and faces rotate accordingly
+  - Module dimensions swap for 90/270 degree rotations
   - Uses Luanti's `vector.rotate` internally
-- **Axis-aligned rotation**: Rotate around X, Y, or Z axes
-  - Supports rotation around any axis-aligned vector
-  - Restricted to 90-degree multiples (voxel game requirement)
-  - Enables creative building orientations
 
 ## Usage Example
 
@@ -185,8 +182,7 @@ room:rotate_y(90)  -- Rotate 90 degrees around Y axis
 - `:remove_schematic(identifier)` - Remove a schematic
 
 ### Rotation
-- `:rotate_y(angle_degrees)` - Rotate around Y axis (must be multiple of 90)
-- `:rotate_axis(axis, angle_degrees)` - Rotate around axis-aligned vector (x/y/z, multiple of 90)
+- `:rotate_y(angle_degrees)` - Rotate around Y axis (must be multiple of 90 degrees)
 
 ## Design Principles
 

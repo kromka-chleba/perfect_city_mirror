@@ -279,32 +279,26 @@ end
 -- angle_degrees: number - rotation angle in degrees (90, 180, 270)
 function building_module:rotate_y(angle_degrees)
     checks.check_rotation_angle(angle_degrees)
-    self:rotate_axis(vector.new(0, 1, 0), angle_degrees)
-    _rotate_junctions_y(self, angle_degrees)
-end
-
--- Rotates the module around a specified axis
--- For voxel games, only x, y, z axes with 90-degree multiples
--- axis: vector - rotation axis (should be unit vector along x, y, or z)
--- angle_degrees: number - rotation angle in degrees (multiple of 90)
-function building_module:rotate_axis(axis, angle_degrees)
-    checks.check_vector(axis, "rotation axis")
-    checks.check_rotation_angle(angle_degrees)
     
     local center = self:get_center()
     local angle_rad = math.rad(angle_degrees)
-    local rotation = vector.multiply(axis, angle_rad)
+    local rotation = vector.new(0, angle_rad, 0)
     
     -- Rotate position around center
     local pos_relative = vector.subtract(self.pos, center)
     pos_relative = vector.rotate(pos_relative, rotation)
     self.pos = vector.add(pos_relative, center)
     
-    -- Rotate size dimensions for non-cube modules
-    local half_size = vector.divide(self.size, 2)
-    half_size = vector.rotate(half_size, rotation)
-    -- Take absolute values since size must be positive
-    self.size = vector.multiply(vector.abs(half_size), 2)
+    -- Swap X and Z size dimensions for Y-axis rotation
+    local rotations = math.floor((angle_degrees % 360) / 90)
+    if rotations % 2 == 1 then
+        -- 90 or 270 degrees - swap X and Z
+        local temp = self.size.x
+        self.size = vector.new(self.size.z, self.size.y, temp)
+    end
+    -- For 180 degrees (rotations % 2 == 0), dimensions don't swap
+    
+    _rotate_junctions_y(self, angle_degrees)
 end
 
 -- ============================================================
