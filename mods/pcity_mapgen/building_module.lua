@@ -99,7 +99,8 @@ end
 
 -- Returns the maximum corner position
 function building_module:get_max_pos()
-    return vector.add(self.pos, self.size) - vector.new(1, 1, 1)
+    return vector.subtract(vector.add(self.pos, self.size),
+        vector.new(1, 1, 1))
 end
 
 -- ============================================================
@@ -216,8 +217,7 @@ function building_module:rotate_axis(axis, angle_degrees)
     
     local center = self:get_center()
     local angle_rad = math.rad(angle_degrees)
-    local rotation = vector.new(axis.x * angle_rad, 
-        axis.y * angle_rad, axis.z * angle_rad)
+    local rotation = vector.multiply(axis, angle_rad)
     
     -- Rotate position around center
     local pos_relative = vector.subtract(self.pos, center)
