@@ -91,24 +91,24 @@ function tests.test_junction_surfaces()
         vector.new(5, 5, 5))
     
     -- Set junction surfaces
-    m:set_junction_surface("top", "surface_a")
-    m:set_junction_surface("bottom", "surface_b")
-    m:set_junction_surface("north", "surface_c")
+    m:set_junction_surface("y+", "surface_a")
+    m:set_junction_surface("y-", "surface_b")
+    m:set_junction_surface("z-", "surface_c")
     
     -- Get junction surfaces
-    assert(m:get_junction_surface("top") == "surface_a",
-        "Top surface should be surface_a")
-    assert(m:get_junction_surface("bottom") == "surface_b",
-        "Bottom surface should be surface_b")
-    assert(m:get_junction_surface("north") == "surface_c",
-        "North surface should be surface_c")
-    assert(m:get_junction_surface("south") == nil,
-        "South surface should be nil")
+    assert(m:get_junction_surface("y+") == "surface_a",
+        "Y+ surface should be surface_a")
+    assert(m:get_junction_surface("y-") == "surface_b",
+        "Y- surface should be surface_b")
+    assert(m:get_junction_surface("z-") == "surface_c",
+        "Z- surface should be surface_c")
+    assert(m:get_junction_surface("z+") == nil,
+        "Z+ surface should be nil")
     
     -- Remove junction surface
-    m:remove_junction_surface("top")
-    assert(m:get_junction_surface("top") == nil,
-        "Top surface should be nil after removal")
+    m:remove_junction_surface("y+")
+    assert(m:get_junction_surface("y+") == nil,
+        "Y+ surface should be nil after removal")
 end
 
 -- Tests module connection compatibility
@@ -118,18 +118,18 @@ function tests.test_can_connect()
     local m2 = building_module.new(vector.new(0, 6, 0),
         vector.new(5, 11, 5))
     
-    m1:set_junction_surface("top", "connector_type_1")
-    m2:set_junction_surface("bottom", "connector_type_1")
+    m1:set_junction_surface("y+", "connector_type_1")
+    m2:set_junction_surface("y-", "connector_type_1")
     
-    assert(m1:can_connect(m2, "top", "bottom") == true,
+    assert(m1:can_connect(m2, "y+", "y-") == true,
         "Modules with matching surfaces should be connectable")
     
-    m2:set_junction_surface("bottom", "connector_type_2")
-    assert(m1:can_connect(m2, "top", "bottom") == false,
+    m2:set_junction_surface("y-", "connector_type_2")
+    assert(m1:can_connect(m2, "y+", "y-") == false,
         "Modules with different surfaces should not be connectable")
     
-    m2:remove_junction_surface("bottom")
-    assert(m1:can_connect(m2, "top", "bottom") == false,
+    m2:remove_junction_surface("y-")
+    assert(m1:can_connect(m2, "y+", "y-") == false,
         "Modules with missing surfaces should not be connectable")
 end
 
@@ -168,18 +168,18 @@ function tests.test_rotate_y()
     local m = building_module.new(vector.new(0, 0, 0),
         vector.new(10, 5, 5))
     
-    m:set_junction_surface("north", "surface_a")
-    m:set_junction_surface("east", "surface_b")
+    m:set_junction_surface("z-", "surface_a")
+    m:set_junction_surface("x+", "surface_b")
     
     -- Rotate 90 degrees
     m:rotate_y(90)
     
     -- After 90 degree rotation around Y:
-    -- North becomes West, East becomes North
-    assert(m:get_junction_surface("west") == "surface_a",
-        "North surface should become West after 90 deg rotation")
-    assert(m:get_junction_surface("north") == "surface_b",
-        "East surface should become North after 90 deg rotation")
+    -- Z- becomes X-, X+ becomes Z-
+    assert(m:get_junction_surface("x-") == "surface_a",
+        "Z- surface should become X- after 90 deg rotation")
+    assert(m:get_junction_surface("z-") == "surface_b",
+        "X+ surface should become Z- after 90 deg rotation")
 end
 
 -- Tests that Y rotation normalizes bounds

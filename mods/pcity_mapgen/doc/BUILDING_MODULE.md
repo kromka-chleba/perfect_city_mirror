@@ -12,12 +12,12 @@ The Building Module system provides a modular building framework for Perfect Cit
 
 ### 2. Junction Surfaces
 - Each module can have junction surfaces on any of its 6 faces:
-  - `top` - positive Y direction
-  - `bottom` - negative Y direction
-  - `north` - negative Z direction
-  - `south` - positive Z direction
-  - `east` - positive X direction
-  - `west` - negative X direction
+  - `y+` - positive Y direction (up)
+  - `y-` - negative Y direction (down)
+  - `z-` - negative Z direction
+  - `z+` - positive Z direction
+  - `x+` - positive X direction
+  - `x-` - negative X direction
 - Junction surfaces have identifiers that must match for modules to connect
 - Allows for flexible building composition
 
@@ -30,9 +30,11 @@ The Building Module system provides a modular building framework for Perfect Cit
 - **Y-axis rotation** (primary): Rotate modules around the vertical axis
   - Supports 90, 180, 270 degree rotations
   - Junction surfaces rotate accordingly
-- **Arbitrary axis rotation** (dreamlike buildings): Rotate around any axis
-  - Supports rotation around any normalized axis vector
-  - Enables creative, non-standard building orientations
+  - Uses Luanti's `vector.rotate` internally
+- **Axis-aligned rotation**: Rotate around X, Y, or Z axes
+  - Supports rotation around any axis-aligned vector
+  - Restricted to 90-degree multiples (voxel game requirement)
+  - Enables creative building orientations
 
 ## Usage Example
 
@@ -46,9 +48,9 @@ local room = building_module.new(
 )
 
 -- Set junction surfaces for connection
-room:set_junction_surface("top", "standard_ceiling")
-room:set_junction_surface("bottom", "standard_floor")
-room:set_junction_surface("north", "door_wall")
+room:set_junction_surface("y+", "standard_ceiling")
+room:set_junction_surface("y-", "standard_floor")
+room:set_junction_surface("z-", "door_wall")
 
 -- Add schematics
 local schematic = {
@@ -62,9 +64,9 @@ room:rotate_y(90)  -- Rotate 90 degrees around Y axis
 
 -- Check if modules can connect
 local hallway = building_module.new(...)
-hallway:set_junction_surface("south", "door_wall")
+hallway:set_junction_surface("z+", "door_wall")
 
-if room:can_connect(hallway, "north", "south") then
+if room:can_connect(hallway, "z-", "z+") then
     -- These modules can be connected
 end
 ```
@@ -95,7 +97,7 @@ end
 
 ### Rotation
 - `:rotate_y(angle_degrees)` - Rotate around Y axis (must be multiple of 90)
-- `:rotate_axis(axis, angle_degrees)` - Rotate around arbitrary axis
+- `:rotate_axis(axis, angle_degrees)` - Rotate around axis-aligned vector (x/y/z, multiple of 90)
 
 ## Design Principles
 

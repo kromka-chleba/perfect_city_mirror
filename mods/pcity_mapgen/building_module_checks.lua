@@ -27,14 +27,14 @@ local pcmg = pcity_mapgen
 pcmg.building_module_checks = pcmg.building_module_checks or {}
 local checks = pcmg.building_module_checks
 
--- Valid face names
+-- Valid face names (Luanti coordinate system)
 local VALID_FACES = {
-    top = true,
-    bottom = true,
-    north = true,
-    south = true,
-    east = true,
-    west = true,
+    ["y+"] = true,
+    ["y-"] = true,
+    ["z-"] = true,
+    ["z+"] = true,
+    ["x+"] = true,
+    ["x-"] = true,
 }
 
 -- Helper function to create readable error messages
@@ -79,7 +79,7 @@ function checks.check_face_name(face)
     
     if not VALID_FACES[face] then
         error("Building module: invalid face name '" .. face ..
-            "'. Must be one of: top, bottom, north, south, east, west.")
+            "'. Must be one of: y+, y-, z-, z+, x+, x-.")
     end
 end
 

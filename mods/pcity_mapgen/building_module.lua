@@ -38,21 +38,23 @@ local checks = pcmg.building_module_checks or
     dofile(mod_path.."/building_module_checks.lua")
 
 -- Face constants for the 6 faces of a cuboid
-local FACE_TOP = "top"
-local FACE_BOTTOM = "bottom"
-local FACE_NORTH = "north"
-local FACE_SOUTH = "south"
-local FACE_EAST = "east"
-local FACE_WEST = "west"
+-- Using Luanti coordinate system: X+ (east), X- (west), Y+ (up), 
+-- Y- (down), Z+ (south), Z- (north)
+local FACE_Y_POS = "y+"
+local FACE_Y_NEG = "y-"
+local FACE_Z_NEG = "z-"
+local FACE_Z_POS = "z+"
+local FACE_X_POS = "x+"
+local FACE_X_NEG = "x-"
 
 -- Valid face names
 local VALID_FACES = {
-    [FACE_TOP] = true,
-    [FACE_BOTTOM] = true,
-    [FACE_NORTH] = true,
-    [FACE_SOUTH] = true,
-    [FACE_EAST] = true,
-    [FACE_WEST] = true,
+    [FACE_Y_POS] = true,
+    [FACE_Y_NEG] = true,
+    [FACE_Z_NEG] = true,
+    [FACE_Z_POS] = true,
+    [FACE_X_POS] = true,
+    [FACE_X_NEG] = true,
 }
 
 -- Counter for generating unique module IDs
@@ -96,8 +98,7 @@ end
 -- ============================================================
 
 -- Sets a junction surface for the specified face
--- face: string - one of "top", "bottom", "north", "south",
---                "east", "west"
+-- face: string - one of "y+", "y-", "z-", "z+", "x+", "x-"
 -- surface_id: any - identifier for the junction surface type
 function building_module:set_junction_surface(face, surface_id)
     checks.check_face_name(face)
@@ -184,27 +185,32 @@ end
 -- angle_degrees: number - rotation angle in degrees (90, 180, 270)
 function building_module:rotate_y(angle_degrees)
     checks.check_rotation_angle(angle_degrees)
-    
-    local center = self:get_center()
-    self.min_pos = _rotate_point_y(self.min_pos, center, angle_degrees)
-    self.max_pos = _rotate_point_y(self.max_pos, center, angle_degrees)
-    
-    _normalize_bounds(self)
+    self:rotate_axis(vector.new(0, 1, 0), angle_degrees)
     _rotate_junction_surfaces_y(self, angle_degrees)
 end
 
--- Rotates the module around an arbitrary axis
--- axis: vector - normalized rotation axis
--- angle_degrees: number - rotation angle in degrees
+-- Rotates the module around a specified axis
+-- For voxel games, only x, y, z axes with 90-degree multiples
+-- axis: vector - rotation axis (should be unit vector along x, y, or z)
+-- angle_degrees: number - rotation angle in degrees (multiple of 90)
 function building_module:rotate_axis(axis, angle_degrees)
     checks.check_vector(axis, "rotation axis")
-    checks.check_number(angle_degrees, "rotation angle")
+    checks.check_rotation_angle(angle_degrees)
     
     local center = self:get_center()
-    self.min_pos = _rotate_point_axis(
-        self.min_pos, center, axis, angle_degrees)
-    self.max_pos = _rotate_point_axis(
-        self.max_pos, center, axis, angle_degrees)
+    local angle_rad = math.rad(angle_degrees)
+    local rotation = vector.new(axis.x * angle_rad, 
+        axis.y * angle_rad, axis.z * angle_rad)
+    
+    -- Rotate corner positions around center
+    local min_relative = vector.subtract(self.min_pos, center)
+    local max_relative = vector.subtract(self.max_pos, center)
+    
+    min_relative = vector.rotate(min_relative, rotation)
+    max_relative = vector.rotate(max_relative, rotation)
+    
+    self.min_pos = vector.add(min_relative, center)
+    self.max_pos = vector.add(max_relative, center)
     
     _normalize_bounds(self)
 end
@@ -212,49 +218,6 @@ end
 -- ============================================================
 -- INTERNAL HELPER FUNCTIONS
 -- ============================================================
-
--- Rotates a point around a center point on the Y axis
-function _rotate_point_y(point, center, angle_degrees)
-    local rad = math.rad(angle_degrees)
-    local cos_a = math.cos(rad)
-    local sin_a = math.sin(rad)
-    
-    local dx = point.x - center.x
-    local dz = point.z - center.z
-    
-    return vector.new(
-        center.x + dx * cos_a - dz * sin_a,
-        point.y,
-        center.z + dx * sin_a + dz * cos_a
-    )
-end
-
--- Rotates a point around a center using axis-angle rotation
-function _rotate_point_axis(point, center, axis, angle_degrees)
-    local rad = math.rad(angle_degrees)
-    local cos_a = math.cos(rad)
-    local sin_a = math.sin(rad)
-    local one_minus_cos = 1 - cos_a
-    
-    local p = vector.subtract(point, center)
-    local ax, ay, az = axis.x, axis.y, axis.z
-    
-    local rotated = vector.new(
-        (cos_a + ax * ax * one_minus_cos) * p.x +
-        (ax * ay * one_minus_cos - az * sin_a) * p.y +
-        (ax * az * one_minus_cos + ay * sin_a) * p.z,
-        
-        (ay * ax * one_minus_cos + az * sin_a) * p.x +
-        (cos_a + ay * ay * one_minus_cos) * p.y +
-        (ay * az * one_minus_cos - ax * sin_a) * p.z,
-        
-        (az * ax * one_minus_cos - ay * sin_a) * p.x +
-        (az * ay * one_minus_cos + ax * sin_a) * p.y +
-        (cos_a + az * az * one_minus_cos) * p.z
-    )
-    
-    return vector.add(rotated, center)
-end
 
 -- Ensures min_pos has smaller coordinates than max_pos
 function _normalize_bounds(module)
@@ -285,12 +248,12 @@ function _rotate_junction_surfaces_y(module, angle_degrees)
     
     for _ = 1, rotations do
         local new_temp = {}
-        new_temp[FACE_TOP] = temp[FACE_TOP]
-        new_temp[FACE_BOTTOM] = temp[FACE_BOTTOM]
-        new_temp[FACE_NORTH] = temp[FACE_WEST]
-        new_temp[FACE_SOUTH] = temp[FACE_EAST]
-        new_temp[FACE_EAST] = temp[FACE_NORTH]
-        new_temp[FACE_WEST] = temp[FACE_SOUTH]
+        new_temp[FACE_Y_POS] = temp[FACE_Y_POS]
+        new_temp[FACE_Y_NEG] = temp[FACE_Y_NEG]
+        new_temp[FACE_Z_NEG] = temp[FACE_X_NEG]
+        new_temp[FACE_Z_POS] = temp[FACE_X_POS]
+        new_temp[FACE_X_POS] = temp[FACE_Z_NEG]
+        new_temp[FACE_X_NEG] = temp[FACE_Z_POS]
         temp = new_temp
     end
     
