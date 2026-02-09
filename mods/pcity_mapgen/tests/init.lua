@@ -64,6 +64,7 @@ end
 dofile(mod_path.."/tests/tests_point.lua")
 dofile(mod_path.."/tests/tests_path.lua")
 dofile(mod_path.."/tests/tests_lru_cache.lua")
+dofile(mod_path.."/tests/tests_building_module.lua")
 
 -- Run all tests
 pcmg.run_tests = function()
