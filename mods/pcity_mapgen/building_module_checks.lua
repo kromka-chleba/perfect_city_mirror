@@ -50,15 +50,20 @@ local function dump_value(val)
 end
 
 -- Validates arguments for building_module.new
-function checks.check_new_arguments(min_pos, max_pos)
-    if not vector.check(min_pos) then
-        error("Building module: min_pos '" .. dump_value(min_pos) ..
+function checks.check_new_arguments(pos, size)
+    if not vector.check(pos) then
+        error("Building module: pos '" .. dump_value(pos) ..
             "' is not a vector.")
     end
     
-    if not vector.check(max_pos) then
-        error("Building module: max_pos '" .. dump_value(max_pos) ..
+    if not vector.check(size) then
+        error("Building module: size '" .. dump_value(size) ..
             "' is not a vector.")
+    end
+    
+    if size.x <= 0 or size.y <= 0 or size.z <= 0 then
+        error("Building module: size components must be positive, got " ..
+            dump_value(size))
     end
 end
 

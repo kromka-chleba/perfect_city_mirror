@@ -34,15 +34,15 @@ local tests = pcmg.tests.building_module
 
 -- Tests that building_module.new creates a module correctly
 function tests.test_building_module_new()
-    local min_pos = vector.new(0, 0, 0)
-    local max_pos = vector.new(10, 20, 10)
-    local m = building_module.new(min_pos, max_pos)
+    local pos = vector.new(10, 20, 30)
+    local size = vector.new(11, 21, 11)
+    local m = building_module.new(pos, size)
     
     assert(m.id ~= nil, "Module should have an ID")
-    assert(vector.equals(m.min_pos, min_pos),
-        "Module min_pos should match input")
-    assert(vector.equals(m.max_pos, max_pos),
-        "Module max_pos should match input")
+    assert(vector.equals(m.pos, pos),
+        "Module pos should match input")
+    assert(vector.equals(m.size, size),
+        "Module size should match input")
     
     -- Test that IDs are unique
     local m2 = building_module.new(vector.new(0, 0, 0),
@@ -66,7 +66,7 @@ end
 -- Tests get_size method
 function tests.test_get_size()
     local m = building_module.new(vector.new(0, 0, 0),
-        vector.new(9, 19, 9))
+        vector.new(10, 20, 10))
     local size = m:get_size()
     
     assert(size.x == 10, "Size X should be 10")
@@ -202,38 +202,43 @@ function tests.test_rotate_y()
         "X+ surface should become Z- after 90 deg rotation")
 end
 
--- Tests that Y rotation normalizes bounds
-function tests.test_rotate_y_normalizes_bounds()
+-- Tests that Y rotation updates size correctly
+function tests.test_rotate_y_updates_size()
     local m = building_module.new(vector.new(0, 0, 0),
-        vector.new(10, 5, 5))
+        vector.new(10, 5, 6))
     
-    m:rotate_y(180)
+    local orig_size = m:get_size()
     
-    -- After rotation, min_pos should still be min and max_pos max
-    assert(m.min_pos.x <= m.max_pos.x,
-        "min_pos.x should be <= max_pos.x")
-    assert(m.min_pos.y <= m.max_pos.y,
-        "min_pos.y should be <= max_pos.y")
-    assert(m.min_pos.z <= m.max_pos.z,
-        "min_pos.z should be <= max_pos.z")
+    m:rotate_y(90)
+    
+    -- After 90 degree Y rotation, X and Z dimensions swap
+    local new_size = m:get_size()
+    assert(new_size.x == orig_size.z,
+        "After Y rotation, X size should match original Z size")
+    assert(new_size.y == orig_size.y,
+        "After Y rotation, Y size should remain unchanged")
+    assert(new_size.z == orig_size.x,
+        "After Y rotation, Z size should match original X size")
 end
 
 -- Tests arbitrary axis rotation
 function tests.test_rotate_axis()
     local m = building_module.new(vector.new(0, 0, 0),
-        vector.new(5, 5, 5))
+        vector.new(6, 5, 4))
     
-    -- Rotate around X axis
+    local orig_size = m:get_size()
+    
+    -- Rotate around X axis - Y and Z should swap
     local x_axis = vector.new(1, 0, 0)
     m:rotate_axis(x_axis, 90)
     
-    -- After rotation, bounds should still be normalized
-    assert(m.min_pos.x <= m.max_pos.x,
-        "min_pos.x should be <= max_pos.x")
-    assert(m.min_pos.y <= m.max_pos.y,
-        "min_pos.y should be <= max_pos.y")
-    assert(m.min_pos.z <= m.max_pos.z,
-        "min_pos.z should be <= max_pos.z")
+    local new_size = m:get_size()
+    assert(new_size.x == orig_size.x,
+        "After X rotation, X size should remain unchanged")
+    assert(new_size.y == orig_size.z,
+        "After X rotation, Y size should match original Z size")
+    assert(new_size.z == orig_size.y,
+        "After X rotation, Z size should match original Y size")
 end
 
 -- Register all tests
@@ -250,8 +255,8 @@ register_test("building_module:can_connect", tests.test_can_connect)
 register_test("building_module schematic management",
     tests.test_schematic_management)
 register_test("building_module:rotate_y", tests.test_rotate_y)
-register_test("building_module:rotate_y normalizes bounds",
-    tests.test_rotate_y_normalizes_bounds)
+register_test("building_module:rotate_y updates size",
+    tests.test_rotate_y_updates_size)
 register_test("building_module:rotate_axis", tests.test_rotate_axis)
 
 return tests

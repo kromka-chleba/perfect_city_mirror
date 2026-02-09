@@ -7,8 +7,10 @@ The Building Module system provides a modular building framework for Perfect Cit
 ## Features
 
 ### 1. Cuboid Space Definition
-- Modules are defined by `min_pos` and `max_pos` vectors
-- Represents a 3D rectangular space in the game world
+- Modules are defined by `pos` (absolute world position) and `size` (dimensions vector)
+- `pos` represents the origin point of the module (0,0,0 in module-local coordinates)
+- `size` represents the dimensions (x, y, z) of the module
+- Simple representation for positioning and sizing
 
 ### 2. Junction Surfaces
 - Each module can have junction surfaces on any of its 6 faces:
@@ -23,7 +25,8 @@ The Building Module system provides a modular building framework for Perfect Cit
 
 ### 3. Schematic Storage
 - Modules can store multiple Luanti schematics
-- Each schematic has a position relative to the module's min_pos
+- Each schematic has a position relative to the module's origin (0,0,0 in module-local space)
+- Module origin (0,0,0 local) corresponds to `pos` in world coordinates
 - Schematics can be stored by name or numeric index
 - Allows for variations within the same module type
 - Position enables proper placement within the module bounds
@@ -43,10 +46,10 @@ The Building Module system provides a modular building framework for Perfect Cit
 ```lua
 local building_module = pcity_mapgen.building_module
 
--- Create a module
+-- Create a module with position and size
 local room = building_module.new(
-    vector.new(0, 0, 0),
-    vector.new(10, 5, 10)
+    vector.new(0, 0, 0),  -- position in world
+    vector.new(11, 6, 11)  -- size (dimensions)
 )
 
 -- Set junction surfaces for connection
@@ -59,14 +62,14 @@ local schematic = {
     size = {x = 11, y = 6, z = 11},
     data = {...}
 }
--- Position relative to module's min_pos (0,0,0)
+-- Position relative to module's origin (0,0,0 in module-local space)
 room:add_schematic(schematic, vector.new(0, 0, 0), "default_variant")
 
--- Rotate for variety
+-- Rotate for variety (size updates automatically)
 room:rotate_y(90)  -- Rotate 90 degrees around Y axis
 
 -- Check if modules can connect
-local hallway = building_module.new(...)
+local hallway = building_module.new(vector.new(0, 0, 11), vector.new(11, 6, 5))
 hallway:set_junction_surface("z+", "door_wall")
 
 if room:can_connect(hallway, "z-", "z+") then
@@ -77,14 +80,18 @@ end
 ## API Reference
 
 ### Constructor
-- `building_module.new(min_pos, max_pos)` - Create a new module
+- `building_module.new(pos, size)` - Create a new module
+  - `pos`: vector - absolute world position (module origin)
+  - `size`: vector - dimensions (x, y, z)
 
 ### Type Checking
 - `building_module.check(obj)` - Check if object is a building module
 
 ### Geometry
-- `:get_size()` - Returns size as a vector
-- `:get_center()` - Returns center position
+- `:get_size()` - Returns size vector (copy)
+- `:get_center()` - Returns center position in world coordinates
+- `:get_min_pos()` - Returns minimum corner position
+- `:get_max_pos()` - Returns maximum corner position
 
 ### Junction Surfaces
 - `:set_junction_surface(face, surface_id)` - Set a junction surface

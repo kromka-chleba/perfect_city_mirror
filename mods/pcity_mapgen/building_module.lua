@@ -60,17 +60,17 @@ local VALID_FACES = {
 -- Counter for generating unique module IDs
 local module_id_counter = 0
 
--- Creates a new building module with the given bounds
--- min_pos: vector - minimum corner position (inclusive)
--- max_pos: vector - maximum corner position (inclusive)
-function building_module.new(min_pos, max_pos)
-    checks.check_new_arguments(min_pos, max_pos)
+-- Creates a new building module with position and size
+-- pos: vector - absolute world position (origin point of the module)
+-- size: vector - dimensions of the module (x, y, z sizes)
+function building_module.new(pos, size)
+    checks.check_new_arguments(pos, size)
     
     local m = {}
     module_id_counter = module_id_counter + 1
     m.id = module_id_counter
-    m.min_pos = vector.copy(min_pos)
-    m.max_pos = vector.copy(max_pos)
+    m.pos = vector.copy(pos)
+    m.size = vector.copy(size)
     m._schematics = {}
     m._junction_surfaces = {}
     
@@ -84,13 +84,22 @@ end
 
 -- Returns the size of the module as a vector
 function building_module:get_size()
-    return vector.subtract(self.max_pos, self.min_pos) +
-        vector.new(1, 1, 1)
+    return vector.copy(self.size)
 end
 
 -- Returns the center position of the module
 function building_module:get_center()
-    return vector.divide(vector.add(self.min_pos, self.max_pos), 2)
+    return vector.add(self.pos, vector.divide(self.size, 2))
+end
+
+-- Returns the minimum corner position
+function building_module:get_min_pos()
+    return vector.copy(self.pos)
+end
+
+-- Returns the maximum corner position
+function building_module:get_max_pos()
+    return vector.add(self.pos, self.size) - vector.new(1, 1, 1)
 end
 
 -- ============================================================
@@ -142,9 +151,9 @@ end
 -- SCHEMATIC MANAGEMENT
 -- ============================================================
 
--- Adds a schematic to the module with a position relative to min_pos
+-- Adds a schematic to the module with a position relative to origin
 -- schematic: table - luanti schematic data
--- relative_pos: vector - position relative to module's min_pos
+-- relative_pos: vector - position relative to module's origin (0,0,0)
 -- name: string (optional) - name identifier for the schematic
 function building_module:add_schematic(schematic, relative_pos, name)
     checks.check_schematic(schematic)
@@ -210,35 +219,21 @@ function building_module:rotate_axis(axis, angle_degrees)
     local rotation = vector.new(axis.x * angle_rad, 
         axis.y * angle_rad, axis.z * angle_rad)
     
-    -- Rotate corner positions around center
-    local min_relative = vector.subtract(self.min_pos, center)
-    local max_relative = vector.subtract(self.max_pos, center)
+    -- Rotate position around center
+    local pos_relative = vector.subtract(self.pos, center)
+    pos_relative = vector.rotate(pos_relative, rotation)
+    self.pos = vector.add(pos_relative, center)
     
-    min_relative = vector.rotate(min_relative, rotation)
-    max_relative = vector.rotate(max_relative, rotation)
-    
-    self.min_pos = vector.add(min_relative, center)
-    self.max_pos = vector.add(max_relative, center)
-    
-    _normalize_bounds(self)
+    -- Rotate size dimensions for non-cube modules
+    local half_size = vector.divide(self.size, 2)
+    half_size = vector.rotate(half_size, rotation)
+    -- Take absolute values since size must be positive
+    self.size = vector.multiply(vector.abs(half_size), 2)
 end
 
 -- ============================================================
 -- INTERNAL HELPER FUNCTIONS
 -- ============================================================
-
--- Ensures min_pos has smaller coordinates than max_pos
-function _normalize_bounds(module)
-    local min_x = math.min(module.min_pos.x, module.max_pos.x)
-    local max_x = math.max(module.min_pos.x, module.max_pos.x)
-    local min_y = math.min(module.min_pos.y, module.max_pos.y)
-    local max_y = math.max(module.min_pos.y, module.max_pos.y)
-    local min_z = math.min(module.min_pos.z, module.max_pos.z)
-    local max_z = math.max(module.min_pos.z, module.max_pos.z)
-    
-    module.min_pos = vector.new(min_x, min_y, min_z)
-    module.max_pos = vector.new(max_x, max_y, max_z)
-end
 
 -- Rotates junction surfaces after Y-axis rotation
 function _rotate_junction_surfaces_y(module, angle_degrees)
