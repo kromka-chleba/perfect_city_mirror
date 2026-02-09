@@ -36,6 +36,7 @@ building_module.__index = building_module
 
 local checks = pcmg.building_module_checks or
     dofile(mod_path.."/building_module_checks.lua")
+local junction = pcmg.junction or dofile(mod_path.."/junction.lua")
 
 -- Face constants for the 6 faces of a cuboid
 -- Using Luanti coordinate system: X+ (east), X- (west), Y+ (up), 
@@ -72,7 +73,7 @@ function building_module.new(pos, size)
     m.pos = vector.copy(pos)
     m.size = vector.copy(size)
     m._schematics = {}
-    m._junction_surfaces = {}
+    m._junctions = {}
     
     return setmetatable(m, building_module)
 end
@@ -107,45 +108,118 @@ end
 -- JUNCTION SURFACE MANAGEMENT
 -- ============================================================
 
--- Sets a junction surface for the specified face
--- face: string - one of "y+", "y-", "z-", "z+", "x+", "x-"
--- surface_id: any - identifier for the junction surface type
-function building_module:set_junction_surface(face, surface_id)
-    checks.check_face_name(face)
-    self._junction_surfaces[face] = surface_id
+-- Adds a junction to the module
+-- j: junction - Junction object to add
+function building_module:add_junction(j)
+    if not junction.check(j) then
+        error("Building module: object is not a Junction")
+    end
+    
+    -- Store by face (one junction per face for now)
+    self._junctions[j.face] = j
 end
 
--- Gets the junction surface for the specified face
--- Returns nil if no junction surface is set for that face
-function building_module:get_junction_surface(face)
+-- Gets the junction for the specified face
+-- Returns nil if no junction is set for that face
+function building_module:get_junction(face)
     checks.check_face_name(face)
-    return self._junction_surfaces[face]
+    return self._junctions[face]
 end
 
--- Removes the junction surface from the specified face
-function building_module:remove_junction_surface(face)
+-- Removes the junction from the specified face
+function building_module:remove_junction(face)
     checks.check_face_name(face)
-    self._junction_surfaces[face] = nil
+    self._junctions[face] = nil
 end
 
--- Checks if two modules can connect via their junction surfaces
+-- Gets all junctions on this module
+function building_module:get_all_junctions()
+    local result = {}
+    for face, j in pairs(self._junctions) do
+        result[face] = j
+    end
+    return result
+end
+
+-- Checks if two modules can connect via their junctions
 -- other: building_module - the other module to check
 -- this_face: string - face of this module
 -- other_face: string - face of the other module
--- Returns true if the junction surfaces match
+-- Returns true if the junctions match and can connect
 function building_module:can_connect(other, this_face, other_face)
     checks.check_module(other)
     checks.check_face_name(this_face)
     checks.check_face_name(other_face)
     
-    local this_surface = self:get_junction_surface(this_face)
-    local other_surface = other:get_junction_surface(other_face)
+    local this_junction = self:get_junction(this_face)
+    local other_junction = other:get_junction(other_face)
     
-    if this_surface == nil or other_surface == nil then
+    if this_junction == nil or other_junction == nil then
         return false
     end
     
-    return this_surface == other_surface
+    return this_junction:can_connect_with(other_junction)
+end
+
+-- Legacy API compatibility: set_junction_surface
+-- Creates a simple junction from a type string
+-- Deprecated: Use add_junction with proper Junction objects instead
+function building_module:set_junction_surface(face, surface_type)
+    checks.check_face_name(face)
+    
+    if type(surface_type) ~= "string" then
+        error("Building module: surface_type must be a string")
+    end
+    
+    -- Create a default junction covering the entire face
+    local pos_min, pos_max = self:_get_face_bounds(face)
+    local j = junction.new(surface_type, pos_min, pos_max, face)
+    self:add_junction(j)
+end
+
+-- Legacy API compatibility: get_junction_surface
+-- Returns the junction type if exists
+-- Deprecated: Use get_junction instead
+function building_module:get_junction_surface(face)
+    local j = self:get_junction(face)
+    if j then
+        return j.type
+    end
+    return nil
+end
+
+-- Legacy API compatibility: remove_junction_surface
+-- Deprecated: Use remove_junction instead
+function building_module:remove_junction_surface(face)
+    self:remove_junction(face)
+end
+
+-- Helper to get face bounds for legacy API
+function building_module:_get_face_bounds(face)
+    local size = self.size
+    local pos_min, pos_max
+    
+    if face == "y+" then
+        pos_min = vector.new(0, size.y - 1, 0)
+        pos_max = vector.new(size.x - 1, size.y - 1, size.z - 1)
+    elseif face == "y-" then
+        pos_min = vector.new(0, 0, 0)
+        pos_max = vector.new(size.x - 1, 0, size.z - 1)
+    elseif face == "z-" then
+        pos_min = vector.new(0, 0, 0)
+        pos_max = vector.new(size.x - 1, size.y - 1, 0)
+    elseif face == "z+" then
+        pos_min = vector.new(0, 0, size.z - 1)
+        pos_max = vector.new(size.x - 1, size.y - 1, size.z - 1)
+    elseif face == "x+" then
+        pos_min = vector.new(size.x - 1, 0, 0)
+        pos_max = vector.new(size.x - 1, size.y - 1, size.z - 1)
+    elseif face == "x-" then
+        pos_min = vector.new(0, 0, 0)
+        pos_max = vector.new(0, size.y - 1, size.z - 1)
+    end
+    
+    return pos_min, pos_max
 end
 
 -- ============================================================
@@ -204,7 +278,7 @@ end
 function building_module:rotate_y(angle_degrees)
     checks.check_rotation_angle(angle_degrees)
     self:rotate_axis(vector.new(0, 1, 0), angle_degrees)
-    _rotate_junction_surfaces_y(self, angle_degrees)
+    _rotate_junctions_y(self, angle_degrees)
 end
 
 -- Rotates the module around a specified axis
@@ -235,32 +309,60 @@ end
 -- INTERNAL HELPER FUNCTIONS
 -- ============================================================
 
--- Rotates junction surfaces after Y-axis rotation
-function _rotate_junction_surfaces_y(module, angle_degrees)
+-- Rotates junctions after Y-axis rotation
+function _rotate_junctions_y(module, angle_degrees)
     local rotations = math.floor((angle_degrees % 360) / 90)
     if rotations == 0 then
         return
     end
     
-    local surfaces = module._junction_surfaces
+    local junctions = module._junctions
     local temp = {}
     
-    for face, surface_id in pairs(surfaces) do
-        temp[face] = surface_id
+    -- Copy junctions and rotate their positions
+    for face, j in pairs(junctions) do
+        -- Rotate junction positions around module center
+        local center = module:get_center()
+        local angle_rad = math.rad(angle_degrees)
+        local rotation = vector.new(0, angle_rad, 0)
+        
+        local pos_min_rel = vector.subtract(j.pos_min, center)
+        local pos_max_rel = vector.subtract(j.pos_max, center)
+        
+        pos_min_rel = vector.rotate(pos_min_rel, rotation)
+        pos_max_rel = vector.rotate(pos_max_rel, rotation)
+        
+        local new_pos_min = vector.add(pos_min_rel, center)
+        local new_pos_max = vector.add(pos_max_rel, center)
+        
+        -- Determine new face after rotation
+        local new_face = _rotate_face_y(face, rotations)
+        
+        -- Create new junction with rotated positions and face
+        local new_j = junction.new(j.type, new_pos_min, new_pos_max, new_face)
+        temp[new_face] = new_j
     end
     
+    module._junctions = temp
+end
+
+-- Helper to rotate face name for Y rotation
+function _rotate_face_y(face, rotations)
+    local face_rotation_map = {
+        ["z-"] = "x-",
+        ["z+"] = "x+",
+        ["x+"] = "z-",
+        ["x-"] = "z+",
+        ["y+"] = "y+",
+        ["y-"] = "y-",
+    }
+    
+    local current_face = face
     for _ = 1, rotations do
-        local new_temp = {}
-        new_temp[FACE_Y_POS] = temp[FACE_Y_POS]
-        new_temp[FACE_Y_NEG] = temp[FACE_Y_NEG]
-        new_temp[FACE_Z_NEG] = temp[FACE_X_NEG]
-        new_temp[FACE_Z_POS] = temp[FACE_X_POS]
-        new_temp[FACE_X_POS] = temp[FACE_Z_NEG]
-        new_temp[FACE_X_NEG] = temp[FACE_Z_POS]
-        temp = new_temp
+        current_face = face_rotation_map[current_face] or current_face
     end
     
-    module._junction_surfaces = temp
+    return current_face
 end
 
 return pcmg.building_module
