@@ -10,6 +10,7 @@ This directory contains comprehensive documentation for the Perfect City mapgen 
 - **[megacanvas.md](megacanvas.md)** - Multi-canvas system for overgeneration across chunk boundaries
 - **[canvas_ids.md](canvas_ids.md)** - Material ID definitions and priority system
 - **[canvas_brushes.md](canvas_brushes.md)** - Shape generation and brush system
+- **[cache_management.md](cache_management.md)** - LRU cache system for preventing OOM
 
 ### Path and Point System
 
@@ -22,6 +23,7 @@ This directory contains comprehensive documentation for the Perfect City mapgen 
 - **[units.md](units.md)** - **Master module** for unit conversions and size constants
 - **[utils.md](utils.md)** - High-level coordinate utilities and helper functions
 - **[metastore.md](metastore.md)** - Metadata storage with weak tables
+- **[lru_cache.md](lru_cache.md)** - Generic LRU cache implementation
 
 ## Quick Reference
 

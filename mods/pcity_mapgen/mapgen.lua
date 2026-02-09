@@ -23,6 +23,7 @@ pcity_mapgen = {}
 local pcmg = pcity_mapgen
 local units = dofile(mod_path.."/units.lua")
 
+pcmg.lru_cache = dofile(mod_path.."/lru_cache.lua")
 dofile(mod_path.."/metastore.lua")
 dofile(mod_path.."/utils.lua")
 dofile(mod_path.."/point.lua")

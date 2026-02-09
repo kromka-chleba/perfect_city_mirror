@@ -118,9 +118,18 @@ local blank_id = 1
     * 'complete': bool values, true means the citychunk was both overgenerated
     and generated.
     * 'citychunk_meta': arbitrary user-provided data
+    
+    **Cache Expiration Strategy**:
+    The cache uses an LRU (Least Recently Used) eviction policy to prevent OOM.
+    When the cache exceeds 'max_entries', the oldest entries are removed.
+    The LRU implementation is provided by the lru_cache module.
 --]]
 
 megacanvas.cache = {}
+
+-- Default maximum number of cached citychunks
+-- Can be overridden by setting pcity_canvas_cache_size in minetest.conf
+local DEFAULT_MAX_CACHE_ENTRIES = 100
 
 function megacanvas.cache.new(c)
     local cache = c or {}
@@ -136,7 +145,34 @@ function megacanvas.cache.new(c)
     if not cache.citychunk_meta then
         cache.citychunk_meta = {}
     end
+    
+    -- Initialize LRU cache if not already present
+    if not cache.lru then
+        -- Get cache size limit from settings or use default
+        local setting = core.settings:get("pcity_canvas_cache_size")
+        local max_entries = tonumber(setting) or DEFAULT_MAX_CACHE_ENTRIES
+        
+        -- Create LRU cache with eviction callback
+        cache.lru = pcmg.lru_cache.new({
+            max_entries = max_entries,
+            on_evict = function(hash, data)
+                -- Clean up all data associated with this hash
+                cache.citychunks[hash] = nil
+                cache.partially_complete[hash] = nil
+                cache.complete[hash] = nil
+                cache.citychunk_meta[hash] = nil
+            end
+        })
+    end
+    
     return cache
+end
+
+-- Public function to update cache access (exported for external use)
+function megacanvas.cache.update_access(cache, hash)
+    if cache.lru then
+        cache.lru:touch(hash)
+    end
 end
 
 local function neighboring_canvases(citychunk_origin, cache)
@@ -146,6 +182,7 @@ local function neighboring_canvases(citychunk_origin, cache)
         local hash = pcmg.citychunk_hash(origin)
         local canv = cache.citychunks[hash] or pcmg.canvas.new(origin)
         cache.citychunks[hash] = canv
+        cache.lru:touch(hash)
         table.insert(canvases, canv)
     end
     return canvases
@@ -159,6 +196,7 @@ function megacanvas.new(citychunk_origin, cache)
     local hash = pcmg.citychunk_hash(citychunk_origin)
     megacanv.central = cache.citychunks[hash] or pcmg.canvas.new(citychunk_origin)
     cache.citychunks[hash] = megacanv.central
+    cache.lru:touch(hash)
     megacanv.neighbors = neighboring_canvases(megacanv.origin, cache)
     megacanv.metastore = pcmg.metastore.new()
     setmetatable(megacanv, megacanvas)
@@ -191,11 +229,13 @@ function megacanvas:mark_complete()
     local hash = pcmg.citychunk_hash(self.central.origin)
     self.cache.complete[hash] = true
     self.cache.partially_complete[hash] = nil
+    self.cache.lru:touch(hash)
 end
 
 function megacanvas:mark_partially_complete()
     local hash = pcmg.citychunk_hash(self.central.origin)
     self.cache.partially_complete[hash] = true
+    self.cache.lru:touch(hash)
 end
 
 --[[
