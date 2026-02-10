@@ -41,15 +41,15 @@ Cache size limits can be configured in `minetest.conf`:
 ### Canvas Cache Size
 
 ```
-# Maximum number of canvas objects to cache (default: 100)
-pcity_canvas_cache_size = 100
+# Maximum number of canvas objects to cache (default: 250)
+pcity_canvas_cache_size = 250
 ```
 
 ### Pathpaver Cache Size
 
 ```
-# Maximum number of pathpaver objects to cache (default: 100)
-pcity_pathpaver_cache_size = 100
+# Maximum number of pathpaver objects to cache (default: 250)
+pcity_pathpaver_cache_size = 250
 ```
 
 ### Choosing Cache Size
@@ -169,7 +169,7 @@ When a citychunk is accessed:
 ### Using Default Cache Size
 
 ```lua
--- Creates cache with default size (100 entries)
+-- Creates cache with default size (250 entries)
 local canvas_cache = pcmg.megacanvas.cache.new()
 local pathpaver_cache = pcmg.megapathpaver.cache.new()
 ```
@@ -181,10 +181,10 @@ Configuration is handled through `minetest.conf` settings. The cache size is rea
 ```lua
 -- The cache reads settings automatically
 local canvas_cache = pcmg.megacanvas.cache.new()
--- Uses pcity_canvas_cache_size setting or default (100)
+-- Uses pcity_canvas_cache_size setting or default (250)
 
 local pathpaver_cache = pcmg.megapathpaver.cache.new()
--- Uses pcity_pathpaver_cache_size setting or default (100)
+-- Uses pcity_pathpaver_cache_size setting or default (250)
 ```
 
 ### Manual Access Tracking (Advanced)
