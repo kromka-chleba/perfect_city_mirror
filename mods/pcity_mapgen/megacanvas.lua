@@ -54,11 +54,13 @@ local citychunk = units.sizes.citychunk
 pcmg.megacanvas = {}
 local megacanvas = pcmg.megacanvas
 
--- Allows calling methods of the Canvas class from Megacanvas.
+--- Allows calling methods of the Canvas class from Megacanvas.
 -- Calls the method for the central citychunk and all neighbors,
 -- returns a table with returned values of each citychunk canvas. When
 -- the returned value is a boolean, it returns a logical OR of the
 -- returned values.
+-- @param method function The canvas method to call
+-- @return function A wrapper function that calls the method on all canvases
 local function make_method(method)
     return function (self, ...)
         -- products are stuff returned by each function
@@ -91,11 +93,14 @@ local function make_method(method)
     end
 end
 
--- Allows Megacanvas objects to call Megacanvas or Canvas methods.
+--- Allows Megacanvas objects to call Megacanvas or Canvas methods.
 -- If there's no method with 'key' name in the Megacanvas class, it
 -- looks for the method in the Canvas class.
 -- When using methods from the Canvas class, a method created by
 -- 'make_method' is used (see above).
+-- @param object table The megacanvas object
+-- @param key string The method name being looked up
+-- @return function|nil The method function or nil if not found
 megacanvas.__index = function(object, key)
     if megacanvas[key] then
         object[key] = megacanvas[key]
@@ -131,6 +136,10 @@ megacanvas.cache = {}
 -- Can be overridden by setting pcity_canvas_cache_size in minetest.conf
 local DEFAULT_MAX_CACHE_ENTRIES = 100
 
+--- Creates a new cache for canvas data.
+-- Initializes LRU cache with eviction callback for memory management.
+-- @param c table|nil Optional existing cache table to use
+-- @return table The initialized cache with citychunks, partially_complete, complete, citychunk_meta, and lru fields
 function megacanvas.cache.new(c)
     local cache = c or {}
     if not cache.citychunks then
@@ -168,13 +177,20 @@ function megacanvas.cache.new(c)
     return cache
 end
 
--- Public function to update cache access (exported for external use)
+--- Updates cache access for LRU tracking.
+-- Public function exported for external use.
+-- @param cache table The cache object
+-- @param hash string The citychunk hash to update access for
 function megacanvas.cache.update_access(cache, hash)
     if cache.lru then
         cache.lru:touch(hash)
     end
 end
 
+--- Gets or creates canvases for all neighboring citychunks.
+-- @param citychunk_origin vector The origin position of the central citychunk
+-- @param cache table The cache to retrieve or store canvases
+-- @return table Array of canvas objects for all neighboring citychunks
 local function neighboring_canvases(citychunk_origin, cache)
     local neighbors = pcmg.citychunk_neighbors(citychunk_origin)
     local canvases = {}
@@ -188,6 +204,11 @@ local function neighboring_canvases(citychunk_origin, cache)
     return canvases
 end
 
+--- Creates a new megacanvas object.
+-- Initializes a megacanvas with a central citychunk and its 8 neighbors.
+-- @param citychunk_origin vector The origin position of the central citychunk
+-- @param cache table The cache object for storing canvases
+-- @return table The new megacanvas object
 function megacanvas.new(citychunk_origin, cache)
     local megacanv = {}
     megacanv.cache = megacanvas.cache.new(cache)
@@ -204,27 +225,30 @@ function megacanvas.new(citychunk_origin, cache)
     return megacanv
 end
 
+--- Sets the metastore for the megacanvas and all its canvases.
+-- @param mt table The metastore object to set
 function megacanvas:set_metastore(mt)
     self.metastore = pcmg.metastore.check(mt) and mt
     local set_metastore = make_method(pcmg.canvas["set_metastore"])
     set_metastore(self, mt)
 end
 
--- Sets cursors of the central citychunk and neighbors
--- to 'pos' which is absolute position
+--- Sets cursors of the central citychunk and neighbors to an absolute position.
+-- @param pos vector The absolute position to set all cursors to
 function megacanvas:set_all_cursors(pos)
     self.cursor = vector.copy(pos)
     self:set_cursor_absolute(pos)
 end
 
--- Moves cursors of the central citychunk and neighbors
--- by 'vec' which is vector
+--- Moves cursors of the central citychunk and neighbors by a vector.
+-- @param vec vector The vector to move all cursors by
 function megacanvas:move_all_cursors(vec)
     self:set_all_cursors(self.cursor + vec)
 end
 
 
--- Marks the central citychunk as complete in the citychunk cache
+--- Marks the central citychunk as complete in the citychunk cache.
+-- Clears the partially_complete flag and sets the complete flag.
 function megacanvas:mark_complete()
     local hash = pcmg.citychunk_hash(self.central.origin)
     self.cache.complete[hash] = true
@@ -232,28 +256,23 @@ function megacanvas:mark_complete()
     self.cache.lru:touch(hash)
 end
 
+--- Marks the central citychunk as partially complete in the cache.
+-- Indicates the citychunk was overgenerated from neighbors but not fully generated.
 function megacanvas:mark_partially_complete()
     local hash = pcmg.citychunk_hash(self.central.origin)
     self.cache.partially_complete[hash] = true
     self.cache.lru:touch(hash)
 end
 
---[[
-    Generates a citychunk using the 'generator_function'
-    which takes a megacanvas as its argument.
-    'recursion_level' is a number of neighbor layers to process,
-    for example 'recursion_level' = 1 means 'generator_function'
-    will also be applied to neighbors of the central citychunk,
-    'recursion_level' = 2 means also neighbors of the neighbors
-    will be generated.
-    'generator_function' MUST use reproducible randomness, otherwise
-    overgeneration won't work.
-    'generator_function' is only ran once for a citychunk that's not
-    marked as 'complete ' or 'partially_complete', so for fresh
-    citychunks only.
-
-    XXX: Replace with a canvas-independent (over)generator?
---]]
+--- Generates a citychunk using the provided generator function.
+-- Applies the generator function to the central citychunk and recursively
+-- to neighboring citychunks based on recursion_level. The generator_function
+-- MUST use reproducible randomness for overgeneration to work correctly.
+-- The function is only run once for fresh citychunks (not marked as
+-- complete or partially_complete).
+-- @param generator_function function Function that takes a megacanvas and optional arguments
+-- @param recursion_level number|nil Number of neighbor layers to process (default: 1)
+-- @param ... any Optional additional arguments passed to generator_function
 function megacanvas:generate(generator_function, recursion_level, ...)
     local recursion_level = recursion_level or 1
     local central_hash = pcmg.citychunk_hash(self.origin)
@@ -277,6 +296,11 @@ function megacanvas:generate(generator_function, recursion_level, ...)
     self:mark_complete()
 end
 
+--- Draws a straight line from start to finish using the given shape.
+-- Moves cursor in a straight line toward the finish position.
+-- @param shape table The shape to draw at each position
+-- @param start vector The starting position
+-- @param finish vector The ending position
 function megacanvas:draw_straight(shape, start, finish)
     self:set_all_cursors(start)
     self:draw_shape(shape)
@@ -287,6 +311,11 @@ function megacanvas:draw_straight(shape, start, finish)
     end
 end
 
+--- Draws a wobbly line from start to finish using the given shape.
+-- Moves cursor with random variation toward the finish position.
+-- @param shape table The shape to draw at each position
+-- @param start vector The starting position
+-- @param finish vector The ending position
 function megacanvas:draw_wobbly(shape, start, finish)
     self:set_all_cursors(start)
     self:draw_shape(shape)
@@ -304,6 +333,9 @@ local line_styles = {
     wobbly = megacanvas.draw_wobbly,
 }
 
+--- Registers a custom line drawing style.
+-- @param name string The name of the drawing style
+-- @param func function The drawing function with signature (self, shape, start, finish)
 function megacanvas:register_drawstyle(name, func)
     if type(name) ~= "string" then
         error("Megacanvas: drawstyle 'name' has to be a string but is: "..shallow_dump(name))
@@ -314,6 +346,11 @@ function megacanvas:register_drawstyle(name, func)
     line_styles[name] = func
 end
 
+--- Draws a path using the specified shape and drawing style.
+-- Recursively draws all branches of the path.
+-- @param shape table The shape to draw along the path
+-- @param path table The path object with start, points, and branching_points
+-- @param style string The default drawing style to use (e.g., "straight", "wobbly")
 function megacanvas:draw_path(shape, path, style)
     local current_point = path.start
     local path_style = self.metastore:get(path, "style")
@@ -332,6 +369,10 @@ function megacanvas:draw_path(shape, path, style)
     end
 end
 
+--- Draws the given shape at each point position in the path.
+-- Recursively draws points for all branches of the path.
+-- @param shape table The shape to draw at each point
+-- @param path table The path object containing positions
 function megacanvas:draw_path_points(shape, path)
     local all_pos = path:all_positions()
     for _, pos in pairs(all_pos) do
@@ -345,6 +386,9 @@ function megacanvas:draw_path_points(shape, path)
     end
 end
 
+--- Draws the shape at random positions within the central citychunk.
+-- @param shape table The shape to draw at each random position
+-- @param nr number The number of random positions to draw at
 function megacanvas:draw_random(shape, nr)
     for x = 1, nr do
         local point = pcmg.random_pos_in_citychunk(self.origin)
