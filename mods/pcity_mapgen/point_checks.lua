@@ -30,23 +30,27 @@ local pcmg = pcity_mapgen
 pcmg.point_checks = pcmg.point_checks or {}
 local checks = pcmg.point_checks
 
--- Validates arguments passed to 'point.new'.
+--- Validates arguments passed to 'point.new'.
+-- Ensures that the position is a valid vector.
+-- @param pos vector Position to validate
 function checks.check_point_new_arguments(pos)
     if not vector.check(pos) then
         error("Path: pos '"..shallow_dump(pos).."' is not a vector.")
     end
 end
 
--- Checks if 'p' is a point, otherwise throws an error.
+--- Checks if 'p' is a point, otherwise throws an error.
 -- This resolves the point checker at call time to avoid circular loads.
+-- @param p table Point to validate
 function checks.check_point(p)
     if not (pcmg and pcmg.point and pcmg.point.check and pcmg.point.check(p)) then
         error("Path: p '"..shallow_dump(p).."' is not a point.")
     end
 end
 
--- Check if points belong to the same path. 'points' is an array/table.
+--- Check if points belong to the same path.
 -- Resolves point.same_path at call time.
+-- @param points table Array of points to validate
 function checks.check_same_path(points)
     if not (pcmg and pcmg.point and pcmg.point.same_path) then
         error("Path: internal error - point.same_path not available.")
@@ -56,7 +60,13 @@ function checks.check_same_path(points)
     end
 end
 
--- Checks if arguments passed to 'path:insert_between' are valid.
+--- Checks if arguments passed to 'path:insert_between' are valid.
+-- Validates that all points are valid, belong to the same path, and that
+-- p_prev and p_next are adjacent.
+-- @param self table Path object
+-- @param p_prev table Previous point
+-- @param p_next table Next point
+-- @param p table Point to insert
 function checks.check_insert_between_arguments(self, p_prev, p_next, p)
     checks.check_point(p)
     checks.check_point(p_prev)
@@ -68,9 +78,10 @@ function checks.check_insert_between_arguments(self, p_prev, p_next, p)
     end
 end
 
--- Checks if arguments passed to 'path:remove', 'path:remove_before'
--- and 'path:remove_after' are valid. Only intermediate points can be
--- removed (not start or finish).
+--- Checks if arguments passed to 'path:remove', 'path:remove_before' and 'path:remove_after' are valid.
+-- Only intermediate points can be removed (not start or finish).
+-- @param self table Path object
+-- @param p table Point to remove
 function checks.check_remove_arguments(self, p)
     if not self.points[p] then
         error("Path: p '"..shallow_dump(p).."' does not belong to the path.")
@@ -83,7 +94,10 @@ function checks.check_remove_arguments(self, p)
     end
 end
 
--- Checks if arguments passed to 'path:remove_at' are valid.
+--- Checks if arguments passed to 'path:remove_at' are valid.
+-- Validates that the index is a number and points to an existing intermediate point.
+-- @param self table Path object
+-- @param nr number Index of point to remove
 function checks.check_remove_at_arguments(self, nr)
     if type(nr) ~= "number" then
         error("Path: nr '"..shallow_dump(nr).."' is not a number.")
@@ -94,7 +108,10 @@ function checks.check_remove_at_arguments(self, nr)
     end
 end
 
--- Checks if arguments passed to 'path:split_at' are valid.
+--- Checks if arguments passed to 'path:split_at' are valid.
+-- Validates that the split point is an intermediate point, not start or finish.
+-- @param self table Path object
+-- @param p table Point at which to split the path
 function checks.check_split_at_arguments(self, p)
     -- use check_same_path to validate
     checks.check_same_path({self.start, p, self.finish})

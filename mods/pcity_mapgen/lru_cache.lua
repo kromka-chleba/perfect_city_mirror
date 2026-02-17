@@ -75,10 +75,14 @@ local DEFAULT_MAX_ENTRIES = 100
 -- LRU CACHE CLASS
 -- ============================================================
 
--- Creates a new LRU cache instance. The cache automatically evicts
--- the oldest entries when it exceeds max_entries. Optional config
--- table accepts max_entries (default 100) and on_evict callback
--- function(key, cache_data) that is called when an entry is evicted.
+--- Creates a new LRU cache instance.
+-- The cache automatically evicts the oldest entries when it exceeds
+-- max_entries.
+-- @param config table Optional configuration table with fields:
+--   - max_entries (number): Maximum cache size (default 100)
+--   - on_evict (function): Callback function(key, cache_data) called when
+--     an entry is evicted
+-- @return table New LRU cache instance
 function lru_cache.new(config)
     config = config or {}
     
@@ -97,7 +101,8 @@ function lru_cache.new(config)
     return cache
 end
 
--- Removes the oldest entry from the cache.
+--- Removes the oldest entry from the cache.
+-- @param cache table The LRU cache instance
 local function evict_oldest(cache)
     if #cache._access_order == 0 then
         return
@@ -118,10 +123,13 @@ local function evict_oldest(cache)
     end
 end
 
--- Updates access order for a key (moves to end if exists, adds if new).
+--- Updates access order for a key.
+-- Moves key to end if it exists, adds if new.
 -- Note: Uses O(n) linear search for removal. This is acceptable for cache
 -- sizes < 1000. For larger caches, consider using a doubly-linked list with
 -- a hash table for O(1) updates.
+-- @param cache table The LRU cache instance
+-- @param key any The cache key to update
 local function update_access_order(cache, key)
     -- Remove key if it already exists in access_order
     for i, k in ipairs(cache._access_order) do
@@ -144,15 +152,19 @@ end
 -- PUBLIC API
 -- ============================================================
 
--- Stores a value in the cache. If the key already exists, it updates
--- the value and marks it as recently used.
+--- Stores a value in the cache.
+-- If the key already exists, updates the value and marks it as recently used.
+-- @param key any The cache key
+-- @param value any The value to store
 function lru_cache:set(key, value)
     self._data[key] = value
     update_access_order(self, key)
 end
 
--- Retrieves a value from the cache. Returns nil if not found.
+--- Retrieves a value from the cache.
 -- Automatically updates the access order (marks as recently used).
+-- @param key any The cache key
+-- @return any The cached value, or nil if not found
 function lru_cache:get(key)
     local value = self._data[key]
     if value ~= nil then
@@ -161,26 +173,30 @@ function lru_cache:get(key)
     return value
 end
 
--- Checks if a key exists in the cache without updating access order.
--- Returns true if key exists, false otherwise.
+--- Checks if a key exists in the cache.
+-- Does not update access order.
+-- @param key any The cache key
+-- @return boolean True if key exists, false otherwise
 function lru_cache:has(key)
     return self._data[key] ~= nil
 end
 
--- Marks a key as accessed (updates LRU order) without retrieving
--- the value. Does nothing if the key doesn't exist.
+--- Marks a key as accessed without retrieving the value.
+-- Updates LRU order. Does nothing if the key doesn't exist.
+-- @param key any The cache key to touch
 function lru_cache:touch(key)
     if self._data[key] ~= nil then
         update_access_order(self, key)
     end
 end
 
--- Returns the current number of entries in the cache.
+--- Returns the current number of entries in the cache.
+-- @return number The number of cached entries
 function lru_cache:size()
     return #self._access_order
 end
 
--- Clears all entries from the cache.
+--- Clears all entries from the cache.
 function lru_cache:clear()
     self._data = {}
     self._access_order = {}

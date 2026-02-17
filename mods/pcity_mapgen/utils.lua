@@ -40,8 +40,9 @@ local node = units.sizes.node
 local mapchunk = units.sizes.mapchunk
 local citychunk = units.sizes.citychunk
 
--- Returns mapchunk coordinates of the mapchunk in mapchunk units.
--- Takes node position as pos.
+--- Returns mapchunk coordinates of the mapchunk in mapchunk units.
+-- @param pos vector Node position
+-- @return vector Mapchunk coordinates in mapchunk units
 function pcmg.mapchunk_coords(pos)
     local origin = vector.subtract(pos, mapchunk_offset)
     origin = vector.divide(origin, mapchunk_size)
@@ -49,8 +50,9 @@ function pcmg.mapchunk_coords(pos)
     return origin
 end
 
--- Returns citychunk coordinates of the citychunk in citychunk units.
--- Takes node position as pos.
+--- Returns citychunk coordinates of the citychunk in citychunk units.
+-- @param pos vector Node position
+-- @return vector Citychunk coordinates in citychunk units
 function pcmg.citychunk_coords(pos)
     local mapchunk_pos = pcmg.mapchunk_coords(pos)
     local origin = vector.divide(mapchunk_pos, citychunk.in_mapchunks)
@@ -58,54 +60,68 @@ function pcmg.citychunk_coords(pos)
     return origin
 end
 
--- Returs origin point of a mapchunk stated in absolute node position.
+--- Returns origin point of a mapchunk stated in absolute node position.
+-- @param pos vector Node position
+-- @return vector Origin point in absolute node position
 function pcmg.mapchunk_origin(pos)
     local coords = pcmg.mapchunk_coords(pos)
     return units.mapchunk_to_node(coords)
 end
 
--- Returns terminus point of a mapchunk stated in absolute node position.
+--- Returns terminus point of a mapchunk stated in absolute node position.
+-- @param pos vector Node position
+-- @return vector Terminus point in absolute node position
 function pcmg.mapchunk_terminus(pos)
     local origin = pcmg.citychunk_origin(pos)
     local t = vector.subtract(mapchunk.in_nodes, 1)
     return origin + t
 end
 
--- Returs origin point of a citychunk stated in absolute node position.
+--- Returns origin point of a citychunk stated in absolute node position.
+-- @param pos vector Node position
+-- @return vector Origin point in absolute node position
 function pcmg.citychunk_origin(pos)
     local coords = pcmg.citychunk_coords(pos)
     return units.citychunk_to_node(coords)
 end
 
--- Returns terminus point of a citychunk stated in absolute node position.
+--- Returns terminus point of a citychunk stated in absolute node position.
+-- @param pos vector Node position
+-- @return vector Terminus point in absolute node position
 function pcmg.citychunk_terminus(pos)
     local origin = pcmg.citychunk_origin(pos)
     local t = vector.subtract(citychunk.in_nodes, 1)
     return origin + t
 end
 
--- Returns mapchunk hash for a given position
+--- Returns mapchunk hash for a given position.
+-- @param pos vector Node position
+-- @return number Hash of mapchunk position
 function pcmg.mapchunk_hash(pos)
     local origin = pcmg.mapchunk_origin(pos)
     return core.hash_node_position(origin)
 end
 
--- Returns citychunk hash for a given position
+--- Returns citychunk hash for a given position.
+-- @param pos vector Node position
+-- @return number Hash of citychunk position
 function pcmg.citychunk_hash(pos)
     local origin = pcmg.citychunk_origin(pos)
     return core.hash_node_position(origin)
 end
 
--- Returns node position relative to citychunk origin point.
--- citychunk pos is in citychunks
+--- Returns node position relative to citychunk origin point.
+-- @param pos vector Citychunk position in citychunks
+-- @return vector Node position relative to citychunk origin
 function pcmg.node_citychunk_relative_pos(pos)
     local pos = units.citychunk_to_node(citychunk_pos)
     local origin = pcmg.citychunk_origin(pos)
     return pos - origin
 end
 
--- Returns citychunk origins of neighboring citychunks
--- pos is position of any node from a citychunk
+--- Returns citychunk origins of neighboring citychunks.
+-- @param pos vector Position of any node from a citychunk
+-- @return table Array of neighboring citychunk origin positions
 function pcmg.citychunk_neighbors(pos)
     local coords = pcmg.citychunk_coords(pos)
     local neighbors = {}
@@ -122,6 +138,8 @@ end
 
 local mapgen_seed = core.get_mapgen_setting("seed")
 
+--- Sets random seed based on citychunk position.
+-- @param citychunk_origin vector Origin point of a citychunk
 function pcmg.set_randomseed(citychunk_origin)
     local coords = pcmg.citychunk_coords(citychunk_origin)
     local seed = bit.tobit(mapgen_seed)
@@ -133,8 +151,10 @@ function pcmg.set_randomseed(citychunk_origin)
     math.randomseed(math.abs(seed))
 end
 
--- splits a vector into a table of smaller vectors
--- nr is the number of new vectors
+--- Splits a vector into a table of smaller vectors.
+-- @param v vector Vector to split
+-- @param nr number Number of new vectors
+-- @return table Array of smaller vectors
 function vector.split(v, nr)
     local new_segments = {}
     local seg_nr = math.floor(nr)
@@ -150,6 +170,10 @@ function vector.split(v, nr)
     end
 end
 
+--- Returns integer and fractional parts of vector components.
+-- @param v vector Input vector
+-- @return vector Integer parts
+-- @return vector Fractional parts
 function vector.modf(v)
     local x_int, x_frac = math.modf(v.x)
     local y_int, y_frac = math.modf(v.y)
@@ -158,18 +182,30 @@ function vector.modf(v)
         vector.new(x_frac, y_frac, z_frac)
 end
 
+--- Returns sign of each vector component.
+-- @param v vector Input vector
+-- @return vector Vector with signs (-1, 0, or 1) of each component
 function vector.sign(v)
     return vector.apply(v, math.sign)
 end
 
+--- Returns ceiling of each vector component.
+-- @param v vector Input vector
+-- @return vector Vector with ceiled components
 function vector.ceil(v)
     return vector.apply(v, math.ceil)
 end
 
+--- Returns absolute value of each vector component.
+-- @param v vector Input vector
+-- @return vector Vector with absolute values of each component
 function vector.abs(v)
     return vector.apply(v, math.abs)
 end
 
+--- Returns accurate length of a table including non-integer keys.
+-- @param t table Input table
+-- @return number Count of all key-value pairs
 function table.better_length(t)
     local count = 0
     for k, v in pairs(t) do
@@ -178,15 +214,24 @@ function table.better_length(t)
     return count
 end
 
+--- Creates a vector by calling a function three times.
+-- @param f function Function to call for each component
+-- @param ... any Additional arguments to pass to the function
+-- @return vector New vector with components from function calls
 function vector.create(f, ...)
     return vector.new(f(...), f(...), f(...))
 end
 
+--- Creates a vector with random components.
+-- @param ... any Arguments to pass to math.random
+-- @return vector New vector with random components
 function vector.random(...)
     return vector.create(math.random, ...)
 end
 
--- Calculates an average from multiple vectors.
+--- Calculates an average from multiple vectors.
+-- @param ... vector Vectors to average
+-- @return vector Average of all input vectors
 function vector.average(...)
     local vectors = {...}
     local avg = vectors[1]
@@ -196,6 +241,9 @@ function vector.average(...)
     return avg
 end
 
+--- Returns a random position within a citychunk.
+-- @param citychunk_origin vector Origin point of the citychunk
+-- @return vector Random node position within the citychunk
 function pcmg.random_pos_in_citychunk(citychunk_origin)
     local max_offset = vector.subtract(citychunk.in_nodes, 1)
     local point = citychunk_origin + vector.new(
@@ -218,10 +266,12 @@ local function print_table(t, ret, name)
     table.insert(ret, "}\n")
 end
 
--- Dumps information about an object as a formatted string. Doesn't
--- follow any references so it is both safe and fast for printing big
--- objects with circular references. Prints names of keys in the
--- object and its metatable and prints types of the values.
+--- Dumps information about an object as a formatted string.
+-- Doesn't follow any references so it is both safe and fast for printing
+-- big objects with circular references. Prints names of keys in the object
+-- and its metatable and prints types of the values.
+-- @param obj any Object to dump
+-- @return string Formatted string representation of the object
 function shallow_dump(obj)
     local ret = {"\n"}
     table.insert(ret, string.format("type: %s \n", type(obj)))
