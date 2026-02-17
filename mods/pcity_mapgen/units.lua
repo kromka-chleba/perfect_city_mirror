@@ -53,7 +53,9 @@ local citychunk_size = vector.new(citychunk_size_x, citychunk_size_y, citychunk_
 -- NODE <-> MAPCHUNK CONVERSIONS
 -- ============================================================
 
--- Translates node position into mapchunk position.
+--- Translate node position to mapchunk position
+-- @param pos vector Node position to translate
+-- @return vector Mapchunk position
 function units.node_to_mapchunk(pos)
     local mapchunk_pos = vector.subtract(vector.floor(pos), mapchunk_offset)
     mapchunk_pos = vector.new(
@@ -64,7 +66,10 @@ function units.node_to_mapchunk(pos)
     return mapchunk_pos
 end
 
--- Translates mapchunk position into node position (returns origin corner).
+--- Translate mapchunk position to node position
+-- Returns the origin corner of the mapchunk.
+-- @param mapchunk_pos vector Mapchunk position to translate
+-- @return vector Node position (origin corner)
 function units.mapchunk_to_node(mapchunk_pos)
     local pos = vector.new(
         mapchunk_pos.x * mapchunk_size.x,
@@ -80,7 +85,9 @@ end
 -- MAPCHUNK <-> CITYCHUNK CONVERSIONS
 -- ============================================================
 
--- Translates mapchunk position to citychunk position.
+--- Translate mapchunk position to citychunk position
+-- @param mapchunk_pos vector Mapchunk position to translate
+-- @return vector Citychunk position
 function units.mapchunk_to_citychunk(mapchunk_pos)
     -- Component-wise division since citychunk_size is now a vector
     local citychunk_pos = vector.new(
@@ -91,7 +98,10 @@ function units.mapchunk_to_citychunk(mapchunk_pos)
     return citychunk_pos
 end
 
--- Translates citychunk position to mapchunk position (returns origin corner).
+--- Translate citychunk position to mapchunk position
+-- Returns the origin corner of the citychunk.
+-- @param citychunk_pos vector Citychunk position to translate
+-- @return vector Mapchunk position (origin corner)
 function units.citychunk_to_mapchunk(citychunk_pos)
     -- Component-wise multiplication since citychunk_size is now a vector
     local mapchunk_pos = vector.new(
@@ -106,7 +116,10 @@ end
 -- CITYCHUNK <-> NODE CONVERSIONS
 -- ============================================================
 
--- Translates citychunk position to node position (returns origin corner).
+--- Translate citychunk position to node position
+-- Returns the origin corner of the citychunk.
+-- @param citychunk_pos vector Citychunk position to translate
+-- @return vector Node position (origin corner)
 function units.citychunk_to_node(citychunk_pos)
     local mapchunk_pos = units.citychunk_to_mapchunk(citychunk_pos)
     return units.mapchunk_to_node(mapchunk_pos)

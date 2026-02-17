@@ -37,6 +37,11 @@ pcmg.canvas_shapes = {}
 local cs = pcmg.canvas_shapes
 cs.cache = {}
 
+--- Generate a hash for a shape to use for caching
+-- Creates a base64-encoded hash from the shape name and arguments.
+-- @param shape_name string The name of the shape
+-- @param args table The arguments used to create the shape
+-- @return string Base64-encoded hash
 function cs.cheap_hash(shape_name, args)
     local data = args
     table.insert(data, 1, shape_name)
@@ -44,6 +49,13 @@ function cs.cheap_hash(shape_name, args)
     return core.encode_base64(serialized)
 end
 
+--- Create a rectangular shape
+-- Returns a cached shape if previously created with the same arguments.
+-- @param x_side number Width of the rectangle
+-- @param z_side number Depth of the rectangle
+-- @param material_id number Material ID for the rectangle
+-- @param centered boolean If true, center the rectangle around the origin
+-- @return table Array of positions representing the rectangle
 function cs.make_rectangle(...)
     local x_side, z_side, material_id, centered = ...
     local args = {...}
@@ -75,9 +87,12 @@ function cs.make_rectangle(...)
     return positions
 end
 
--- Creates a shape for circle with with diameter of
--- 2 * 'radius' + 1. The circle is attached to the
--- cursor by the centermost node.
+--- Create a circular shape centered at origin
+-- Creates a shape for circle with diameter of 2 * radius + 1.
+-- The circle is attached to the cursor by the centermost node.
+-- @param radius number Radius of the circle
+-- @param material_id number Material ID for the circle
+-- @return table Array of cells with pos and material fields
 function cs.make_circle(...)
     local radius, material_id = ...
     local args = {...}
@@ -104,6 +119,9 @@ function cs.make_circle(...)
     return circle
 end
 
+--- Convert shape positions to hash table
+-- @param shape table Array of cells with pos field
+-- @return table Hash table mapping position hashes to cells
 local function hash_shape_positions(shape)
     local hashed = {}
     for _, cell in pairs(shape) do
@@ -113,6 +131,9 @@ local function hash_shape_positions(shape)
     return hashed
 end
 
+--- Convert hash table back to shape array
+-- @param hashed table Hash table mapping position hashes to cells
+-- @return table Array of cells
 local function unhash_shape_positions(hashed)
     local unhashed = {}
     for hash, cell in pairs(hashed) do
@@ -121,6 +142,10 @@ local function unhash_shape_positions(hashed)
     return unhashed
 end
 
+--- Create a line shape from origin along a vector
+-- @param vec vector Direction and length of the line
+-- @param material_id number Material ID for the line
+-- @return table Hash table mapping position hashes to cells
 function cs.make_line(...)
     local vec, material_id = ...
     local args = {...}
@@ -142,6 +167,11 @@ function cs.make_line(...)
     return cells
 end
 
+--- Combine two shapes into one
+-- Overlapping positions from shape2 will override those from shape1.
+-- @param shape1 table First shape array
+-- @param shape2 table Second shape array
+-- @return table Combined shape array
 function cs.combine_shapes(shape1, shape2)
     local hashed_1 = hash_shape_positions(shape1)
     local hashed_2 = hash_shape_positions(shape2)
@@ -158,6 +188,9 @@ canvas_brush.__index = canvas_brush
 
 local shape_cache = {}
 
+--- Create a new canvas brush
+-- @param ... table Variable number of shape arrays
+-- @return table Canvas brush object
 function canvas_brush.new(...)
     local shapes = {...}
     local brush = {}
@@ -169,6 +202,9 @@ function canvas_brush.new(...)
     return setmetatable(brush, canvas_brush)
 end
 
+--- Get the current shape from the brush
+-- If animate is enabled, advances to the next shape.
+-- @return table Current shape array
 function canvas_brush:get_shape()
     local index = self.current
     if self.animate then

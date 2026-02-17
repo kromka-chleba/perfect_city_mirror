@@ -42,6 +42,10 @@ pcmg.pathpaver = {}
 local pathpaver = pcmg.pathpaver
 pathpaver.__index = pathpaver
 
+--- Create a new pathpaver
+-- Stores point and path data for a given citychunk.
+-- @param citychunk_origin vector Origin position of the citychunk
+-- @return table Pathpaver object
 function pathpaver.new(citychunk_origin)
     local p = {}
     p.origin = vector.copy(citychunk_origin)
@@ -52,31 +56,43 @@ function pathpaver.new(citychunk_origin)
     return setmetatable(p, pathpaver)
 end
 
+--- Check if position is inside citychunk with overgeneration area
 -- Checks if position 'pos' is inside the citychunk and its
--- overgeneration area. Returns a boolean.
+-- overgeneration area.
+-- @param pos vector Position to check
+-- @return boolean True if position is in margin area
 function pathpaver:pos_in_margin(pos)
     return vector.in_area(pos, self.margin_min, self.margin_max)
 end
 
+--- Check if position is inside citychunk without overgeneration area
 -- Checks if position 'pos' is inside the citychunk (NOT including its
--- overgeneration area. Returns a boolean.
+-- overgeneration area).
+-- @param pos vector Position to check
+-- @return boolean True if position is in citychunk
 function pathpaver:pos_in_citychunk(pos)
     return vector.in_area(pos, self.origin, self.origin +
                           units.sizes.citychunk.pos_max)
 end
 
+--- Check if an object is a pathpaver
+-- @param p table Object to check
+-- @return boolean True if object is a pathpaver
 function pathpaver.check(p)
     return getmetatable(p) == pathpaver
 end
 
--- Saves the 'pnt' point in the pathpaver.
+--- Save a point in the pathpaver
+-- Saves the point if it's within the margin area.
+-- @param pnt table Point object to save
 function pathpaver:save_point(pnt)
     if self:pos_in_margin(pnt.pos) then
         self.points[pnt] = pnt
     end
 end
 
--- Saves a path and all its points in the pathpaver
+--- Save a path and all its points in the pathpaver
+-- @param pth table Path object to save
 function pathpaver:save_path(pth)
     self.paths[pth] = pth
     local points = pth:all_points()
@@ -85,7 +101,8 @@ function pathpaver:save_path(pth)
     end
 end
 
--- Returns all points that belong to paths saved in this pathpaver
+--- Get all points that belong to paths in this pathpaver
+-- @return table Hash table mapping point objects to themselves
 function pathpaver:path_points()
     local all = {}
     for _, pth in pairs(self.paths) do

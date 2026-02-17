@@ -43,7 +43,9 @@ local border_grid_spacing = grid_spacing
 local border_point_probability = 0.6
 local road_origin_margin = 80
 
--- Set random seed based on mapgen seed and position
+--- Set random seed based on position and salt
+-- @param pos vector Position to use for seed calculation
+-- @param salt number Optional salt value (default: 0)
 local function set_position_seed(pos, salt)
     salt = salt or 0
     local seed = mapgen_seed + 
@@ -54,6 +56,9 @@ local function set_position_seed(pos, salt)
     math.randomseed(seed)
 end
 
+--- Set random seed for a citychunk
+-- @param citychunk_origin vector Origin position of citychunk
+-- @param salt number Optional salt value
 local function set_citychunk_seed(citychunk_origin, salt)
     set_position_seed(citychunk_origin, salt)
 end
@@ -62,7 +67,10 @@ end
 -- ROAD ORIGIN GENERATION
 -- ============================================================
 
--- Get all grid-aligned points along a citychunk border
+--- Get all grid-aligned points along a citychunk border
+-- @param citychunk_origin vector Origin position of citychunk
+-- @param border_edge string Border edge ("x_min", "x_max", "z_min", or "z_max")
+-- @return table Array of grid-aligned positions on the border
 local function get_grid_points_on_border(citychunk_origin, border_edge)
     local min_x = citychunk_origin.x
     local max_x = citychunk_origin.x + citychunk.in_nodes.x - 1
@@ -97,7 +105,12 @@ local function get_grid_points_on_border(citychunk_origin, border_edge)
     return points
 end
 
--- Returns a random grid-aligned road origin point for the given border edge
+--- Get a random grid-aligned road origin point on a border edge
+-- Returns a random grid-aligned road origin point for the given border edge.
+-- @param citychunk_origin vector Origin position of citychunk
+-- @param border_edge string Border edge ("x_min", "x_max", "z_min", or "z_max")
+-- @param salt number Salt value for deterministic randomness
+-- @return vector Grid-aligned position on the border
 local function get_road_origin_on_border(citychunk_origin, border_edge, salt)
     local grid_points = get_grid_points_on_border(citychunk_origin, border_edge)
     
@@ -137,6 +150,9 @@ local function get_road_origin_on_border(citychunk_origin, border_edge, salt)
     return grid_points[index]
 end
 
+--- Get road origins for two edges of a citychunk
+-- @param citychunk_coords vector Citychunk coordinates
+-- @return vector, vector X-edge origin and Z-edge origin positions
 local function halfchunk_ori(citychunk_coords)
     local origin = units.citychunk_to_node(citychunk_coords)
     local x_edge_ori = get_road_origin_on_border(origin, "z_min", 1)
@@ -144,6 +160,10 @@ local function halfchunk_ori(citychunk_coords)
     return x_edge_ori, z_edge_ori
 end
 
+--- Get road origin points for a citychunk
+-- Returns four road origin points for connection with neighbors.
+-- @param citychunk_origin vector Origin position of citychunk
+-- @return table Array of four road origin positions
 function pcmg.citychunk_road_origins(citychunk_origin)
     local citychunk_coords = pcmg.citychunk_coords(citychunk_origin)
     local up_coords = citychunk_coords + vector.new(0, 0, 1)
@@ -154,6 +174,10 @@ function pcmg.citychunk_road_origins(citychunk_origin)
     return {bottom, left, up, right}
 end
 
+--- Connect road origins in random pairs
+-- @param citychunk_origin vector Origin position of citychunk
+-- @param road_origins table Array of road origin positions
+-- @return table Array of point pairs to connect
 local function connect_road_origins(citychunk_origin, road_origins)
     local points = {}
     for _, origin in pairs(road_origins) do
@@ -201,6 +225,9 @@ local origin_shape = pcmg.canvas_shapes.make_circle(1, road_origin_id)
 -- DRAWING UTILITIES
 -- ============================================================
 
+--- Draw road origin points on the canvas
+-- @param megacanv table Megacanvas object
+-- @param points table Array of point positions to draw
 local function draw_points(megacanv, points)
     for _, pt in pairs(points) do
         megacanv:set_all_cursors(pt)
@@ -215,11 +242,15 @@ local road_metastore = pcmg.metastore.new()
 -- ROAD BUILDING
 -- ============================================================
 
+--- Build a simple road path between two points
 -- Builds a simple road path between start and finish points.
 -- Note: Collision detection has been removed as part of simplification.
 -- The path is created using make_slanted(), which creates an L-shaped path
 -- with one horizontal segment and one vertical segment when start/finish
 -- are not axis-aligned, or a single straight segment when they are aligned.
+-- @param start vector Start position
+-- @param finish vector End position
+-- @return table Path object
 local function build_road(start, finish)
     local start_point = pcmg.point.new(start)
     local finish_point = pcmg.point.new(finish)
@@ -233,6 +264,9 @@ end
 -- MAIN GENERATION
 -- ============================================================
 
+--- Generate roads for a citychunk
+-- @param megacanv table Megacanvas object
+-- @param pathpaver_cache table Cache for pathpavers
 local function road_generator(megacanv, pathpaver_cache)
     megacanv:set_metastore(road_metastore)
     
@@ -258,6 +292,9 @@ local function road_generator(megacanv, pathpaver_cache)
     end
 end
 
+--- Generate roads for a citychunk using megacanvas
+-- @param megacanv table Megacanvas object
+-- @param pathpaver_cache table Cache for pathpavers
 function pcmg.generate_roads(megacanv, pathpaver_cache)
     local t1 = core.get_us_time()
     megacanv:generate(road_generator, 1, pathpaver_cache)
