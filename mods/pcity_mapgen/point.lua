@@ -38,11 +38,12 @@ local point_id_counter = 0
 -- Counter for generating unique path IDs.
 local path_id_counter = 0
 
--- Creates a new instance of the Point class. Points store absolute
--- world position, the previous and the next point in a sequence and
--- the path (see the Path class below) they belong to. Points can be
--- linked to create linked lists which should be helpful for
--- road/street generation algorithms.
+--- Creates a new instance of the Point class.
+-- Points store absolute world position, the previous and next point
+-- in a sequence, and the path they belong to. Points can be linked
+-- to create linked lists for road/street generation algorithms.
+-- @param pos vector World position for the point
+-- @return table The newly created point object
 function point.new(pos)
     checks.check_point_new_arguments(pos)
     local p = {}
@@ -61,7 +62,9 @@ function point.new(pos)
     return setmetatable(p, point)
 end
 
--- Checks if the object is a point.
+--- Checks if the object is a point.
+-- @param p any Object to check
+-- @return boolean True if p is a point, false otherwise
 function point.check(p)
     return getmetatable(p) == point
 end
@@ -70,15 +73,18 @@ end
 -- (point.check is used elsewhere; checks.check_point resolves runtime)
 -- (no local duplicate here)
 
--- Creates a copy of point 'p' with the same position. The copy does
--- not inherit path, previous/next links, attachments, or branches -
--- it is a fresh, unlinked point. Use this when you need a new point
--- at the same location (e.g., when splitting a path).
+--- Creates a copy of the point with the same position.
+-- The copy does not inherit path, previous/next links, attachments,
+-- or branches - it is a fresh, unlinked point. Use this when you
+-- need a new point at the same location (e.g., when splitting a path).
+-- @return table New point with copied position
 function point:copy()
     return point.new(self.pos)
 end
 
--- Check if points belong to the same path. '...' is any number of points.
+--- Check if points belong to the same path.
+-- @param ... table Any number of point objects
+-- @return boolean True if all points belong to the same path
 function point.same_path(...)
     local points = {...}
     local first_path = points[1].path
@@ -90,8 +96,9 @@ function point.same_path(...)
     return true
 end
 
--- Links points in order, accepts any number of points. '...' is any number of points.
+--- Links points in order.
 -- Only points belonging to the same path can be linked.
+-- @param ... table Any number of point objects to link in sequence
 function point.link(...)
     local points = {...}
     checks.check_same_path(points)
@@ -101,7 +108,7 @@ function point.link(...)
     end
 end
 
--- Unlinks the current point from the previous point.
+--- Unlinks the current point from the previous point.
 function point:unlink_from_previous()
     if self.previous and self.previous.next == self then
         self.previous.next = nil
@@ -109,7 +116,7 @@ function point:unlink_from_previous()
     self.previous = nil
 end
 
--- Unlinks the current point from the next point.
+--- Unlinks the current point from the next point.
 function point:unlink_from_next()
     if self.next and self.next.previous == self then
         self.next.previous = nil
@@ -117,16 +124,17 @@ function point:unlink_from_next()
     self.next = nil
 end
 
--- Unlinks the point from both the previous and the next point.
+--- Unlinks the point from both the previous and the next point.
 function point:unlink()
     self:unlink_from_previous()
     self:unlink_from_next()
 end
 
--- Attaches this point to any number of other points passed as
--- arguments. '...' is any number of points. Attached points share
--- the same position as this point. When the position of this point
--- changes, the positions of all attached points change as well.
+--- Attaches this point to any number of other points.
+-- Attached points share the same position as this point. When the
+-- position of this point changes, the positions of all attached
+-- points change as well.
+-- @param ... table Any number of point objects to attach
 function point:attach(...)
     local points = {...}
     for _, p in ipairs(points) do
@@ -137,8 +145,8 @@ function point:attach(...)
     end
 end
 
--- Detaches this point from any number of other points passed as
--- arguments. '...' is any number of points.
+--- Detaches this point from any number of other points.
+-- @param ... table Any number of point objects to detach from
 function point:detach(...)
     local points = {...}
     for _, p in ipairs(points) do
@@ -148,7 +156,7 @@ function point:detach(...)
     end
 end
 
--- Detaches this point from all points it is attached to.
+--- Detaches this point from all points it is attached to.
 function point:detach_all()
     for _, p in pairs(self.attached) do
         p.attached[self] = nil
@@ -156,7 +164,8 @@ function point:detach_all()
     self.attached = setmetatable({}, {__mode = "kv"})
 end
 
--- Sets position of the given point and all attached points to 'pos'.
+--- Sets position of the given point and all attached points.
+-- @param pos vector New position for the point and all attached points
 function point:set_position(pos)
     if not vector.check(pos) then
         error("Path: pos '"..shallow_dump(pos).."' is not a vector.")
@@ -171,8 +180,12 @@ end
 -- COMPARATORS
 -- ============================================================
 
--- Comparator for vectors. Compares by x, y, z in order.
--- Returns false for equal vectors (strict weak ordering).
+--- Comparator for vectors.
+-- Compares by x, y, z in order. Returns false for equal vectors
+-- (strict weak ordering).
+-- @param v1 vector First vector
+-- @param v2 vector Second vector
+-- @return boolean True if v1 < v2
 function vector.comparator(v1, v2)
     if v1.x ~= v2.x then return v1.x < v2.x end
     if v1.y ~= v2.y then return v1.y < v2.y end
@@ -180,12 +193,19 @@ function vector.comparator(v1, v2)
     return false
 end
 
+--- Checks if two points are equal.
+-- @param p1 table First point
+-- @param p2 table Second point
+-- @return boolean True if points have same position and ID
 function point.equals(p1, p2)
     return vector.equals(p1.pos, p2.pos) and p1.id == p2.id
 end
 
--- Comparator for points. Compares by position, then by ID.
--- Deterministic across Lua environments.
+--- Comparator for points.
+-- Compares by position, then by ID. Deterministic across Lua environments.
+-- @param p1 table First point
+-- @param p2 table Second point
+-- @return boolean True if p1 < p2
 function point.comparator(p1, p2)
     if not vector.equals(p1.pos, p2.pos) then
         return vector.comparator(p1.pos, p2.pos)
@@ -197,7 +217,9 @@ end
 -- SORTING HELPERS
 -- ============================================================
 
--- Returns a sorted copy of a table of points.
+--- Returns a sorted copy of a table of points.
+-- @param points table Table of point objects
+-- @return table Sorted array of points
 function point.sort(points)
     local sorted = {}
     for _, p in pairs(points) do
@@ -207,12 +229,14 @@ function point.sort(points)
     return sorted
 end
 
--- Returns attached points in deterministic order.
+--- Returns attached points in deterministic order.
+-- @return table Sorted array of attached points
 function point:attached_sorted()
     return point.sort(self.attached)
 end
 
--- Returns branches in deterministic order.
+--- Returns branches in deterministic order.
+-- @return table Sorted array of branch paths
 function point:branches_sorted()
     return path.sort(self.branches)
 end
@@ -221,13 +245,13 @@ end
 -- ITERATORS
 -- ============================================================
 
--- Returns an iterator function for a point. The iterator function
--- lets you traverse the linked list of points and returns two values:
--- 'i' - the ordinal number of the next point starting from the
--- current point (so the number of points between the point the
--- iterator was created for) and 'current_point' - the next point in
--- the sequence (linked list/path). Use just like 'ipairs'.
--- Example usage: for i, p in my_point:iterator() do ... end
+--- Returns an iterator function for a point.
+-- The iterator function lets you traverse the linked list of points
+-- and returns two values: 'i' (the ordinal number of the next point
+-- starting from the current point) and 'current_point' (the next
+-- point in the sequence). Use just like 'ipairs'.
+-- @return function Iterator function
+-- @usage for i, p in my_point:iterator() do ... end
 function point:iterator()
     local i = 0
     local current_point = self
@@ -240,10 +264,11 @@ function point:iterator()
     end
 end
 
--- Works just like 'point:iterator()', but instead it iterates in
--- reverse order - lets you traverse the path from a given point to
--- the start point.
--- Example: for i, p in my_point:reverse_iterator() do ... end
+--- Iterator that traverses points in reverse order.
+-- Works just like point:iterator(), but iterates from the current
+-- point toward the start of the path.
+-- @return function Iterator function
+-- @usage for i, p in my_point:reverse_iterator() do ... end
 function point:reverse_iterator()
     local i = 0
     local current_point = self
@@ -260,8 +285,10 @@ end
 -- PATH ASSIGNMENT AND BRANCHING
 -- ============================================================
 
--- Sets 'pth' as the path for the point. Removes the point from the
--- old path's points table and adds it to the new path's points table.
+--- Sets the path for this point.
+-- Removes the point from the old path's points table and adds it
+-- to the new path's points table.
+-- @param pth table The path object to assign
 function point:set_path(pth)
     if not path.check(pth) then
         error("Path: pth '"..shallow_dump(pth).."' is not a path.")
@@ -274,12 +301,13 @@ function point:set_path(pth)
     pth.points[self] = self
 end
 
--- Creates a new branch starting from this point and ending at
--- 'finish' point. The branch is a new path instance. The start point
--- of the branch is attached to this point. The branch is stored
--- in this point's branches table. The point is marked as a
--- branching point in the path's branching_points table. Returns
--- the newly created branch (path).
+--- Creates a new branch starting from this point.
+-- The branch is a new path instance. The start point of the branch
+-- is attached to this point. The branch is stored in this point's
+-- branches table. The point is marked as a branching point in the
+-- path's branching_points table.
+-- @param finish table The end point of the branch
+-- @return table The newly created branch (path object)
 function point:branch(finish)
     self.path.branching_points[self] = self
     local pth = path.new(self:copy(), finish)
@@ -288,12 +316,15 @@ function point:branch(finish)
     return pth
 end
 
--- Checks if the point has any branches.
+--- Checks if the point has any branches.
+-- @return boolean True if the point has branches
 function point:has_branches()
     return next(self.branches) ~= nil
 end
 
--- Removes the branch 'pth' from the point.
+--- Removes a branch from the point.
+-- If there are no more branches, unmarks this point as a branching point.
+-- @param pth table The branch path to remove
 function point:unbranch(pth)
     self.branches[pth] = nil
     -- if there are no more branches, unmark this point
@@ -302,7 +333,7 @@ function point:unbranch(pth)
     end
 end
 
--- Removes all branches from the point.
+--- Removes all branches from the point.
 function point:unbranch_all()
     for _, branch in pairs(self.branches) do
         self:unbranch(branch)
@@ -310,10 +341,11 @@ function point:unbranch_all()
     self.branches = setmetatable({}, {__mode = "kv"})
 end
 
--- Clears the point by unlinking it from previous and next points,
--- detaching all attached points and unbranching all branches. Also
--- removes the point from its path's points table.
--- *Caution*: after calling this method, the point could be collected by
+--- Clears the point.
+-- Unlinks it from previous and next points, detaches all attached
+-- points, and unbranches all branches. Also removes the point from
+-- its path's points table.
+-- Note: After calling this method, the point could be collected by
 -- the garbage collector if there are no other references to it.
 -- You're more likely to want to use 'path:remove' instead.
 function point:clear()
