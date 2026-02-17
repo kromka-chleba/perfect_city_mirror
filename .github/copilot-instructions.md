@@ -28,6 +28,12 @@ Perfect City is a game built for Luanti (formerly Minetest) 5.12+ using Lua. The
 
 ## Coding Standards
 
+### Documentation Format
+- Use **LuaDoc/LDoc format** for function documentation
+- Triple-dash `---` for brief description, double-dash `--` for details
+- Use `@param name type description` for parameters
+- Use `@return type description` for return values
+
 ### Naming Conventions
 - Use `snake_case` for variables and functions
 - Use `UPPER_SNAKE_CASE` for constants

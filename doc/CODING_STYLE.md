@@ -348,22 +348,31 @@ end
 
 ### Function Documentation
 
-Document functions with clear, concise comments describing:
-- What the function does
-- Parameters and their types
-- Return values
-- Any important side effects or caveats
+Perfect City uses **LuaDoc/LDoc format** for documenting functions. This standard format enables automatic documentation generation and provides clear, structured comments.
+
+**Basic LuaDoc Format:**
+- Use triple-dash `---` for the brief description (first line)
+- Use double-dash `--` for extended description and tags
+- Use `@param` for parameters (format: `@param name type description`)
+- Use `@return` for return values (format: `@return type description`)
 
 ```lua
--- Creates a new instance of the Point class. Points store absolute
--- world position, the previous and the next point in a sequence and
--- the path (see the Path class below) they belong to. Points can be
--- linked to create linked lists which should be helpful for
--- road/street generation algorithms.
+--- Creates a new instance of the Point class.
+-- Points store absolute world position, the previous and next point
+-- in a sequence, and the path they belong to. Points can be linked
+-- to create linked lists for road/street generation algorithms.
+-- @param pos vector The position in world coordinates
+-- @return table The newly created point object
 function point.new(pos)
     -- ...
 end
 ```
+
+Document all public functions with:
+- What the function does (brief on first line, details after)
+- Parameters and their types (`@param`)
+- Return values and their types (`@return`)
+- Any important side effects or caveats
 
 ### Section Headers
 
