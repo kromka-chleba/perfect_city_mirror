@@ -36,7 +36,9 @@ local concrete_id = core.get_content_id("pcity_nodes:concrete")
 local bricks_id = core.get_content_id("pcity_nodes:bricks_red")
 local yellow_id = core.get_content_id("pcity_nodes:roughcast_yellow")
 
--- Draws a grid to visualize mapchunks, citychunks and overgeneration
+--- Draw a helper grid to visualize mapchunks and citychunks
+-- Draws a grid to visualize mapchunks, citychunks and overgeneration.
+-- @param mapgen_args table Contains {vm, pos_min, pos_max, blockseed}
 function pcmg.debug.helper_grid(mapgen_args)
     local vm, pos_min, pos_max, blockseed = unpack(mapgen_args)
 

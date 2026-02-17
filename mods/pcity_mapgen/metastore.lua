@@ -42,6 +42,10 @@ function metastore:__newindex(key, value)
     core.log("error", "Metastore: Don't set values directly, use 'metastore:set', etc. instead.")
 end
 
+--- Create a new metastore
+-- Metastore allows storing meta data for objects without modifying them directly.
+-- Uses weak keys for automatic garbage collection.
+-- @return table New metastore object
 function metastore.new()
     local m = setmetatable({}, metastore)
     private[m] = setmetatable({}, {__mode = "k"})
@@ -49,10 +53,16 @@ function metastore.new()
     return m
 end
 
+--- Check if an object is a metastore
+-- @param m table Object to check
+-- @return boolean True if object is a metastore
 function metastore.check(m)
     return getmetatable(m) == metastore
 end
 
+--- Initialize storage for an object
+-- Creates storage tables if they don't exist.
+-- @param object table The object to initialize storage for
 function metastore:init_store(object)
     if type(object) ~= "table" then
         error("Metastore: Trying to initialize storage, but 'object': "..
@@ -68,6 +78,10 @@ function metastore:init_store(object)
     end
 end
 
+--- Set a mutable value for an object
+-- @param object table The object to store metadata for
+-- @param key any The key to store the value under
+-- @param value any The value to store
 function metastore:set(object, key, value)
     self:init_store(object)
     local store = private[self]
@@ -75,6 +89,11 @@ function metastore:set(object, key, value)
     store[object][key] = value
 end
 
+--- Set a constant (immutable) value for an object
+-- Stores value in const storage and removes from mutable storage.
+-- @param object table The object to store metadata for
+-- @param key any The key to store the value under
+-- @param value any The constant value to store
 function metastore:constant(object, key, value)
     self:init_store(object)
     local store = private_const[self]
@@ -83,6 +102,11 @@ function metastore:constant(object, key, value)
     store_const[object][key] = value
 end
 
+--- Get a value for an object
+-- Checks constant storage first, then mutable storage.
+-- @param object table The object to get metadata for
+-- @param key any The key to retrieve
+-- @return any The stored value or nil if not found
 function metastore:get(object, key)
     self:init_store(object)
     local store = private[self]

@@ -68,6 +68,10 @@ local road_center_id = materials_by_name["road_center"]
 local road_origin_id = materials_by_name["road_origin"]
 local road_midpoint_id = materials_by_name["road_midpoint"]
 
+--- Write roads to the voxel manipulator
+-- Translates canvas material IDs to actual node IDs and writes them to the map.
+-- @param mapgen_args table Contains {vm, pos_min, pos_max, blockseed}
+-- @param canv table Canvas object with road data
 function pcmg.write_roads(mapgen_args, canv)
     local t1 = core.get_us_time()
     local vm, pos_min, pos_max, blockseed = unpack(mapgen_args)

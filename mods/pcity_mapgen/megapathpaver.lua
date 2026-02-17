@@ -33,6 +33,10 @@ megapathpaver.cache = {}
 -- Can be overridden by setting pcity_pathpaver_cache_size in minetest.conf
 local DEFAULT_MAX_CACHE_ENTRIES = 100
 
+--- Create a new megapathpaver cache
+-- Initializes an LRU cache for pathpavers if not already present.
+-- @param c table Optional existing cache to initialize
+-- @return table Initialized cache with pathpavers and lru tables
 function megapathpaver.cache.new(c)
     local cache = c or {}
     if not cache.pathpavers then
@@ -58,13 +62,19 @@ function megapathpaver.cache.new(c)
     return cache
 end
 
--- Public function to update cache access (exported for external use)
+--- Update cache access for a given hash
+-- Public function to update cache access (exported for external use).
+-- @param cache table The cache object
+-- @param hash string Hash key to mark as recently used
 function megapathpaver.cache.update_access(cache, hash)
     if cache.lru then
         cache.lru:touch(hash)
     end
 end
 
+--- Create a method wrapper that calls a pathpaver method on all neighbors
+-- @param method function The pathpaver method to wrap
+-- @return function Wrapper function that applies method to central and all neighbor pathpavers
 local function make_method(method)
     return function (self, ...)
         local products = {}
@@ -89,6 +99,10 @@ megapathpaver.__index = function(object, key)
     end
 end
 
+--- Get or create pathpavers for all neighboring citychunks
+-- @param citychunk_origin vector Origin position of the citychunk
+-- @param cache table Cache object containing pathpavers and LRU cache
+-- @return table Array of pathpaver objects for neighboring citychunks
 local function neighboring_pathpavers(citychunk_origin, cache)
     local neighbors = pcmg.citychunk_neighbors(citychunk_origin)
     local pathpavers = {}
@@ -102,7 +116,11 @@ local function neighboring_pathpavers(citychunk_origin, cache)
     return pathpavers
 end
 
--- Rename to path store?
+--- Create a new megapathpaver
+-- Manages pathpavers for a citychunk and its neighbors.
+-- @param citychunk_origin vector Origin position of the citychunk
+-- @param cache table Cache object for storing pathpavers
+-- @return table Megapathpaver object
 function megapathpaver.new(citychunk_origin, cache)
     local mpp = {}
     mpp.origin = vector.copy(citychunk_origin)
@@ -115,6 +133,8 @@ function megapathpaver.new(citychunk_origin, cache)
     return setmetatable(mpp, megapathpaver)
 end
 
+--- Save a path to the central pathpaver and all its points
+-- @param pth table Path object to save
 function megapathpaver:save_path(pth)
     self.central.paths[pth] = pth
     for _, pnt in pairs(pth:all_points()) do
@@ -122,6 +142,9 @@ function megapathpaver:save_path(pth)
     end
 end
 
+--- Check if an object is a megapathpaver
+-- @param p table Object to check
+-- @return boolean True if object is a megapathpaver
 function megapathpaver.check(p)
     return getmetatable(p) == megapathpaver
 end

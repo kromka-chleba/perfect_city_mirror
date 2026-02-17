@@ -73,10 +73,15 @@ core.log("error", mapgen_seed)
 local road_canvas_cache = pcmg.megacanvas.cache.new()
 local pathpaver_cache = pcmg.megapathpaver.cache.new()
 
--- Main mapgen function called by Minetest for each generated mapchunk
+--- Main mapgen function for Perfect City
+-- Main mapgen function called by Minetest for each generated mapchunk.
 -- vm: VoxelManip object for reading/writing nodes
 -- pos_min, pos_max: Bounds of the mapchunk being generated
 -- blockseed: Seed for this specific block (not currently used)
+-- @param vm table VoxelManip object
+-- @param pos_min vector Minimum position of mapchunk
+-- @param pos_max vector Maximum position of mapchunk
+-- @param blockseed number Block seed for deterministic generation
 local function mapgen(vm, pos_min, pos_max, blockseed)
     -- Track generation time for performance monitoring
     local t1 = core.get_us_time()
