@@ -27,7 +27,7 @@ local units = dofile(mod_path.."/units.lua")
 -- Get mapchunk size using the new API
 local chunksize_blocks = core.get_mapgen_chunksize()
 -- Convert blocks to nodes
-local mapchunk_size = vector.multiply(chunksize_blocks, core.MAP_BLOCKSIZE)
+local mapchunk_size = chunksize_blocks * core.MAP_BLOCKSIZE
 -- Calculate offset
 local mapchunk_offset = vector.new(
     -core.MAP_BLOCKSIZE * math.floor(chunksize_blocks.x / 2),
@@ -44,8 +44,8 @@ local citychunk = units.sizes.citychunk
 -- @param pos vector Node position
 -- @return vector Mapchunk coordinates in mapchunk units
 function pcmg.mapchunk_coords(pos)
-    local origin = vector.subtract(pos, mapchunk_offset)
-    origin = vector.divide(origin, mapchunk_size)
+    local origin = pos - mapchunk_offset
+    origin = origin / mapchunk_size
     origin = vector.floor(origin)
     return origin
 end
@@ -55,7 +55,7 @@ end
 -- @return vector Citychunk coordinates in citychunk units
 function pcmg.citychunk_coords(pos)
     local mapchunk_pos = pcmg.mapchunk_coords(pos)
-    local origin = vector.divide(mapchunk_pos, citychunk.in_mapchunks)
+    local origin = mapchunk_pos / citychunk.in_mapchunks
     origin = vector.floor(origin)
     return origin
 end
@@ -73,7 +73,7 @@ end
 -- @return vector Terminus point in absolute node position
 function pcmg.mapchunk_terminus(pos)
     local origin = pcmg.citychunk_origin(pos)
-    local t = vector.subtract(mapchunk.in_nodes, 1)
+    local t = mapchunk.in_nodes - 1
     return origin + t
 end
 
@@ -90,7 +90,7 @@ end
 -- @return vector Terminus point in absolute node position
 function pcmg.citychunk_terminus(pos)
     local origin = pcmg.citychunk_origin(pos)
-    local t = vector.subtract(citychunk.in_nodes, 1)
+    local t = citychunk.in_nodes - 1
     return origin + t
 end
 
@@ -159,7 +159,7 @@ function vector.split(v, nr)
     local new_segments = {}
     local seg_nr = math.floor(nr)
     if seg_nr >= 1 then
-        local new_v = vector.divide(v, seg_nr)
+        local new_v = v / seg_nr
         for i = 1, seg_nr do
             table.insert(new_segments, new_v)
         end
@@ -245,7 +245,7 @@ end
 -- @param citychunk_origin vector Origin point of the citychunk
 -- @return vector Random node position within the citychunk
 function pcmg.random_pos_in_citychunk(citychunk_origin)
-    local max_offset = vector.subtract(citychunk.in_nodes, 1)
+    local max_offset = citychunk.in_nodes - 1
     local point = citychunk_origin + vector.new(
         math.random(0, max_offset.x),
         math.random(0, max_offset.y),
