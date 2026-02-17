@@ -21,6 +21,11 @@ local mod_name = core.get_current_modname()
 
 local pcn = pcity_nodes
 
+--- Gets hard sound table for nodes.
+-- Returns a table with footstep sound configuration. If the input table
+-- doesn't have a footstep sound, adds a default hard footstep sound.
+-- @param table table Optional sound configuration table
+-- @return table Sound configuration with footstep sound
 function pcn.get_hard_sound(table)
   table = type(table) == "table" and table or {}
   if not table.footstep then
