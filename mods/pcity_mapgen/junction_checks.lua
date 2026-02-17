@@ -54,12 +54,15 @@ local function is_perpendicular(v1, v2)
     return vector.dot(v1, v2) == 0
 end
 
--- Validates arguments for junction.new
-function checks.check_junction_new_arguments(pos, direction, size, jtype)
+-- Validates position argument
+local function check_pos_argument(pos)
     if not vector.check(pos) then
         error("Junction: pos '"..shallow_dump(pos).."' is not a vector.")
     end
-    
+end
+
+-- Validates direction argument
+local function check_direction_argument(direction)
     if not vector.check(direction) then
         error("Junction: direction '"..shallow_dump(direction).."' is not a vector.")
     end
@@ -70,7 +73,10 @@ function checks.check_junction_new_arguments(pos, direction, size, jtype)
               "Direction must be a unit vector along one axis: "..
               "(±1,0,0), (0,±1,0), or (0,0,±1).")
     end
-    
+end
+
+-- Validates size argument
+local function check_size_argument(size, direction)
     if not vector.check(size) then
         error("Junction: size '"..shallow_dump(size).."' is not a vector.")
     end
@@ -80,7 +86,10 @@ function checks.check_junction_new_arguments(pos, direction, size, jtype)
               "' is not perpendicular to direction vector '"..
               shallow_dump(direction).."'.")
     end
-    
+end
+
+-- Validates type argument
+local function check_type_argument(jtype)
     if type(jtype) ~= "string" then
         error("Junction: type '"..tostring(jtype).."' is not a string.")
     end
@@ -88,6 +97,14 @@ function checks.check_junction_new_arguments(pos, direction, size, jtype)
     if jtype == "" then
         error("Junction: type cannot be an empty string.")
     end
+end
+
+-- Validates arguments for junction.new
+function checks.check_junction_new_arguments(pos, direction, size, jtype)
+    check_pos_argument(pos)
+    check_direction_argument(direction)
+    check_size_argument(size, direction)
+    check_type_argument(jtype)
 end
 
 -- Checks if the object is a junction
