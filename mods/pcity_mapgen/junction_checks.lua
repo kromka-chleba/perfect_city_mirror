@@ -27,8 +27,10 @@ local pcmg = pcity_mapgen
 pcmg.junction_checks = pcmg.junction_checks or {}
 local checks = pcmg.junction_checks
 
--- Checks if a vector has only one non-zero component with value 1 or -1
+--- Checks if a vector has only one non-zero component with value 1 or -1.
 -- Valid direction vectors: (1,0,0), (-1,0,0), (0,1,0), (0,-1,0), (0,0,1), (0,0,-1)
+-- @param v vector Vector to validate
+-- @return boolean True if valid direction vector, false otherwise
 local function is_valid_direction_vector(v)
     if not vector.check(v) then
         return false
@@ -49,19 +51,24 @@ local function is_valid_direction_vector(v)
     return non_zero_count == 1
 end
 
--- Checks if a vector is perpendicular to another vector
+--- Checks if a vector is perpendicular to another vector.
+-- @param v1 vector First vector
+-- @param v2 vector Second vector
+-- @return boolean True if vectors are perpendicular (dot product is zero)
 local function is_perpendicular(v1, v2)
     return vector.dot(v1, v2) == 0
 end
 
--- Validates position argument
+--- Validates position argument.
+-- @param pos vector Position to validate
 local function check_pos_argument(pos)
     if not vector.check(pos) then
         error("Junction: pos '"..shallow_dump(pos).."' is not a vector.")
     end
 end
 
--- Validates direction argument
+--- Validates direction argument.
+-- @param direction vector Direction to validate
 local function check_direction_argument(direction)
     if not vector.check(direction) then
         error("Junction: direction '"..shallow_dump(direction).."' is not a vector.")
@@ -75,7 +82,9 @@ local function check_direction_argument(direction)
     end
 end
 
--- Validates size argument
+--- Validates size argument.
+-- @param size vector Size to validate
+-- @param direction vector Direction that size must be perpendicular to
 local function check_size_argument(size, direction)
     if not vector.check(size) then
         error("Junction: size '"..shallow_dump(size).."' is not a vector.")
@@ -88,7 +97,8 @@ local function check_size_argument(size, direction)
     end
 end
 
--- Validates type argument
+--- Validates type argument.
+-- @param jtype string Type to validate
 local function check_type_argument(jtype)
     if type(jtype) ~= "string" then
         error("Junction: type '"..tostring(jtype).."' is not a string.")
@@ -99,7 +109,11 @@ local function check_type_argument(jtype)
     end
 end
 
--- Validates arguments for junction.new
+--- Validates arguments for junction.new.
+-- @param pos vector Position in nodes
+-- @param direction vector Direction vector
+-- @param size vector Size vector
+-- @param jtype string Junction type
 function checks.check_junction_new_arguments(pos, direction, size, jtype)
     check_pos_argument(pos)
     check_direction_argument(direction)
@@ -107,7 +121,8 @@ function checks.check_junction_new_arguments(pos, direction, size, jtype)
     check_type_argument(jtype)
 end
 
--- Checks if the object is a junction
+--- Checks if the object is a junction.
+-- @param j any Object to check
 function checks.check_junction(j)
     local junction = pcmg.junction
     if not junction then

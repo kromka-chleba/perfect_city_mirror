@@ -46,15 +46,13 @@ junction.__index = junction
 
 local checks = pcmg.junction_checks or dofile(mod_path.."/junction_checks.lua")
 
--- Creates a new instance of the Junction class. A junction represents
--- a rectangular connection surface on a building module.
--- 
--- @param pos: relative position in nodes (vector)
--- @param direction: normal vector pointing outwards, must be a unit vector
---                   along one axis: (±1,0,0), (0,±1,0), or (0,0,±1)
--- @param size: vector perpendicular to direction, defines surface dimensions
--- @param jtype: string identifier for junction type (e.g., "staircase", "corridor")
--- @return: new junction object
+--- Creates a new instance of the Junction class.
+-- A junction represents a rectangular connection surface on a building module.
+-- @param pos vector Relative position in nodes
+-- @param direction vector Normal vector pointing outwards, must be a unit vector along one axis: (±1,0,0), (0,±1,0), or (0,0,±1)
+-- @param size vector Vector perpendicular to direction, defines surface dimensions
+-- @param jtype string Type identifier for junction (e.g., "staircase", "corridor")
+-- @return table New junction object
 function junction.new(pos, direction, size, jtype)
     checks.check_junction_new_arguments(pos, direction, size, jtype)
     local j = {}
@@ -65,26 +63,26 @@ function junction.new(pos, direction, size, jtype)
     return setmetatable(j, junction)
 end
 
--- Checks if the object is a junction.
--- @param j: object to check
--- @return: true if j is a junction, false otherwise
+--- Checks if the object is a junction.
+-- @param j any Object to check
+-- @return boolean True if j is a junction, false otherwise
 function junction.check(j)
     return getmetatable(j) == junction
 end
 
--- Returns the second corner position of the junction rectangle.
+--- Returns the second corner position of the junction rectangle.
 -- The junction defines a rectangular surface from pos to pos+size.
--- @return: vector representing the opposite corner of the junction
+-- @return vector Vector representing the opposite corner of the junction
 function junction:get_opposite_corner()
     return vector.add(self.pos, self.size)
 end
 
--- Checks if two junctions can be connected.
+--- Checks if two junctions can be connected.
 -- Junctions can be connected if:
 -- 1. Their direction vectors sum to zero (opposite facing)
 -- 2. They have the same type
--- @param other: another junction object
--- @return: true if junctions can connect, false otherwise
+-- @param other table Another junction object
+-- @return boolean True if junctions can connect, false otherwise
 function junction:can_connect(other)
     checks.check_junction(other)
     
@@ -102,17 +100,17 @@ function junction:can_connect(other)
     return true
 end
 
--- Creates a copy of the junction with the same properties.
--- @return: new junction object with copied properties
+--- Creates a copy of the junction with the same properties.
+-- @return table New junction object with copied properties
 function junction:copy()
     return junction.new(self.pos, self.direction, self.size, self.type)
 end
 
--- Checks if two junctions are equal.
+--- Checks if two junctions are equal.
 -- Junctions are equal if they have the same pos, direction, size, and type.
--- @param j1: first junction
--- @param j2: second junction
--- @return: true if junctions are equal, false otherwise
+-- @param j1 table First junction
+-- @param j2 table Second junction
+-- @return boolean True if junctions are equal, false otherwise
 function junction.equals(j1, j2)
     return vector.equals(j1.pos, j2.pos) and
            vector.equals(j1.direction, j2.direction) and
