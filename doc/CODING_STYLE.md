@@ -455,6 +455,30 @@ local vector = vector
 local pcmg = pcity_mapgen
 ```
 
+### Vector Operations
+
+**Always prefer operators over verbose methods** for Luanti vectors. This makes the code more concise and readable.
+
+**Good:**
+```lua
+local result = v1 + v2           -- Addition
+local diff = v1 - v2             -- Subtraction
+local scaled = v * 2             -- Multiplication by scalar
+local scaled_inv = v / 2         -- Division by scalar
+local negated = -v               -- Negation
+local equal = v1 == v2           -- Equality check
+```
+
+**Bad:**
+```lua
+local result = vector.add(v1, v2)        -- Too verbose
+local diff = vector.subtract(v1, v2)     -- Too verbose
+local scaled = vector.multiply(v, 2)     -- Too verbose
+local scaled_inv = vector.divide(v, 2)   -- Too verbose
+```
+
+**Note:** Operators work when all involved vectors have metatables. Luanti vectors created with `vector.new()`, `vector.zero()`, or returned from the API have metatables by default. Use operators (`+`, `-`, `*`, `/`) for arithmetic operations with vectors and scalars. For other vector operations like `vector.length()`, `vector.dot()`, `vector.normalize()`, continue using the function form as they don't have operator equivalents.
+
 ### Control Flow
 
 - Use early returns to reduce nesting
