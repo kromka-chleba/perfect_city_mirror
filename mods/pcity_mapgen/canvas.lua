@@ -76,9 +76,10 @@ local margin_vector = canvas_margin  -- Already a vector, no need to multiply
 local margin_min = citychunk.pos_min - margin_vector
 local margin_max = citychunk.pos_max + margin_vector
 
--- Creates a blank citychunk array
--- Note: Canvas is 2D (x, z), so we use .x and .z components
--- Pre-calculate sizes for performance
+--- Creates a blank citychunk array
+-- Note: Canvas is 2D (x, z), so we use .x and .z components.
+-- Pre-calculates sizes for performance optimization.
+-- @return table 2D array filled with blank_id values
 local blank_size_x = canvas_size.x + 2 * canvas_margin.x
 local blank_size_z = canvas_size.z + 2 * canvas_margin.z
 local function new_blank()
@@ -93,9 +94,11 @@ local function new_blank()
     return blank_template
 end
 
--- Creates a new canvas object for the citychunk
--- specified by 'citychunk_origin'
--- (see pcmg.mapchunk_origin in utils.lua)
+--- Creates a new canvas object for the citychunk
+-- The canvas provides a 2D data structure for storing and processing
+-- citychunk node data as a blueprint for map generation.
+-- @param citychunk_origin vector The origin position of the citychunk
+-- @return table Canvas object with initialized array, cursor, and metastore
 function canvas.new(citychunk_origin)
     local canv = {}
     canv.origin = vector.copy(citychunk_origin)
@@ -107,6 +110,8 @@ function canvas.new(citychunk_origin)
     return setmetatable(canv, canvas)
 end
 
+--- Sets the metastore for this canvas
+-- @param mt table Metastore object to assign to this canvas
 function canvas:set_metastore(mt)
     if not pcmg.metastore.check(mt) then
         error("Canvas: 'mt' is not a proper metastore object: "..shallow_dump(mt))
@@ -114,23 +119,26 @@ function canvas:set_metastore(mt)
     self.metastore = mt
 end
 
--- Sets cursor to a mapchunk-relative position
--- x, z should have values from 0 to citychunk size - 1
+--- Sets cursor to a citychunk-relative position
+-- Updates cursor_inside flag based on whether position is within canvas margin.
+-- @param pos vector Position relative to citychunk origin (x, z from 0 to citychunk size - 1)
 function canvas:set_cursor(pos)
     self.cursor_inside = vector.in_area(pos, margin_min, margin_max)
     self.cursor = vector.copy(pos)
     self.cursor.y = 0
 end
 
--- Sets cursor to an absolute position 'pos'
--- The function actually translates absolute position
--- to citychunk-relative position that the cursor stores
+--- Sets cursor to an absolute position
+-- Translates absolute position to citychunk-relative position
+-- before storing in the cursor.
+-- @param pos vector Absolute world position
 function canvas:set_cursor_absolute(pos)
     local relative = pos - self.origin
     self:set_cursor(relative)
 end
 
--- Moves cursor by a vector 'vec'
+--- Moves cursor by a relative offset vector
+-- @param vec vector Offset to add to current cursor position
 function canvas:move_cursor(vec)
     self:set_cursor(self.cursor + vec)
 end
@@ -139,9 +147,10 @@ end
 local margin_offset_x = 1 + canvas_margin.x
 local margin_offset_z = 1 + canvas_margin.z
 
--- Reads a cell for a citychunk-relative position given by x, z
--- Returns material ID of the cell or blank_id if the position
--- is out of bounds of the canvas
+--- Reads a cell at citychunk-relative position
+-- @param x number X coordinate relative to citychunk origin
+-- @param z number Z coordinate relative to citychunk origin
+-- @return number Material ID of the cell or blank_id if out of bounds
 function canvas:read_cell(x, z)
     local new_x, new_z = x + margin_offset_x, z + margin_offset_z
     local row = self.array[new_x]
@@ -151,18 +160,21 @@ function canvas:read_cell(x, z)
     return blank_id
 end
 
--- Returns material priority for a cell at
--- the citychunk-relative position given by x, z
--- Returns the lowest priority if the position is out of bounds
+--- Returns material priority for a cell
+-- @param x number X coordinate relative to citychunk origin
+-- @param z number Z coordinate relative to citychunk origin
+-- @return number Material priority (lowest priority if out of bounds)
 function canvas:cell_priority(x, z)
     local id = self:read_cell(x, z)
     return materials_by_id[id].priority
 end
 
--- Writes material ID to the cell at the citychunk-relative position x, z
--- The data is only written if priority of the new material is equal or
--- higher than the priority of the old material.
--- When the position is out of bounds, no data is written.
+--- Writes material ID to a cell with priority checking
+-- Data is only written if the new material's priority is equal to or
+-- higher than the existing material's priority. Out-of-bounds writes are ignored.
+-- @param x number X coordinate relative to citychunk origin
+-- @param z number Z coordinate relative to citychunk origin
+-- @param material_id number Material ID to write
 function canvas:write_cell(x, z, material_id)
     local new_x, new_z = x + margin_offset_x, z + margin_offset_z
     local row = self.array[new_x]
@@ -176,8 +188,11 @@ function canvas:write_cell(x, z, material_id)
     end
 end
 
--- A function that combines functions of 'read_cell', 'write_cell' and
--- 'cell_priority'. It likely makes it faster.
+--- Combined read-write operation with priority checking
+-- Optimized function that performs read, priority check, and write in one call.
+-- @param x number X coordinate relative to citychunk origin
+-- @param z number Z coordinate relative to citychunk origin
+-- @param material_id number Material ID to write
 function canvas:read_write_cell(x, z, material_id)
     local new_x, new_z = x + margin_offset_x, z + margin_offset_z
     local row = self.array[new_x]
@@ -195,12 +210,12 @@ function canvas:read_write_cell(x, z, material_id)
     end
 end
 
--- Checks if a material ID is present in the canvas within
--- the area defined by 'shape' that's attached to the cursor.
--- 'shape' is a table of vectors that describe cell position
--- relative to the cursor. Each element of the 'shape' table
--- is added to the cursor position to get the position in
--- the citychunk.
+--- Searches for a material within a shape area attached to cursor
+-- Each element of the shape table contains vectors describing cell positions
+-- relative to the cursor. Returns nil if cursor is outside canvas.
+-- @param shape table Array of vectors defining positions relative to cursor
+-- @param material_id number Material ID to search for
+-- @return boolean|nil True if material found, false if not, nil if cursor outside
 function canvas:search_for_material(shape, material_id)
     if not self.cursor_inside then
         return
@@ -219,6 +234,9 @@ function canvas:search_for_material(shape, material_id)
     return false
 end
 
+--- Draws a shape onto the canvas at cursor position
+-- Each element in the shape must have 'pos' (vector) and 'material' (number) fields.
+-- @param shape table Array of cells with pos and material fields
 function canvas:draw_shape(shape)
     if not self.cursor_inside then
         return
@@ -232,6 +250,8 @@ function canvas:draw_shape(shape)
     end
 end
 
+--- Draws a brush onto the canvas at cursor position
+-- @param brush table Brush object with get_shape() method
 function canvas:draw_brush(brush)
     if not self.cursor_inside then
         return
@@ -240,11 +260,13 @@ function canvas:draw_brush(brush)
     self:draw_shape(shape)
 end
 
--- Draws a rectangle with in the citychunk. 'x_side' and 'z_side' are
--- the dimensions of the rectangle drawn. 'centered' is a bool that when
--- true will center the rectangle around the cursor, when false the rectangle
--- will have its bottom left corner at the cursor position and will extend
--- to X+ and Z+.
+--- Draws a rectangle in the citychunk
+-- When centered is true, rectangle is centered around cursor.
+-- When false, cursor is at bottom-left corner extending toward X+ and Z+.
+-- @param x_side number Width of rectangle (must be >= 1)
+-- @param z_side number Depth of rectangle (must be >= 1)
+-- @param material_id number Material ID to use for rectangle
+-- @param centered boolean Whether to center rectangle around cursor
 function canvas:draw_rectangle(x_side, z_side, material_id, centered)
     assert(x_side >= 1, "Canvas rectangle X side is smaller than 1: "..x_side)
     assert(z_side >= 1, "Canvas rectangle Z side is smaller than 1: "..z_side)
@@ -256,8 +278,11 @@ function canvas:draw_rectangle(x_side, z_side, material_id, centered)
     self:draw_shape(shape)
 end
 
--- Works just like canvas:draw_rectangle (see above) but draws
--- a square.
+--- Draws a square in the citychunk
+-- Convenience function that calls draw_rectangle with equal sides.
+-- @param side number Side length of square (must be >= 1)
+-- @param material_id number Material ID to use for square
+-- @param centered boolean Whether to center square around cursor
 function canvas:draw_square(side, material_id, centered)
     assert(side >= 1, "Canvas square side is smaller than 1: "..side)
     if not self.cursor_inside then
@@ -266,8 +291,9 @@ function canvas:draw_square(side, material_id, centered)
     self:draw_rectangle(side, side, material_id, centered)
 end
 
--- Draws a circle as created by 'make_circle' (see above)
--- into the canvas using 'material_id'.
+--- Draws a circle onto the canvas at cursor position
+-- @param radius number Radius of circle (must be >= 1)
+-- @param material_id number Material ID to use for circle
 function canvas:draw_circle(radius, material_id)
     assert(radius >= 1, "Canvas circle radius is smaller than 1: "..radius)
     if not self.cursor_inside then
@@ -278,9 +304,10 @@ function canvas:draw_circle(radius, material_id)
     self:draw_shape(shape)
 end
 
--- Searches for a material in the area of canvas covered by
--- a circle with radius 'radius' created by 'make_circle' (see above).
--- Returns true if the material was found, false if not.
+--- Searches for a material within a circular area around cursor
+-- @param radius number Radius of search circle (must be >= 1)
+-- @param material_id number Material ID to search for
+-- @return boolean|nil True if material found, false if not, nil if cursor outside
 function canvas:search_in_circle(radius, material_id)
     assert(radius >= 1, "Canvas circle radius is smaller than 1: "..radius)
     if not self.cursor_inside then
@@ -293,9 +320,12 @@ function canvas:search_in_circle(radius, material_id)
     return false
 end
 
--- Returns min and max indices (vectors) in citychunk.array that
--- specify min and max position of the mapchunk in the canvas.
--- 'pos_min', 'pos_max' are min and max absolute positions of the mapchunk
+--- Returns array indices for a mapchunk within the canvas
+-- Translates absolute mapchunk positions to canvas array indices.
+-- @param pos_min vector Minimum absolute position of mapchunk
+-- @param pos_max vector Maximum absolute position of mapchunk
+-- @return vector Minimum array index position
+-- @return vector Maximum array index position
 function canvas:mapchunk_indices(pos_min, pos_max)
     local array_pos_min =
         pos_min - self.origin + vector.new(1, 1, 1) + margin_vector
