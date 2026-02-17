@@ -38,14 +38,16 @@ local path_id_counter = 0
 -- PATH CLASS
 -- ============================================================
 
--- Creates a new instance of the Path class. Paths consist of a start
--- point, a finish point and any number of intermediate points in
--- between. Points are instances of the Point class. All points
--- (including start and finish) are stored in self.points. Paths
--- support various operations for manipulating points such as
+--- Creates a new instance of the Path class.
+-- Paths consist of a start point, a finish point and any number of 
+-- intermediate points in between. Points are instances of the Point class.
+-- All points (including start and finish) are stored in self.points. 
+-- Paths support various operations for manipulating points such as
 -- inserting, removing, splitting, extending, shortening, subdividing,
--- unsubdividing, etc. 'start' and 'finish' are points (instances of
--- the Point class).
+-- unsubdividing, etc.
+-- @param start table Point instance for the path start
+-- @param finish table Point instance for the path finish
+-- @return table New path instance
 function path.new(start, finish)
     local pth = setmetatable({}, path)
     path_id_counter = path_id_counter + 1
@@ -61,7 +63,9 @@ function path.new(start, finish)
     return pth
 end
 
--- Checks if an object is a path as created by path.new
+--- Checks if an object is a path as created by path.new.
+-- @param pth any Object to check
+-- @return boolean True if the object is a path, false otherwise
 function path.check(pth)
     return getmetatable(pth) == path
 end
@@ -70,8 +74,8 @@ end
 -- INTERMEDIATE COUNT HELPERS
 -- ============================================================
 
--- Counts intermediate points by traversing the linked list.
--- Returns the number of intermediate points (excludes start and finish).
+--- Counts intermediate points by traversing the linked list.
+-- @return number The number of intermediate points (excludes start and finish)
 function path:count_intermediate()
     local count = 0
     local current = self.start and self.start.next
@@ -82,8 +86,8 @@ function path:count_intermediate()
     return count
 end
 
--- Checks if the path has any intermediate points.
--- Returns true if there is at least one intermediate point.
+--- Checks if the path has any intermediate points.
+-- @return boolean True if there is at least one intermediate point
 function path:has_intermediate()
     return self.start and self.start.next and self.start.next ~= self.finish
 end
@@ -92,8 +96,12 @@ end
 -- COMPARATORS AND SORTING
 -- ============================================================
 
--- Comparator for paths. Compares by start, finish, intermediate
--- points, then by ID. Deterministic across Lua environments.
+--- Comparator for paths.
+-- Compares by start, finish, intermediate points, then by ID.
+-- Deterministic across Lua environments.
+-- @param pth1 table First path to compare
+-- @param pth2 table Second path to compare
+-- @return boolean True if pth1 should be ordered before pth2
 function path.comparator(pth1, pth2)
     -- Compare start points
     if not point.equals(pth1.start, pth2.start) then
@@ -123,7 +131,9 @@ function path.comparator(pth1, pth2)
     return pth1.id < pth2.id
 end
 
--- Returns a sorted copy of a table of paths.
+--- Returns a sorted copy of a table of paths.
+-- @param paths table Table of paths to sort
+-- @return table Sorted copy of the paths table
 function path.sort(paths)
     local sorted = {}
     for _, pth in pairs(paths) do
@@ -133,7 +143,8 @@ function path.sort(paths)
     return sorted
 end
 
--- Returns branching points in deterministic order (path order).
+--- Returns branching points in deterministic order (path order).
+-- @return table List of branching points in path order
 function path:branching_points_sorted()
     local result = {}
     for _, p in ipairs(self:all_points()) do
@@ -148,8 +159,9 @@ end
 -- START AND FINISH
 -- ============================================================
 
--- Sets the start point of the path to 'p'. The start point is added
--- to the path's points table.
+--- Sets the start point of the path.
+-- The start point is added to the path's points table.
+-- @param p table Point to set as the start point
 function path:set_start(p)
     checks.check_point(p)
     local old_start = self.start
@@ -170,8 +182,9 @@ function path:set_start(p)
     end
 end
 
--- Sets the finish point of the path to 'p'. The finish point is added
--- to the path's points table.
+--- Sets the finish point of the path.
+-- The finish point is added to the path's points table.
+-- @param p table Point to set as the finish point
 function path:set_finish(p)
     checks.check_point(p)
     local old_finish = self.finish
@@ -196,13 +209,13 @@ end
 -- POINT RETRIEVAL
 -- ============================================================
 
--- Returns an intermediate point given by 'nr' that is the ordinal
--- number of the point in the sequence starting from the first
--- intermediate point (after start) and ending with the last (before
--- finish). So 'nr' = 1 will give the first intermediate point in the
--- path, etc. Returns 'nil' if no point is found at the position.
--- Returns 'nil' if 'nr' is lower than 1.
+--- Returns an intermediate point given by its ordinal number.
+-- The ordinal number starts from the first intermediate point (after start)
+-- and ends with the last (before finish). So nr = 1 will give the first 
+-- intermediate point in the path, etc.
 -- Note: start and finish are not considered intermediate points.
+-- @param nr number Ordinal number of the point (must be >= 1)
+-- @return table|nil The point at the given position, or nil if not found
 function path:get_point(nr)
     if type(nr) ~= "number" or nr <= 0 then
         return nil
@@ -219,10 +232,12 @@ function path:get_point(nr)
     return nil
 end
 
--- Returns all intermediate points between 'from' and 'to' (inclusive
--- if intermediate, exclusive if start/finish), which are points
--- belonging to the path. Note: start and finish points are never
--- included in the returned list.
+--- Returns all intermediate points between two points.
+-- The range is inclusive if intermediate, exclusive if start/finish.
+-- Note: start and finish points are never included in the returned list.
+-- @param from table Starting point (must belong to the path)
+-- @param to table Ending point (must belong to the path)
+-- @return table List of intermediate points between from and to
 function path:get_points(from, to)
     checks.check_point(from)
     checks.check_point(to)
@@ -239,9 +254,9 @@ function path:get_points(from, to)
     return points
 end
 
--- Picks a random intermediate point in the path and returns it.
--- Returns 'nil' if there are no intermediate points.
+--- Picks a random intermediate point in the path.
 -- Note: start and finish are not considered intermediate points.
+-- @return table|nil A random intermediate point, or nil if none exist
 function path:random_intermediate_point()
     local intermediates = {}
     local current = self.start and self.start.next
@@ -255,9 +270,12 @@ function path:random_intermediate_point()
     return nil
 end
 
--- Checks if the point belongs to the path (as start, intermediate,
--- or finish point). All points are stored in self.points, so this
--- simply checks if the point exists in that table.
+--- Checks if a point belongs to the path.
+-- Checks if the point belongs as start, intermediate, or finish point.
+-- All points are stored in self.points, so this simply checks if the 
+-- point exists in that table.
+-- @param p table Point to check
+-- @return boolean True if the point belongs to the path
 function path:point_in_path(p)
     return self.points[p] ~= nil
 end
@@ -266,36 +284,45 @@ end
 -- INSERTION
 -- ============================================================
 
--- Inserts intermediate point 'p' between points 'p_prev' and 'p_next'.
--- 'p_prev' and 'p_next' need to belong to the path. The inserted point
+--- Inserts intermediate point between two points.
+-- Both p_prev and p_next need to belong to the path. The inserted point
 -- is added to the path's points table.
+-- @param p_prev table Previous point (must belong to the path)
+-- @param p_next table Next point (must belong to the path)
+-- @param p table Point to insert between p_prev and p_next
 function path:insert_between(p_prev, p_next, p)
     checks.check_insert_between_arguments(self, p_prev, p_next, p)
     p:set_path(self)
     point.link(p_prev, p, p_next)
 end
 
--- Inserts intermediate point 'p' at ordinal position 'nr' in the path.
--- 'nr' = 1 means inserting 'p' right after the start point.
--- 'nr' = count_intermediate() + 1 means inserting 'p' right before the
--- finish point.
+--- Inserts intermediate point at ordinal position in the path.
+-- nr = 1 means inserting right after the start point.
+-- nr = count_intermediate() + 1 means inserting right before the finish point.
+-- @param nr number Ordinal position to insert at
+-- @param p table Point to insert
 function path:insert_at(nr, p)
     local p1 = self:get_point(nr - 1) or self.start
     local p2 = p1.next or self.finish
     self:insert_between(p1, p2, p)
 end
 
--- Inserts an intermediate point 'p' before point 'target'.
+--- Inserts an intermediate point before a target point.
+-- @param target table Point to insert before
+-- @param p table Point to insert
 function path:insert_before(target, p)
     self:insert_between(target.previous, target, p)
 end
 
--- Inserts an intermediate point 'p' after point 'target'.
+--- Inserts an intermediate point after a target point.
+-- @param target table Point to insert after
+-- @param p table Point to insert
 function path:insert_after(target, p)
     self:insert_between(target, target.next, p)
 end
 
--- Inserts an intermediate point 'p' before the finish point.
+--- Inserts an intermediate point before the finish point.
+-- @param p table Point to insert
 function path:insert(p)
     local last = self.finish.previous or self.start
     self:insert_between(last, self.finish, p)
@@ -305,8 +332,9 @@ end
 -- REMOVAL
 -- ============================================================
 
--- Removes intermediate point 'p' from the path. Cannot remove start
--- or finish points.
+--- Removes intermediate point from the path.
+-- Cannot remove start or finish points.
+-- @param p table Point to remove (must be an intermediate point)
 function path:remove(p)
     checks.check_point(p)
     checks.check_remove_arguments(self, p)
@@ -320,23 +348,26 @@ function path:remove(p)
     p:clear()
 end
 
--- Removes the intermediate point that comes before point 'p'.
+--- Removes the intermediate point that comes before a given point.
 -- Cannot remove start or finish points.
+-- @param p table Point whose previous point will be removed
 function path:remove_previous(p)
     checks.check_point(p)
     checks.check_remove_arguments(self, p.previous)
     self:remove(p.previous)
 end
 
--- Removes the intermediate point that comes after point 'p'.
+--- Removes the intermediate point that comes after a given point.
 -- Cannot remove start or finish points.
+-- @param p table Point whose next point will be removed
 function path:remove_next(p)
     checks.check_point(p)
     checks.check_remove_arguments(self, p.next)
     self:remove(p.next)
 end
 
--- Removes an intermediate point given by its ordinal number 'nr'.
+--- Removes an intermediate point given by its ordinal number.
+-- @param nr number Ordinal number of the point to remove
 function path:remove_at(nr)
     checks.check_remove_at_arguments(self, nr)
     local p = self:get_point(nr)
@@ -347,9 +378,10 @@ end
 -- EXTEND AND SHORTEN
 -- ============================================================
 
--- Extends the path by adding 'p' at the end of the path.
--- 'p' becomes the new finish point, and the old finish becomes
+--- Extends the path by adding a point at the end.
+-- The point becomes the new finish point, and the old finish becomes
 -- an intermediate point.
+-- @param p table Point to add at the end
 function path:extend(p)
     checks.check_point(p)
     local old_finish = self.finish
@@ -360,10 +392,10 @@ function path:extend(p)
     self.finish = p
 end
 
--- Shortens the path by removing the finish point and setting the
--- previous point as the new finish. Does nothing if there are no
--- intermediate points. Returns 'true' if the path was shortened,
--- 'false' otherwise.
+--- Shortens the path by removing the finish point.
+-- Sets the previous point as the new finish. Does nothing if there are no
+-- intermediate points.
+-- @return boolean True if the path was shortened, false otherwise
 function path:shorten()
     if not self:has_intermediate() then
         return false
@@ -376,9 +408,10 @@ function path:shorten()
     return true
 end
 
--- Shortens the path by 'nr' points. If 'nr' is bigger than the
--- number of intermediate points, the path is shortened as much
--- as possible.
+--- Shortens the path by a given number of points.
+-- If nr is bigger than the number of intermediate points, the path is 
+-- shortened as much as possible.
+-- @param nr number Number of points to shorten by
 function path:shorten_by(nr)
     for i = 1, nr do
         if not self:shorten() then
@@ -387,8 +420,10 @@ function path:shorten_by(nr)
     end
 end
 
--- Cuts off (removes from the path) all points that come after the
--- point specified by 'stop_point'. Sets 'stop_point' as the new finish.
+--- Cuts off all points that come after a given point.
+-- Removes from the path all points after stop_point and sets stop_point 
+-- as the new finish.
+-- @param stop_point table Point to cut off after
 function path:cut_off(stop_point)
     checks.check_point(stop_point)
     checks.check_same_path({self.start, stop_point, self.finish})
@@ -403,8 +438,9 @@ end
 -- ALL POINTS AND POSITIONS
 -- ============================================================
 
--- Returns all points of the path including start,
--- intermediate points and finish (in order).
+--- Returns all points of the path.
+-- Includes start, intermediate points and finish (in order).
+-- @return table List of all points in the path
 function path:all_points()
     local points = {}
     table.insert(points, self.start)
@@ -414,8 +450,9 @@ function path:all_points()
     return points
 end
 
--- Returns positions of all points of the path including start,
--- intermediate points and finish (in order).
+--- Returns positions of all points of the path.
+-- Includes start, intermediate points and finish (in order).
+-- @return table List of all point positions as vectors
 function path:all_positions()
     local positions = {}
     for _, p in ipairs(self:all_points()) do
@@ -428,7 +465,9 @@ end
 -- LENGTH AND GEOMETRY
 -- ============================================================
 
--- Returns the length of the path by summing lengths of all segments.
+--- Returns the length of the path.
+-- Calculates by summing lengths of all segments.
+-- @return number The total length of the path
 function path:length()
     local points = self:all_points()
     local len = 0
@@ -444,7 +483,9 @@ end
 -- ============================================================
 -- Moved to path_utils.lua (pcmg.path_utils)
 
--- Returns all segments of the path as a list of {start_pos, end_pos} pairs.
+--- Returns all segments of the path.
+-- Each segment is a table with start_pos, end_pos, start_point, and end_point.
+-- @return table List of segments
 function path:all_segments()
     local segments = {}
     local points = self:all_points()
@@ -464,8 +505,9 @@ end
 -- SUBDIVIDE AND UNSUBDIVIDE (EXISTING)
 -- ============================================================
 
--- Subdivides path into segments with max length specified by
--- 'segment_length', leaves segments shorter than that untouched.
+--- Subdivides path into segments with maximum length.
+-- Leaves segments shorter than segment_length untouched.
+-- @param segment_length number Maximum length for each segment
 function path:subdivide(segment_length)
     local current_point = self.start
     while (current_point.next) do
@@ -479,8 +521,10 @@ function path:subdivide(segment_length)
     end
 end
 
--- Unsubdivides the path by removing intermediate points that form an angle
--- smaller than 'angle' (in radians) with their neighbors. Leaves other points untouched.
+--- Unsubdivides the path by removing nearly collinear points.
+-- Removes intermediate points that form an angle smaller than the threshold
+-- with their neighbors. Leaves other points untouched.
+-- @param angle number Angle threshold in radians
 function path:unsubdivide(angle)
     if not self:has_intermediate() then
         return
@@ -508,10 +552,13 @@ end
 -- SPLIT AND TRANSFER
 -- ============================================================
 
--- Transfers all intermediate points between 'first' and 'last'
--- (inclusive) from 'self' path to 'pth' path. 'first' and 'last'
--- need to belong to this path. Only intermediate points are
--- transferred (not start or finish).
+--- Transfers intermediate points to another path.
+-- Transfers all intermediate points between first and last (inclusive) from
+-- this path to another path. Both first and last need to belong to this path.
+-- Only intermediate points are transferred (not start or finish).
+-- @param pth table Target path to transfer points to
+-- @param first table First point in the range
+-- @param last table Last point in the range
 function path:transfer_points_to(pth, first, last)
     local points = self:get_points(first, last)
     for _, p in ipairs(points) do
@@ -520,11 +567,13 @@ function path:transfer_points_to(pth, first, last)
     end
 end
 
--- Splits the path into two paths at point 'p' which needs to be an
--- intermediate point. 'p' gets duplicated so that it becomes the
--- finish point of the first path and the start point of the second
--- path. The path needs to have at least 1 intermediate point for the
--- split to be possible. Returns the newly created second path.
+--- Splits the path into two paths at a given point.
+-- The point must be an intermediate point. The point gets duplicated so 
+-- that it becomes the finish point of the first path and the start point 
+-- of the second path. The path needs to have at least 1 intermediate point 
+-- for the split to be possible.
+-- @param p table Point to split at (must be an intermediate point)
+-- @return table The newly created second path
 function path:split_at(p)
     checks.check_point(p)
     checks.check_split_at_arguments(self, p)
@@ -543,8 +592,8 @@ end
 -- CLEAR INTERMEDIATE
 -- ============================================================
 
--- Clears all intermediate points from the path, leaving only start
--- and finish.
+--- Clears all intermediate points from the path.
+-- Leaves only start and finish.
 function path:clear_intermediate()
     while self:has_intermediate() do
         local p = self:get_point(1)
@@ -560,19 +609,23 @@ end
 -- PATH SHAPE GENERATORS
 -- ============================================================
 
--- Creates a straight path from 'self.start' to 'self.finish'
--- When 'segment_length' is given, the path will be subdivided
--- into segments with max length of 'segment_length'.
+--- Creates a straight path from start to finish.
+-- When segment_length is given, the path will be subdivided into segments
+-- with max length of segment_length.
+-- @param segment_length number|nil Optional maximum segment length
 function path:make_straight(segment_length)
     if segment_length then
         self:subdivide(segment_length)
     end
 end
 
--- Creates a wavy path from 'self.start' to 'self.finish'. The wave
--- oscillates with 'amplitude' (in nodes) and 'density' controls how
--- many complete wave cycles fit into the whole length of the path.
--- The path is divided into 'segment_nr' segments.
+--- Creates a wavy path from start to finish.
+-- The wave oscillates with the given amplitude (in nodes) and density
+-- controls how many complete wave cycles fit into the whole length of the path.
+-- The path is divided into segment_nr segments.
+-- @param segment_nr number Number of segments to divide the path into
+-- @param amplitude number Wave amplitude in nodes
+-- @param density number Number of complete wave cycles along the path
 function path:make_wave(segment_nr, amplitude, density)
     local v = (self.finish.pos - self.start.pos) / segment_nr
     local total_distance = vector.distance(self.start.pos, self.finish.pos)
@@ -590,14 +643,14 @@ function path:make_wave(segment_nr, amplitude, density)
     end
 end
 
--- Creates a path by connecting 'self.start' and 'self.finish' so that
--- there's only one break point that forms a 45 degree angle with its
--- neighbors. When 'self.start' and 'self.finish' are parallel to
--- either the x or z axis, the function will simply make a straight
--- line. The "straight" region (parallel to x or z axis) is always
--- longer or equal to the "slanted" region. When 'segment_length' is
--- given, the path will be further subdivided into segments with max
--- length of 'segment_length'.
+--- Creates a path with a 45 degree angle break point.
+-- Connects start and finish so that there's only one break point that forms
+-- a 45 degree angle with its neighbors. When start and finish are parallel 
+-- to either the x or z axis, the function will simply make a straight line.
+-- The "straight" region (parallel to x or z axis) is always longer or equal 
+-- to the "slanted" region. When segment_length is given, the path will be 
+-- further subdivided into segments with max length of segment_length.
+-- @param segment_length number|nil Optional maximum segment length
 function path:make_slanted(segment_length)
     local vec = self.finish.pos - self.start.pos
     local sign = vector.sign(vec)
