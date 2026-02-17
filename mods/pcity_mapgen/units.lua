@@ -35,7 +35,7 @@ local units = {}
 -- Get mapchunk size using the new API (returns a vector in blocks)
 local chunksize_blocks = core.get_mapgen_chunksize()
 -- Convert blocks to nodes (each block is core.MAP_BLOCKSIZE nodes)
-local mapchunk_size = vector.multiply(chunksize_blocks, core.MAP_BLOCKSIZE)
+local mapchunk_size = chunksize_blocks * core.MAP_BLOCKSIZE
 -- Calculate offset for chunk alignment (center alignment)
 local mapchunk_offset = vector.new(
     -core.MAP_BLOCKSIZE * math.floor(chunksize_blocks.x / 2),
@@ -57,7 +57,7 @@ local citychunk_size = vector.new(citychunk_size_x, citychunk_size_y, citychunk_
 -- @param pos vector Node position to translate
 -- @return vector Mapchunk position
 function units.node_to_mapchunk(pos)
-    local mapchunk_pos = vector.subtract(vector.floor(pos), mapchunk_offset)
+    local mapchunk_pos = vector.floor(pos) - mapchunk_offset
     mapchunk_pos = vector.new(
         mapchunk_pos.x / mapchunk_size.x,
         mapchunk_pos.y / mapchunk_size.y,
@@ -76,7 +76,7 @@ function units.mapchunk_to_node(mapchunk_pos)
         mapchunk_pos.y * mapchunk_size.y,
         mapchunk_pos.z * mapchunk_size.z
     )
-    pos = vector.add(pos, mapchunk_offset)
+    pos = pos + mapchunk_offset
     pos = vector.round(pos) -- round to avoid fp garbage
     return pos
 end
@@ -167,14 +167,14 @@ local citychunk_in_nodes = vector.new(
     mapchunk_size.y * citychunk_size.y,
     mapchunk_size.z * citychunk_size.z
 )
-local citychunk_max = vector.subtract(citychunk_in_nodes, 1)
+local citychunk_max = citychunk_in_nodes - 1
 sizes_table.citychunk = {
     in_nodes = citychunk_in_nodes,
     in_mapchunks = citychunk_size,  -- Now a vector!
     pos_min = vector.zero(),
     pos_max = citychunk_max,
     -- Overgen margin as a vector (use 2x the mapchunk dimensions)
-    overgen_margin = vector.multiply(mapchunk_size, 2)
+    overgen_margin = mapchunk_size * 2
 }
 
 -- Height of most rooms

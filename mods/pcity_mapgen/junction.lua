@@ -74,7 +74,7 @@ end
 -- The junction defines a rectangular surface from pos to pos+size.
 -- @return vector Vector representing the opposite corner of the junction
 function junction:get_opposite_corner()
-    return vector.add(self.pos, self.size)
+    return self.pos + self.size
 end
 
 --- Checks if two junctions can be connected.
@@ -87,7 +87,7 @@ function junction:can_connect(other)
     checks.check_junction(other)
     
     -- Check if direction vectors sum to zero (opposite directions)
-    local dir_sum = vector.add(self.direction, other.direction)
+    local dir_sum = self.direction + other.direction
     if not vector.equals(dir_sum, vector.new(0, 0, 0)) then
         return false
     end

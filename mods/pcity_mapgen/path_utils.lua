@@ -147,18 +147,18 @@ end
 -- @return number Distance from point to segment
 -- @return table Closest point on the segment
 function path_utils.point_to_segment_distance(pos, seg_start, seg_end)
-    local seg_dir = vector.subtract(seg_end, seg_start)
+    local seg_dir = seg_end - seg_start
     local seg_len_sq = vector_xz_length_sq(seg_dir)
 
     if seg_len_sq < 1e-6 then
-        return vector_xz_length(vector.subtract(pos, seg_start)), seg_start
+        return vector_xz_length(pos - seg_start), seg_start
     end
 
-    local to_pos = vector.subtract(pos, seg_start)
+    local to_pos = pos - seg_start
     local t = vector_xz_dot(to_pos, seg_dir) / seg_len_sq
     t = math.max(0, math.min(1, t))
 
-    local closest = vector.add(seg_start, vector.multiply(seg_dir, t))
+    local closest = seg_start + seg_dir * t
 
     return vector.distance(pos, closest), closest
 end
@@ -174,8 +174,8 @@ end
 -- @return number|nil Parameter t1 along first segment (0-1)
 -- @return number|nil Parameter t2 along second segment (0-1)
 function path_utils.calculate_segment_intersection(seg1_start, seg1_end, seg2_start, seg2_end)
-    local d1 = vector.subtract(seg1_end, seg1_start)
-    local d2 = vector.subtract(seg2_end, seg2_start)
+    local d1 = seg1_end - seg1_start
+    local d2 = seg2_end - seg2_start
 
     local cross = d1.x * d2.z - d1.z * d2.x
 
@@ -184,7 +184,7 @@ function path_utils.calculate_segment_intersection(seg1_start, seg1_end, seg2_st
         return nil
     end
 
-    local delta = vector.subtract(seg2_start, seg1_start)
+    local delta = seg2_start - seg1_start
 
     local t1 = (delta.x * d2.z - delta.z * d2.x) / cross
     local t2 = (delta.x * d1.z - delta.z * d1.x) / cross
@@ -195,7 +195,7 @@ function path_utils.calculate_segment_intersection(seg1_start, seg1_end, seg2_st
     end
 
     -- Calculate intersection point
-    local intersection = vector.add(seg1_start, vector.multiply(d1, t1))
+    local intersection = seg1_start + d1 * t1
     local iy = (seg1_start.y + seg2_start.y) / 2
 
     return vector.new(intersection.x, iy, intersection.z), t1, t2
@@ -215,9 +215,9 @@ end
 -- @return table Closest point on first segment
 -- @return table Closest point on second segment
 local function segment_distance_2d(a1, a2, b1, b2)
-    local a_dir = vector.subtract(a2, a1)
-    local b_dir = vector.subtract(b2, b1)
-    local d = vector.subtract(b1, a1)
+    local a_dir = a2 - a1
+    local b_dir = b2 - b1
+    local d = b1 - a1
 
     local len_a_sq = vector_xz_length_sq(a_dir)
     local len_b_sq = vector_xz_length_sq(b_dir)
@@ -230,17 +230,17 @@ local function segment_distance_2d(a1, a2, b1, b2)
 
     if len_a_sq < 1e-10 then
         local t = math.max(0, math.min(1, vector_xz_dot(d, b_dir) / len_b_sq))
-        local closest_b = vector.add(b1, vector.multiply(b_dir, t))
+        local closest_b = b1 + b_dir * t
         closest_b = vector.new(closest_b.x, (b1.y + b2.y) / 2, closest_b.z)
-        local dist = vector_xz_length(vector.subtract(a1, closest_b))
+        local dist = vector_xz_length(a1 - closest_b)
         return dist, a1, closest_b
     end
 
     if len_b_sq < 1e-10 then
         local t = math.max(0, math.min(1, -vector_xz_dot(d, a_dir) / len_a_sq))
-        local closest_a = vector.add(a1, vector.multiply(a_dir, t))
+        local closest_a = a1 + a_dir * t
         closest_a = vector.new(closest_a.x, (a1.y + a2.y) / 2, closest_a.z)
-        local dist = vector_xz_length(vector.subtract(closest_a, b1))
+        local dist = vector_xz_length(closest_a - b1)
         return dist, closest_a, b1
     end
 
@@ -279,10 +279,10 @@ local function segment_distance_2d(a1, a2, b1, b2)
         s = math.max(0, math.min(1, s))
     end
 
-    local closest_a = vector.add(a1, vector.multiply(a_dir, s))
-    local closest_b = vector.add(b1, vector.multiply(b_dir, t))
+    local closest_a = a1 + a_dir * s
+    local closest_b = b1 + b_dir * t
 
-    local dist = vector_xz_length(vector.subtract(closest_a, closest_b))
+    local dist = vector_xz_length(closest_a - closest_b)
 
     return dist, closest_a, closest_b
 end
@@ -301,7 +301,7 @@ function path_utils.segment_intersects(a1, a2, b1, b2, margin)
     local dist, closest_a, closest_b = segment_distance_2d(a1, a2, b1, b2)
 
     if dist <= margin then
-        local midpoint = vector.multiply(vector.add(closest_a, closest_b), 0.5)
+        local midpoint = (closest_a + closest_b) * 0.5
         return {
             intersects = dist < 1e-6,
             distance = dist,
@@ -322,20 +322,20 @@ end
 -- @return number Distance from point to segment
 -- @return table Closest point on the segment
 function path_utils.point_to_segment_distance_2d(p, seg_start, seg_end)
-    local seg_dir = vector.subtract(seg_end, seg_start)
+    local seg_dir = seg_end - seg_start
     local len_sq = vector_xz_length_sq(seg_dir)
 
     if len_sq < 1e-10 then
-        local dist = vector_xz_length(vector.subtract(p, seg_start))
+        local dist = vector_xz_length(p - seg_start)
         return dist, seg_start
     end
 
-    local t = vector_xz_dot(vector.subtract(p, seg_start), seg_dir) / len_sq
+    local t = vector_xz_dot(p - seg_start, seg_dir) / len_sq
     t = math.max(0, math.min(1, t))
 
-    local closest = vector.add(seg_start, vector.multiply(seg_dir, t))
+    local closest = seg_start + seg_dir * t
 
-    local dist = vector_xz_length(vector.subtract(p, closest))
+    local dist = vector_xz_length(p - closest)
     return dist, closest
 end
 
