@@ -33,7 +33,7 @@ local tests = pcmg.tests.path
 -- PATH CLASS UNIT TESTS
 -- ============================================================
 
--- Tests that path.new creates a path with start and finish points
+--- Tests that path.new creates a path with start and finish points
 function tests.test_path_new()
     local p1 = point.new(vector.new(5, 10, 15))
     local p2 = point.new(vector.new(25, 30, 35))
@@ -50,7 +50,7 @@ function tests.test_path_new()
     assert(p2.previous == p1, "Finish should link back to start")
 end
 
--- Tests that path.check correctly identifies path objects
+--- Tests that path.check correctly identifies path objects
 function tests.test_path_check()
     local p1 = point.new(vector.new(0, 5, 10))
     local p2 = point.new(vector.new(20, 25, 30))
@@ -62,7 +62,7 @@ function tests.test_path_check()
     assert(path.check(nil) == false, "path.check should return false for nil")
 end
 
--- Tests that path.comparator provides deterministic ordering
+--- Tests that path.comparator provides deterministic ordering
 function tests.test_path_comparator()
     local pth1 = path.new(point.new(vector.new(0, 5, 10)), point.new(vector.new(30, 35, 40)))
     local pth2 = path.new(point.new(vector.new(15, 20, 25)), point.new(vector.new(45, 50, 55)))
@@ -75,7 +75,7 @@ function tests.test_path_comparator()
     assert(path.comparator(pth1, pth3) == true, "pth1 should come before pth3 (finish comparison)")
 end
 
--- Tests that path.sort returns paths in deterministic order
+--- Tests that path.sort returns paths in deterministic order
 function tests.test_path_sort()
     local pth3 = path.new(point.new(vector.new(30, 35, 40)), point.new(vector.new(60, 65, 70)))
     local pth1 = path.new(point.new(vector.new(0, 5, 10)), point.new(vector.new(30, 35, 40)))
@@ -89,7 +89,7 @@ function tests.test_path_sort()
     assert(sorted[3] == pth3, "Third path should be pth3 (largest start x)")
 end
 
--- Tests that path:branching_points_sorted returns branching points in path order
+--- Tests that path:branching_points_sorted returns branching points in path order
 function tests.test_path_branching_points_sorted()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(40, 20, 30))
@@ -111,7 +111,7 @@ function tests.test_path_branching_points_sorted()
     assert(sorted[2] == p_mid2, "Second branching point should be p_mid2")
 end
 
--- Tests that path:count_intermediate correctly counts intermediate points
+--- Tests that path:count_intermediate correctly counts intermediate points
 function tests.test_path_count_intermediate()
     local p1 = point.new(vector.new(0, 10, 20))
     local p2 = point.new(vector.new(40, 50, 60))
@@ -129,7 +129,7 @@ function tests.test_path_count_intermediate()
     assert(pth:count_intermediate() == 3, "Count should be 3 after third insert")
 end
 
--- Tests that path:has_intermediate correctly detects intermediate points
+--- Tests that path:has_intermediate correctly detects intermediate points
 function tests.test_path_has_intermediate()
     local p1 = point.new(vector.new(5, 15, 25))
     local p2 = point.new(vector.new(35, 45, 55))
@@ -141,7 +141,7 @@ function tests.test_path_has_intermediate()
     assert(pth:has_intermediate() == true, "Should have intermediates after insert")
 end
 
--- Tests that path:set_start replaces the start point
+--- Tests that path:set_start replaces the start point
 function tests.test_path_set_start()
     local p1 = point.new(vector.new(10, 20, 30))
     local p2 = point.new(vector.new(50, 60, 70))
@@ -157,7 +157,7 @@ function tests.test_path_set_start()
     assert(new_start.next.pos.x == 30, "New start should link to first intermediate")
 end
 
--- Tests that path:set_finish replaces the finish point
+--- Tests that path:set_finish replaces the finish point
 function tests.test_path_set_finish()
     local p1 = point.new(vector.new(0, 10, 20))
     local p2 = point.new(vector.new(40, 50, 60))
@@ -173,7 +173,7 @@ function tests.test_path_set_finish()
     assert(new_finish.previous.pos.x == 20, "New finish should link from last intermediate")
 end
 
--- Tests that path:get_point returns the correct intermediate point by index
+--- Tests that path:get_point returns the correct intermediate point by index
 function tests.test_path_get_point()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(40, 20, 30))
@@ -193,7 +193,7 @@ function tests.test_path_get_point()
     assert(pth:get_point(4) == nil, "get_point(4) should return nil (out of range)")
 end
 
--- Tests that path:get_points returns intermediate points in a range
+--- Tests that path:get_points returns intermediate points in a range
 function tests.test_path_get_points()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(40, 20, 30))
@@ -220,7 +220,7 @@ function tests.test_path_get_points()
     assert(points[2] == mid2, "Second should be mid2")
 end
 
--- Tests that path:random_intermediate_point returns a valid intermediate point
+--- Tests that path:random_intermediate_point returns a valid intermediate point
 function tests.test_path_random_intermediate_point()
     local p1 = point.new(vector.new(0, 5, 10))
     local p2 = point.new(vector.new(30, 35, 40))
@@ -239,7 +239,7 @@ function tests.test_path_random_intermediate_point()
     assert(random_point ~= p1 and random_point ~= p2, "Should not return start or finish")
 end
 
--- Tests that path:point_in_path correctly checks if point belongs to path
+--- Tests that path:point_in_path correctly checks if point belongs to path
 function tests.test_path_point_in_path()
     local p1 = point.new(vector.new(0, 10, 20))
     local p2 = point.new(vector.new(40, 50, 60))
@@ -256,7 +256,7 @@ function tests.test_path_point_in_path()
     assert(pth:point_in_path(outside) == false, "Outside point should not be in path")
 end
 
--- Tests that path:insert_between inserts a point between two adjacent points
+--- Tests that path:insert_between inserts a point between two adjacent points
 function tests.test_path_insert_between()
     local p1 = point.new(vector.new(0, 5, 10))
     local p2 = point.new(vector.new(30, 35, 40))
@@ -272,7 +272,7 @@ function tests.test_path_insert_between()
     assert(p2.previous == mid, "p2.previous should be mid")
 end
 
--- Tests that path:insert_at inserts a point at a specific ordinal position
+--- Tests that path:insert_at inserts a point at a specific ordinal position
 function tests.test_path_insert_at()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(40, 20, 30))
@@ -288,7 +288,7 @@ function tests.test_path_insert_at()
     assert(pth:get_point(2) == mid, "Point at position 2 should be mid")
 end
 
--- Tests that path:insert_before inserts a point before target
+--- Tests that path:insert_before inserts a point before target
 function tests.test_path_insert_before()
     local p1 = point.new(vector.new(0, 5, 10))
     local p2 = point.new(vector.new(40, 45, 50))
@@ -305,7 +305,7 @@ function tests.test_path_insert_before()
     assert(mid1.previous == mid2, "mid1.previous should be mid2")
 end
 
--- Tests that path:insert_after inserts a point after target
+--- Tests that path:insert_after inserts a point after target
 function tests.test_path_insert_after()
     local p1 = point.new(vector.new(0, 10, 20))
     local p2 = point.new(vector.new(40, 50, 60))
@@ -322,7 +322,7 @@ function tests.test_path_insert_after()
     assert(mid2.previous == mid1, "mid2.previous should be mid1")
 end
 
--- Tests that path:insert appends a point before finish
+--- Tests that path:insert appends a point before finish
 function tests.test_path_insert()
     local p1 = point.new(vector.new(5, 15, 25))
     local p2 = point.new(vector.new(35, 45, 55))
@@ -336,7 +336,7 @@ function tests.test_path_insert()
     assert(p2.previous == mid, "Finish should link back to inserted point")
 end
 
--- Tests that path:remove removes an intermediate point
+--- Tests that path:remove removes an intermediate point
 function tests.test_path_remove()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(40, 20, 30))
@@ -357,7 +357,7 @@ function tests.test_path_remove()
     assert(pth:point_in_path(mid2) == false, "mid2 should no longer be in path")
 end
 
--- Tests that path:remove_previous removes the point before target
+--- Tests that path:remove_previous removes the point before target
 function tests.test_path_remove_previous()
     local p1 = point.new(vector.new(0, 5, 10))
     local p2 = point.new(vector.new(30, 35, 40))
@@ -374,7 +374,7 @@ function tests.test_path_remove_previous()
     assert(pth:get_point(1) == mid2, "Only mid2 should remain")
 end
 
--- Tests that path:remove_next removes the point after target
+--- Tests that path:remove_next removes the point after target
 function tests.test_path_remove_next()
     local p1 = point.new(vector.new(5, 10, 15))
     local p2 = point.new(vector.new(35, 40, 45))
@@ -391,7 +391,7 @@ function tests.test_path_remove_next()
     assert(pth:get_point(1) == mid1, "Only mid1 should remain")
 end
 
--- Tests that path:remove_at removes the point at a specific ordinal position
+--- Tests that path:remove_at removes the point at a specific ordinal position
 function tests.test_path_remove_at()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(40, 20, 30))
@@ -411,7 +411,7 @@ function tests.test_path_remove_at()
     assert(pth:get_point(2) == mid3, "Second should be mid3")
 end
 
--- Tests that path:extend adds a new finish point
+--- Tests that path:extend adds a new finish point
 function tests.test_path_extend()
     local p1 = point.new(vector.new(0, 10, 20))
     local p2 = point.new(vector.new(30, 40, 50))
@@ -426,7 +426,7 @@ function tests.test_path_extend()
     assert(p2.next == new_finish, "p2 should link to new finish")
 end
 
--- Tests that path:shorten removes the finish and promotes last intermediate
+--- Tests that path:shorten removes the finish and promotes last intermediate
 function tests.test_path_shorten()
     local p1 = point.new(vector.new(5, 15, 25))
     local p2 = point.new(vector.new(35, 45, 55))
@@ -446,7 +446,7 @@ function tests.test_path_shorten()
     assert(result == false, "Shorten should return false when no intermediates")
 end
 
--- Tests that path:shorten_by shortens by multiple points
+--- Tests that path:shorten_by shortens by multiple points
 function tests.test_path_shorten_by()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(50, 25, 40))
@@ -465,7 +465,7 @@ function tests.test_path_shorten_by()
     assert(pth.finish.pos.z == 24, "Finish should be at z=24")
 end
 
--- Tests that path:cut_off removes all points after stop_point
+--- Tests that path:cut_off removes all points after stop_point
 function tests.test_path_cut_off()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(40, 20, 30))
@@ -485,7 +485,7 @@ function tests.test_path_cut_off()
     assert(pth:get_point(1) == mid1, "Only mid1 should remain as intermediate")
 end
 
--- Tests that path:all_points returns all points in order
+--- Tests that path:all_points returns all points in order
 function tests.test_path_all_points()
     local p1 = point.new(vector.new(0, 5, 10))
     local p2 = point.new(vector.new(40, 45, 50))
@@ -505,7 +505,7 @@ function tests.test_path_all_points()
     assert(all[4] == p2, "Fourth should be finish")
 end
 
--- Tests that path:all_positions returns positions of all points in order
+--- Tests that path:all_positions returns positions of all points in order
 function tests.test_path_all_positions()
     local p1 = point.new(vector.new(0, 10, 20))
     local p2 = point.new(vector.new(40, 50, 60))
@@ -522,7 +522,7 @@ function tests.test_path_all_positions()
     assert(positions[3].x == 40 and positions[3].y == 50 and positions[3].z == 60, "Third position should match p2")
 end
 
--- Tests that path:length returns the total length of the path
+--- Tests that path:length returns the total length of the path
 function tests.test_path_length()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(30, 40, 0))  -- 3-4-5 triangle scaled by 10
@@ -546,7 +546,7 @@ function tests.test_path_length()
     assert(length > 50, "Path length should increase with detour")
 end
 
--- Tests that path:subdivide breaks long segments into shorter ones
+--- Tests that path:subdivide breaks long segments into shorter ones
 function tests.test_path_subdivide()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(30, 40, 0))
@@ -564,7 +564,7 @@ function tests.test_path_subdivide()
     end
 end
 
--- Tests that path:unsubdivide removes nearly-collinear intermediate points
+--- Tests that path:unsubdivide removes nearly-collinear intermediate points
 function tests.test_path_unsubdivide()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(40, 20, 30))
@@ -583,7 +583,7 @@ function tests.test_path_unsubdivide()
     assert(pth:count_intermediate() == 0, "All collinear points should be removed")
 end
 
--- Tests that path:split_at divides a path into two at an intermediate point
+--- Tests that path:split_at divides a path into two at an intermediate point
 function tests.test_path_split_at()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(50, 25, 40))
@@ -608,7 +608,7 @@ function tests.test_path_split_at()
     assert(new_path.finish.pos.x == 50, "New path finish should be at x=50")
 end
 
--- Tests that path:transfer_points_to moves intermediate points between paths
+--- Tests that path:transfer_points_to moves intermediate points between paths
 function tests.test_path_transfer_points_to()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(50, 25, 40))
@@ -631,7 +631,7 @@ function tests.test_path_transfer_points_to()
     assert(pth2:count_intermediate() == 2, "pth2 should have 2 intermediates")
 end
 
--- Tests that path:clear_intermediate removes all intermediate points
+--- Tests that path:clear_intermediate removes all intermediate points
 function tests.test_path_clear_intermediate()
     local p1 = point.new(vector.new(0, 10, 20))
     local p2 = point.new(vector.new(40, 50, 60))
@@ -648,7 +648,7 @@ function tests.test_path_clear_intermediate()
     assert(pth.start.next == pth.finish, "Start should link directly to finish")
 end
 
--- Tests that path:make_straight subdivides if segment_length is given
+--- Tests that path:make_straight subdivides if segment_length is given
 function tests.test_path_make_straight()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(30, 40, 0))
@@ -659,7 +659,7 @@ function tests.test_path_make_straight()
     assert(pth:count_intermediate() >= 2, "Should have intermediate points after subdivision")
 end
 
--- Tests that path:make_wave creates a wavy path with intermediate points
+--- Tests that path:make_wave creates a wavy path with intermediate points
 function tests.test_path_make_wave()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(100, 0, 0))
@@ -682,7 +682,7 @@ function tests.test_path_make_wave()
     assert(has_offset, "Wave should have points offset from straight line")
 end
 
--- Tests that path:make_slanted creates a path with a 45-degree break point
+--- Tests that path:make_slanted creates a path with a 45-degree break point
 function tests.test_path_make_slanted()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(20, 0, 10))
@@ -716,7 +716,7 @@ function tests.test_path_make_slanted()
     assert(pth3:count_intermediate() == 0, "Z-aligned path should have no intermediate points")
 end
 
--- Tests that vector.comparator provides correct ordering
+--- Tests that vector.comparator provides correct ordering
 function tests.test_vector_comparator()
     local v1 = vector.new(0, 0, 0)
     local v2 = vector.new(10, 0, 0)

@@ -33,7 +33,7 @@ local tests = pcmg.tests.point
 -- POINT CLASS UNIT TESTS
 -- ============================================================
 
--- Tests that point.new creates a point with correct position and unique ID
+--- Tests that point.new creates a point with correct position and unique ID
 function tests.test_point_new()
     local pos = vector.new(5, 10, 15)
     local p = point.new(pos)
@@ -51,7 +51,7 @@ function tests.test_point_new()
     assert(p2.id ~= p.id, "Points should have unique IDs")
 end
 
--- Tests that point.check correctly identifies point objects
+--- Tests that point.check correctly identifies point objects
 function tests.test_point_check()
     local p = point.new(vector.new(7, 14, 21))
     
@@ -61,7 +61,7 @@ function tests.test_point_check()
     assert(point.check(nil) == false, "point.check should return false for nil")
 end
 
--- Tests that point:copy creates a new point with same position but no links
+--- Tests that point:copy creates a new point with same position but no links
 function tests.test_point_copy()
     local p1 = point.new(vector.new(0, 10, 20))
     local p2 = point.new(vector.new(30, 40, 50))
@@ -79,7 +79,7 @@ function tests.test_point_copy()
     assert(p_copy.next == nil, "Copy should have no next link")
 end
 
--- Tests that point.same_path correctly identifies points on the same path
+--- Tests that point.same_path correctly identifies points on the same path
 function tests.test_point_same_path()
     local p1 = point.new(vector.new(0, 5, 10))
     local p2 = point.new(vector.new(30, 35, 40))
@@ -98,7 +98,7 @@ function tests.test_point_same_path()
     assert(point.same_path(p1, p4) == false, "Points from different paths should return false")
 end
 
--- Tests that point.link correctly links multiple points in order
+--- Tests that point.link correctly links multiple points in order
 function tests.test_point_link()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(10, 15, 20))
@@ -114,7 +114,7 @@ function tests.test_point_link()
     assert(p3.previous == p2, "p3.previous should be p2")
 end
 
--- Tests that point:unlink_from_previous correctly severs the previous link
+--- Tests that point:unlink_from_previous correctly severs the previous link
 function tests.test_point_unlink_from_previous()
     local p1 = point.new(vector.new(5, 10, 15))
     local p2 = point.new(vector.new(35, 40, 45))
@@ -129,7 +129,7 @@ function tests.test_point_unlink_from_previous()
     assert(p1.next == nil, "p1.next should be nil after unlink")
 end
 
--- Tests that point:unlink_from_next correctly severs the next link
+--- Tests that point:unlink_from_next correctly severs the next link
 function tests.test_point_unlink_from_next()
     local p1 = point.new(vector.new(0, 8, 16))
     local p2 = point.new(vector.new(32, 40, 48))
@@ -144,7 +144,7 @@ function tests.test_point_unlink_from_next()
     assert(p2.previous == nil, "p2.previous should be nil after unlink")
 end
 
--- Tests that point:unlink correctly severs both previous and next links
+--- Tests that point:unlink correctly severs both previous and next links
 function tests.test_point_unlink()
     local p1 = point.new(vector.new(0, 5, 10))
     local p2 = point.new(vector.new(30, 35, 40))
@@ -161,7 +161,7 @@ function tests.test_point_unlink()
     assert(p2.previous == nil, "p2.previous should be nil")
 end
 
--- Tests that point:attach shares position between attached points
+--- Tests that point:attach shares position between attached points
 function tests.test_point_attach()
     local p1 = point.new(vector.new(10, 20, 30))
     local p2 = point.new(vector.new(5, 15, 25))
@@ -177,7 +177,7 @@ function tests.test_point_attach()
     assert(p2.attached[p1] == p1, "p1 should be in p2's attached table")
 end
 
--- Tests that point:detach removes attachment relationship
+--- Tests that point:detach removes attachment relationship
 function tests.test_point_detach()
     local p1 = point.new(vector.new(15, 25, 35))
     local p2 = point.new(vector.new(5, 10, 15))
@@ -191,7 +191,7 @@ function tests.test_point_detach()
     assert(p1.attached[p3] == p3, "p3 should still be attached to p1")
 end
 
--- Tests that point:detach_all removes all attachments
+--- Tests that point:detach_all removes all attachments
 function tests.test_point_detach_all()
     local p1 = point.new(vector.new(20, 30, 40))
     local p2 = point.new(vector.new(5, 10, 15))
@@ -205,7 +205,7 @@ function tests.test_point_detach_all()
     assert(p3.attached[p1] == nil, "p1 should be removed from p3's attached table")
 end
 
--- Tests that point:set_position updates position for all attached points
+--- Tests that point:set_position updates position for all attached points
 function tests.test_point_set_position()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(50, 60, 70))
@@ -219,7 +219,7 @@ function tests.test_point_set_position()
     assert(p2.pos == p1.pos, "p2 should share the updated position")
 end
 
--- Tests that point.equals correctly compares points by position and ID
+--- Tests that point.equals correctly compares points by position and ID
 function tests.test_point_equals()
     local p1 = point.new(vector.new(10, 20, 30))
     local p2 = point.new(vector.new(10, 20, 30))
@@ -235,7 +235,7 @@ function tests.test_point_equals()
     assert(point.equals(p1, p3) == false, "Points with different positions should not be equal")
 end
 
--- Tests that point.comparator provides deterministic ordering
+--- Tests that point.comparator provides deterministic ordering
 function tests.test_point_comparator()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(5, 0, 0))
@@ -256,7 +256,7 @@ function tests.test_point_comparator()
     assert(point.comparator(p1, p5) == true, "p1 should come before p5 (ID comparison)")
 end
 
--- Tests that point.sort returns points in deterministic order
+--- Tests that point.sort returns points in deterministic order
 function tests.test_point_sort()
     local p3 = point.new(vector.new(30, 15, 10))
     local p1 = point.new(vector.new(5, 25, 20))
@@ -270,7 +270,7 @@ function tests.test_point_sort()
     assert(sorted[3] == p3, "Third point should be p3 (largest x)")
 end
 
--- Tests that point:attached_sorted returns attached points in order
+--- Tests that point:attached_sorted returns attached points in order
 function tests.test_point_attached_sorted()
     local p1 = point.new(vector.new(25, 25, 25))
     local p2 = point.new(vector.new(10, 15, 20))
@@ -284,7 +284,7 @@ function tests.test_point_attached_sorted()
     assert(#sorted == 2, "Should have 2 attached points")
 end
 
--- Tests that point:branches_sorted returns branches in deterministic order
+--- Tests that point:branches_sorted returns branches in deterministic order
 function tests.test_point_branches_sorted()
     local p1 = point.new(vector.new(0, 10, 20))
     local p2 = point.new(vector.new(30, 40, 50))
@@ -305,7 +305,7 @@ function tests.test_point_branches_sorted()
     assert(#sorted == 2, "Should have 2 branches")
 end
 
--- Tests that point:iterator traverses forward through linked points
+--- Tests that point:iterator traverses forward through linked points
 function tests.test_point_iterator()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(40, 20, 30))
@@ -329,7 +329,7 @@ function tests.test_point_iterator()
     assert(x_positions[4] == 40, "Fourth visited should be at x=40 (finish)")
 end
 
--- Tests that point:reverse_iterator traverses backward through linked points
+--- Tests that point:reverse_iterator traverses backward through linked points
 function tests.test_point_reverse_iterator()
     local p1 = point.new(vector.new(0, 0, 0))
     local p2 = point.new(vector.new(40, 20, 30))
@@ -353,7 +353,7 @@ function tests.test_point_reverse_iterator()
     assert(x_positions[4] == 0, "Fourth visited should be at x=0 (start)")
 end
 
--- Tests that point:set_path correctly assigns point to path
+--- Tests that point:set_path correctly assigns point to path
 function tests.test_point_set_path()
     local p1 = point.new(vector.new(0, 5, 10))
     local p2 = point.new(vector.new(30, 35, 40))
@@ -366,7 +366,7 @@ function tests.test_point_set_path()
     assert(pth.points[p3] == p3, "Path should contain point in points table")
 end
 
--- Tests that point:branch creates a new path branching from this point
+--- Tests that point:branch creates a new path branching from this point
 function tests.test_point_branch()
     local p1 = point.new(vector.new(0, 10, 20))
     local p2 = point.new(vector.new(30, 40, 50))
@@ -385,7 +385,7 @@ function tests.test_point_branch()
     assert(p_mid.attached[branch.start] == branch.start, "Branch start should be attached to branching point")
 end
 
--- Tests that point:has_branches correctly detects branches
+--- Tests that point:has_branches correctly detects branches
 function tests.test_point_has_branches()
     local p1 = point.new(vector.new(5, 15, 25))
     local p2 = point.new(vector.new(35, 45, 55))
@@ -402,7 +402,7 @@ function tests.test_point_has_branches()
     assert(p_mid:has_branches() == true, "Point should have branches after branching")
 end
 
--- Tests that point:unbranch removes a specific branch
+--- Tests that point:unbranch removes a specific branch
 function tests.test_point_unbranch()
     local p1 = point.new(vector.new(0, 10, 20))
     local p2 = point.new(vector.new(40, 50, 60))
@@ -426,7 +426,7 @@ function tests.test_point_unbranch()
     assert(pth.branching_points[p_mid] == nil, "Point should no longer be a branching point")
 end
 
--- Tests that point:unbranch_all removes all branches
+--- Tests that point:unbranch_all removes all branches
 function tests.test_point_unbranch_all()
     local p1 = point.new(vector.new(5, 15, 25))
     local p2 = point.new(vector.new(45, 55, 65))
@@ -446,7 +446,7 @@ function tests.test_point_unbranch_all()
     assert(pth.branching_points[p_mid] == nil, "Point should no longer be a branching point")
 end
 
--- Tests that point:clear removes all links, attachments, and branches
+--- Tests that point:clear removes all links, attachments, and branches
 function tests.test_point_clear()
     local p1 = point.new(vector.new(0, 10, 20))
     local p2 = point.new(vector.new(40, 50, 60))

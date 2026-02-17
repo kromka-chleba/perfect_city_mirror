@@ -30,7 +30,7 @@ local tests = pcmg.tests.lru_cache
 -- LRU CACHE CLASS UNIT TESTS
 -- ============================================================
 
--- Tests that lru_cache.new creates a cache with default configuration
+--- Tests that lru_cache.new creates a cache with default configuration
 function tests.test_lru_cache_new_default()
     local cache = lru_cache.new()
     
@@ -39,7 +39,7 @@ function tests.test_lru_cache_new_default()
     assert(cache._max_entries == 100, "Default max_entries should be 100")
 end
 
--- Tests that lru_cache.new creates a cache with custom configuration
+--- Tests that lru_cache.new creates a cache with custom configuration
 function tests.test_lru_cache_new_custom()
     local cache = lru_cache.new({max_entries = 50})
     
@@ -48,7 +48,7 @@ function tests.test_lru_cache_new_custom()
     assert(cache._max_entries == 50, "Custom max_entries should be 50")
 end
 
--- Tests that set stores a value in the cache
+--- Tests that set stores a value in the cache
 function tests.test_lru_cache_set()
     local cache = lru_cache.new()
     
@@ -57,7 +57,7 @@ function tests.test_lru_cache_set()
     assert(cache:has("key1"), "Cache should have key1")
 end
 
--- Tests that get retrieves a value from the cache
+--- Tests that get retrieves a value from the cache
 function tests.test_lru_cache_get()
     local cache = lru_cache.new()
     
@@ -67,7 +67,7 @@ function tests.test_lru_cache_get()
     assert(value == "value1", "Retrieved value should match stored value")
 end
 
--- Tests that get returns nil for non-existent keys
+--- Tests that get returns nil for non-existent keys
 function tests.test_lru_cache_get_nonexistent()
     local cache = lru_cache.new()
     
@@ -75,7 +75,7 @@ function tests.test_lru_cache_get_nonexistent()
     assert(value == nil, "Get should return nil for non-existent key")
 end
 
--- Tests that has checks existence without retrieving value
+--- Tests that has checks existence without retrieving value
 function tests.test_lru_cache_has()
     local cache = lru_cache.new()
     
@@ -85,7 +85,7 @@ function tests.test_lru_cache_has()
     assert(cache:has("key1") == true, "Cache should have key1 after set")
 end
 
--- Tests that size returns the correct number of entries
+--- Tests that size returns the correct number of entries
 function tests.test_lru_cache_size()
     local cache = lru_cache.new()
     
@@ -101,7 +101,7 @@ function tests.test_lru_cache_size()
     assert(cache:size() == 3, "Cache should have size 3 after three sets")
 end
 
--- Tests that clear removes all entries
+--- Tests that clear removes all entries
 function tests.test_lru_cache_clear()
     local cache = lru_cache.new()
     
@@ -117,7 +117,7 @@ function tests.test_lru_cache_clear()
     assert(cache:has("key3") == false, "key3 should not exist after clear")
 end
 
--- Tests that cache evicts oldest entry when limit is exceeded
+--- Tests that cache evicts oldest entry when limit is exceeded
 function tests.test_lru_cache_eviction()
     local cache = lru_cache.new({max_entries = 3})
     
@@ -135,7 +135,7 @@ function tests.test_lru_cache_eviction()
     assert(cache:has("key4") == true, "key4 should exist")
 end
 
--- Tests that accessing a key moves it to the end (most recent)
+--- Tests that accessing a key moves it to the end (most recent)
 function tests.test_lru_cache_access_order()
     local cache = lru_cache.new({max_entries = 3})
     
@@ -155,7 +155,7 @@ function tests.test_lru_cache_access_order()
     assert(cache:has("key4") == true, "key4 should exist")
 end
 
--- Tests that touch updates access order without retrieving value
+--- Tests that touch updates access order without retrieving value
 function tests.test_lru_cache_touch()
     local cache = lru_cache.new({max_entries = 3})
     
@@ -175,7 +175,7 @@ function tests.test_lru_cache_touch()
     assert(cache:has("key4") == true, "key4 should exist")
 end
 
--- Tests that touch does nothing for non-existent keys
+--- Tests that touch does nothing for non-existent keys
 function tests.test_lru_cache_touch_nonexistent()
     local cache = lru_cache.new()
     
@@ -188,7 +188,7 @@ function tests.test_lru_cache_touch_nonexistent()
     assert(cache:size() == size_before, "Size should not change when touching non-existent key")
 end
 
--- Tests that has does not update access order
+--- Tests that has does not update access order
 function tests.test_lru_cache_has_no_update()
     local cache = lru_cache.new({max_entries = 3})
     
@@ -208,7 +208,7 @@ function tests.test_lru_cache_has_no_update()
     assert(cache:has("key4") == true, "key4 should exist")
 end
 
--- Tests that on_evict callback is called when entry is evicted
+--- Tests that on_evict callback is called when entry is evicted
 function tests.test_lru_cache_eviction_callback()
     local evicted_keys = {}
     local evicted_values = {}
@@ -233,7 +233,7 @@ function tests.test_lru_cache_eviction_callback()
     assert(evicted_values[1] == "value1", "Evicted value should be value1")
 end
 
--- Tests that updating an existing key's value works correctly
+--- Tests that updating an existing key's value works correctly
 function tests.test_lru_cache_update_value()
     local cache = lru_cache.new()
     
@@ -246,7 +246,7 @@ function tests.test_lru_cache_update_value()
     assert(cache:size() == 1, "Size should still be 1 after update")
 end
 
--- Tests that cache works with different value types
+--- Tests that cache works with different value types
 function tests.test_lru_cache_various_value_types()
     local cache = lru_cache.new()
     
@@ -270,7 +270,7 @@ function tests.test_lru_cache_various_value_types()
     assert(cache:get("bool_key") == true, "Boolean value should work")
 end
 
--- Tests cache behavior with single entry limit
+--- Tests cache behavior with single entry limit
 function tests.test_lru_cache_single_entry()
     local cache = lru_cache.new({max_entries = 1})
     
@@ -283,7 +283,7 @@ function tests.test_lru_cache_single_entry()
     assert(cache:size() == 1, "Cache should have exactly 1 entry")
 end
 
--- Tests multiple evictions in one operation
+--- Tests multiple evictions in one operation
 function tests.test_lru_cache_multiple_evictions()
     local eviction_count = 0
     
@@ -306,7 +306,7 @@ function tests.test_lru_cache_multiple_evictions()
     assert(eviction_count == 2, "Should have 2 evictions total")
 end
 
--- Tests that setting same key multiple times maintains correct size
+--- Tests that setting same key multiple times maintains correct size
 function tests.test_lru_cache_set_same_key()
     local cache = lru_cache.new()
     

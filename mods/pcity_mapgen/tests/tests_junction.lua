@@ -31,7 +31,7 @@ local tests = pcmg.tests.junction
 -- JUNCTION CLASS UNIT TESTS
 -- ============================================================
 
--- Tests that junction.new creates a junction with correct properties
+--- Tests that junction.new creates a junction with correct properties
 function tests.test_junction_new()
     local pos = vector.new(5, 10, 15)
     local direction = vector.new(1, 0, 0)
@@ -46,7 +46,7 @@ function tests.test_junction_new()
     assert(j.type == jtype, "Junction type should match input")
 end
 
--- Tests that junction.check correctly identifies junction objects
+--- Tests that junction.check correctly identifies junction objects
 function tests.test_junction_check()
     local j = junction.new(
         vector.new(0, 0, 0),
@@ -61,7 +61,7 @@ function tests.test_junction_check()
     assert(junction.check(nil) == false, "junction.check should return false for nil")
 end
 
--- Tests junction creation with different valid direction vectors
+--- Tests junction creation with different valid direction vectors
 function tests.test_junction_valid_directions()
     local pos = vector.new(0, 0, 0)
     local size = vector.new(0, 2, 3)
@@ -91,7 +91,7 @@ function tests.test_junction_valid_directions()
     end
 end
 
--- Tests that invalid direction vectors are rejected
+--- Tests that invalid direction vectors are rejected
 function tests.test_junction_invalid_direction()
     local pos = vector.new(0, 0, 0)
     local size = vector.new(0, 2, 3)
@@ -112,7 +112,7 @@ function tests.test_junction_invalid_direction()
     end
 end
 
--- Tests that size must be perpendicular to direction
+--- Tests that size must be perpendicular to direction
 function tests.test_junction_size_perpendicularity()
     local pos = vector.new(0, 0, 0)
     local direction = vector.new(1, 0, 0)
@@ -130,7 +130,7 @@ function tests.test_junction_size_perpendicularity()
     assert(not ok, "Should reject non-perpendicular size")
 end
 
--- Tests that type must be a non-empty string
+--- Tests that type must be a non-empty string
 function tests.test_junction_type_validation()
     local pos = vector.new(0, 0, 0)
     local direction = vector.new(1, 0, 0)
@@ -153,7 +153,7 @@ function tests.test_junction_type_validation()
     assert(not ok, "Should reject non-string type")
 end
 
--- Tests get_opposite_corner method
+--- Tests get_opposite_corner method
 function tests.test_junction_get_opposite_corner()
     local pos = vector.new(5, 10, 15)
     local direction = vector.new(1, 0, 0)
@@ -167,7 +167,7 @@ function tests.test_junction_get_opposite_corner()
            "Opposite corner should be pos + size")
 end
 
--- Tests can_connect method with compatible junctions
+--- Tests can_connect method with compatible junctions
 function tests.test_junction_can_connect_compatible()
     -- Create two junctions facing each other
     local j1 = junction.new(
@@ -188,7 +188,7 @@ function tests.test_junction_can_connect_compatible()
     assert(j2:can_connect(j1), "Connection should be symmetric")
 end
 
--- Tests can_connect method with incompatible directions
+--- Tests can_connect method with incompatible directions
 function tests.test_junction_can_connect_wrong_direction()
     -- Create two junctions not facing each other
     local j1 = junction.new(
@@ -209,7 +209,7 @@ function tests.test_junction_can_connect_wrong_direction()
            "Junctions with non-opposite directions should not connect")
 end
 
--- Tests can_connect method with incompatible types
+--- Tests can_connect method with incompatible types
 function tests.test_junction_can_connect_wrong_type()
     -- Create two junctions with different types
     local j1 = junction.new(
@@ -230,7 +230,7 @@ function tests.test_junction_can_connect_wrong_type()
            "Junctions with different types should not connect")
 end
 
--- Tests junction:copy method
+--- Tests junction:copy method
 function tests.test_junction_copy()
     local j1 = junction.new(
         vector.new(5, 10, 15),
@@ -253,7 +253,7 @@ function tests.test_junction_copy()
     assert(j1.pos.x ~= 100, "Modifying copy should not affect original")
 end
 
--- Tests junction.equals method
+--- Tests junction.equals method
 function tests.test_junction_equals()
     local j1 = junction.new(
         vector.new(5, 10, 15),
