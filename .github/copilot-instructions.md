@@ -2,11 +2,7 @@
 
 ## Project Overview
 
-Perfect City is a psychological horror game built for Luanti (formerly Minetest) 5.12+. The game creates an infinite maze city representing a broken mind, where the player must survive and uncover lost memories.
-
-**Core Concept:** An endless post-Soviet Eastern European city with no people, dark atmosphere, and surreal elements. The City is alive, stalks the player, and sends creatures to kill them.
-
-**Target Audience:** Adults (contains horror, gore, mental illness themes)
+Perfect City is a game built for Luanti (formerly Minetest) 5.12+ using Lua. The project implements procedural map generation, custom nodes, and game mechanics using the Luanti API.
 
 ## Folder Structure
 
@@ -63,26 +59,6 @@ Perfect City is a psychological horror game built for Luanti (formerly Minetest)
 - Test infrastructure uses Luanti engine (not standard Lua)
 - Tests run with `.util/run_tests.sh` from repository root
 - See `mods/pcity_mapgen/tests/` for examples
-
-## Game Design Guidelines
-
-### Aesthetic
-- Post-Soviet, Central/Eastern European architecture
-- Dark, moody atmosphere (eternal twilight)
-- Timeline: vaguely 2000s-2010s
-- Surreal elements: melting reality, disappearing objects, impossible geometry
-
-### Monsters
-- Anthropomorphic city elements (road signs, pipes, electric components)
-- Not typical horror creatures
-
-### NPCs (Minimal)
-- Copernicus (guide)
-- Villain (embodiment of trauma)
-- Mysterious Granny
-- Mysterious Girl
-
-**Important:** This is NOT Minecraft. Avoid blocky, cheerful aesthetics.
 
 ## Reference
 See `doc/CODING_STYLE.md` for complete coding guidelines.
