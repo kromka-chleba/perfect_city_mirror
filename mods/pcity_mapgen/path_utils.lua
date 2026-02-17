@@ -28,36 +28,70 @@ local pcmg = pcity_mapgen
 pcmg.path_utils = pcmg.path_utils or {}
 local path_utils = pcmg.path_utils
 
+--- Flatten a 3D vector to the XZ plane.
+-- Sets the Y component to 0, keeping only X and Z coordinates.
+-- @param v table A 3D vector with x, y, z components
+-- @return table A new vector with y=0
 local function vector_flatten_xz(v)
     return vector.new(v.x, 0, v.z)
 end
 
+--- Calculate dot product of two vectors in the XZ plane.
+-- Ignores Y components of both vectors.
+-- @param v1 table First 3D vector
+-- @param v2 table Second 3D vector
+-- @return number The dot product in XZ plane
 local function vector_xz_dot(v1, v2)
     return vector.dot(vector_flatten_xz(v1), vector_flatten_xz(v2))
 end
 
+--- Calculate length of a vector in the XZ plane.
+-- Ignores Y component.
+-- @param v table A 3D vector
+-- @return number The length in XZ plane
 local function vector_xz_length(v)
     return vector.length(vector_flatten_xz(v))
 end
 
+--- Calculate squared length of a vector in the XZ plane.
+-- Ignores Y component. More efficient than calculating length.
+-- @param v table A 3D vector
+-- @return number The squared length in XZ plane
 local function vector_xz_length_sq(v)
     local flat = vector_flatten_xz(v)
     return vector.dot(flat, flat)
 end
 
+--- Calculate dot product of two vectors in the XZ plane.
+-- Public API wrapper for vector_xz_dot.
+-- @param v1 table First 3D vector
+-- @param v2 table Second 3D vector
+-- @return number The dot product in XZ plane
 function path_utils.xz_dot(v1, v2)
     return vector_xz_dot(v1, v2)
 end
 
+--- Calculate length of a vector in the XZ plane.
+-- Public API wrapper for vector_xz_length.
+-- @param v table A 3D vector
+-- @return number The length in XZ plane
 function path_utils.xz_length(v)
     return vector_xz_length(v)
 end
 
+--- Calculate squared length of a vector in the XZ plane.
+-- Public API wrapper for vector_xz_length_sq.
+-- @param v table A 3D vector
+-- @return number The squared length in XZ plane
 function path_utils.xz_length_sq(v)
     return vector_xz_length_sq(v)
 end
 
--- Calculate the 2D angle between two direction vectors (in XZ plane)
+--- Calculate the 2D angle between two direction vectors in the XZ plane.
+-- Returns angle in radians between 0 and pi.
+-- @param dir1 table First direction vector
+-- @param dir2 table Second direction vector
+-- @return number Angle in radians between the vectors
 function path_utils.angle_between_2d(dir1, dir2)
     local flat1 = vector_flatten_xz(dir1)
     local flat2 = vector_flatten_xz(dir2)
@@ -71,8 +105,15 @@ function path_utils.angle_between_2d(dir1, dir2)
     return math.acos(cos_angle)
 end
 
--- Check if two segments are parallel (within a threshold angle)
--- Returns true if angle between segments is less than threshold or greater than pi - threshold
+--- Check if two segments are parallel within a threshold angle.
+-- Returns true if angle between segments is less than threshold or
+-- greater than pi - threshold.
+-- @param seg1_start table Start position of first segment
+-- @param seg1_end table End position of first segment
+-- @param seg2_start table Start position of second segment
+-- @param seg2_end table End position of second segment
+-- @param threshold number Angle threshold in radians (default: pi/6)
+-- @return boolean True if segments are parallel
 function path_utils.segments_are_parallel(seg1_start, seg1_end, seg2_start, seg2_end, threshold)
     threshold = threshold or (math.pi / 6)
 
@@ -84,7 +125,13 @@ function path_utils.segments_are_parallel(seg1_start, seg1_end, seg2_start, seg2
     return angle < threshold or angle > (math.pi - threshold)
 end
 
--- Check if a direction is parallel to a segment
+--- Check if a direction is parallel to a segment.
+-- Returns true if angle is less than threshold or greater than pi - threshold.
+-- @param direction table Direction vector to check
+-- @param seg_start table Start position of segment
+-- @param seg_end table End position of segment
+-- @param threshold number Angle threshold in radians (default: pi/6)
+-- @return boolean True if direction is parallel to segment
 function path_utils.direction_parallel_to_segment(direction, seg_start, seg_end, threshold)
     threshold = threshold or (math.pi / 6)
     local seg_dir = vector.direction(seg_start, seg_end)
@@ -92,8 +139,13 @@ function path_utils.direction_parallel_to_segment(direction, seg_start, seg_end,
     return angle < threshold or angle > (math.pi - threshold)
 end
 
--- Calculate the shortest distance from a point to a line segment (in 2D, XZ plane)
--- Returns the distance and the closest point on the segment
+--- Calculate the shortest distance from a point to a line segment.
+-- Works in 2D using the XZ plane.
+-- @param pos table Point position
+-- @param seg_start table Start position of segment
+-- @param seg_end table End position of segment
+-- @return number Distance from point to segment
+-- @return table Closest point on the segment
 function path_utils.point_to_segment_distance(pos, seg_start, seg_end)
     local seg_dir = vector.subtract(seg_end, seg_start)
     local seg_len_sq = vector_xz_length_sq(seg_dir)
@@ -111,9 +163,16 @@ function path_utils.point_to_segment_distance(pos, seg_start, seg_end)
     return vector.distance(pos, closest), closest
 end
 
--- Calculate the intersection point between two line segments
--- Returns the intersection point, t1 (parameter along seg1), t2 (parameter along seg2)
--- or nil if segments don't intersect
+--- Calculate the intersection point between two line segments.
+-- Returns intersection point and parameters along each segment, or nil if
+-- segments don't intersect.
+-- @param seg1_start table Start position of first segment
+-- @param seg1_end table End position of first segment
+-- @param seg2_start table Start position of second segment
+-- @param seg2_end table End position of second segment
+-- @return table|nil Intersection point, or nil if no intersection
+-- @return number|nil Parameter t1 along first segment (0-1)
+-- @return number|nil Parameter t2 along second segment (0-1)
 function path_utils.calculate_segment_intersection(seg1_start, seg1_end, seg2_start, seg2_end)
     local d1 = vector.subtract(seg1_end, seg1_start)
     local d2 = vector.subtract(seg2_end, seg2_start)
@@ -146,6 +205,15 @@ end
 -- INTERNAL 2D DISTANCE HELPERS
 -- ============================================================
 
+--- Calculate minimum distance between two line segments in 2D (XZ plane).
+-- Returns distance and closest points on both segments.
+-- @param a1 table Start position of first segment
+-- @param a2 table End position of first segment
+-- @param b1 table Start position of second segment
+-- @param b2 table End position of second segment
+-- @return number Minimum distance between segments
+-- @return table Closest point on first segment
+-- @return table Closest point on second segment
 local function segment_distance_2d(a1, a2, b1, b2)
     local a_dir = vector.subtract(a2, a1)
     local b_dir = vector.subtract(b2, b1)
@@ -219,6 +287,14 @@ local function segment_distance_2d(a1, a2, b1, b2)
     return dist, closest_a, closest_b
 end
 
+--- Check if two segments intersect or are within margin distance.
+-- Returns intersection info table or nil if distance exceeds margin.
+-- @param a1 table Start position of first segment
+-- @param a2 table End position of first segment
+-- @param b1 table Start position of second segment
+-- @param b2 table End position of second segment
+-- @param margin number Maximum distance to consider as intersection (default: 0)
+-- @return table|nil Table with intersection info or nil
 function path_utils.segment_intersects(a1, a2, b1, b2, margin)
     margin = margin or 0
 
@@ -238,6 +314,13 @@ function path_utils.segment_intersects(a1, a2, b1, b2, margin)
     return nil
 end
 
+--- Calculate distance from a point to a line segment in 2D (XZ plane).
+-- Returns distance and closest point on the segment.
+-- @param p table Point position
+-- @param seg_start table Start position of segment
+-- @param seg_end table End position of segment
+-- @return number Distance from point to segment
+-- @return table Closest point on the segment
 function path_utils.point_to_segment_distance_2d(p, seg_start, seg_end)
     local seg_dir = vector.subtract(seg_end, seg_start)
     local len_sq = vector_xz_length_sq(seg_dir)
@@ -256,8 +339,14 @@ function path_utils.point_to_segment_distance_2d(p, seg_start, seg_end)
     return dist, closest
 end
 
--- Find intersection point between a line segment and a grid line
--- Returns the intersection point and t parameter, or nil if no intersection
+--- Find intersection point between a line segment and a grid line.
+-- Grid line is either vertical (x=constant) or horizontal (z=constant).
+-- @param seg_start table Start position of segment
+-- @param seg_end table End position of segment
+-- @param grid_coord number Coordinate value of the grid line
+-- @param is_x_grid boolean True for vertical grid line (x), false for horizontal (z)
+-- @return table|nil Intersection point, or nil if no intersection
+-- @return number|nil Parameter t along segment (0-1)
 function path_utils.segment_grid_intersection(seg_start, seg_end, grid_coord, is_x_grid)
     local start_coord, end_coord
     local other_start, other_end
