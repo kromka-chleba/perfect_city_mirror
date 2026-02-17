@@ -61,6 +61,16 @@ Perfect City is a game built for Luanti (formerly Minetest) 5.12+ using Lua. The
 - Limit lines to 80-100 characters
 - Add blank lines between logical sections
 
+### Vector Operations
+- **Always prefer operators over verbose methods** for Luanti vectors
+- Use `v1 + v2` instead of `vector.add(v1, v2)`
+- Use `v1 - v2` instead of `vector.subtract(v1, v2)`
+- Use `v * scalar` instead of `vector.multiply(v, scalar)`
+- Use `v / scalar` instead of `vector.divide(v, scalar)`
+- Use `-v` instead of negation methods
+- Use `v1 == v2` instead of verbose equality checks
+- Note: Continue using function form for operations without operator equivalents (e.g., `vector.length()`, `vector.dot()`, `vector.normalize()`)
+
 ### Testing
 - Test infrastructure uses Luanti engine (not standard Lua)
 - Tests run with `.util/run_tests.sh` from repository root
