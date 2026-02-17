@@ -9,6 +9,11 @@ player_api.registered_models = {}
 -- Local for speed.
 local models = player_api.registered_models
 
+--- Check if two collision boxes are equal.
+-- Compares each of the 6 collision box coordinates for equality.
+-- @param collisionbox table First collision box array
+-- @param other_collisionbox table Second collision box array
+-- @return boolean True if collision boxes are equal
 local function collisionbox_equals(collisionbox, other_collisionbox)
 	if collisionbox == other_collisionbox then
 		return true
@@ -21,6 +26,12 @@ local function collisionbox_equals(collisionbox, other_collisionbox)
 	return true
 end
 
+--- Register a new player model.
+-- Registers a player model with animations and properties. Sets default
+-- values for visual_size, collisionbox, stepheight, and eye_height.
+-- Sorts animations into property classes based on collision box and eye height.
+-- @param name string Model identifier
+-- @param def table Model definition with animations, visual_size, etc.
 function player_api.register_model(name, def)
 	models[name] = def
 	def.visual_size = def.visual_size or {x = 1, y = 1}
@@ -53,15 +64,28 @@ end
 local players = {}
 player_api.player_attached = {}
 
+--- Get player data by player object.
+-- Retrieves the player data table for the given player.
+-- @param player ObjectRef Player object
+-- @return table Player data table containing model, textures, and animation
 local function get_player_data(player)
 	return assert(players[player:get_player_name()])
 end
 
+--- Get animation data for a player.
+-- Returns the player data table containing current animation state.
+-- @param player ObjectRef Player object
+-- @return table Player data with animation, animation_speed, model, textures
 function player_api.get_animation(player)
 	return get_player_data(player)
 end
 
--- Called when a player's appearance needs to be updated
+--- Set player model.
+-- Updates the player's appearance with a new model. Clears animation data
+-- and applies model properties like mesh, textures, visual_size, and stepheight.
+-- Falls back to upright_sprite visual if model not found.
+-- @param player ObjectRef Player object
+-- @param model_name string Name of the registered model to apply
 function player_api.set_model(player, model_name)
 	local player_data = get_player_data(player)
 	if player_data.model == model_name then
@@ -96,12 +120,20 @@ function player_api.set_model(player, model_name)
 	end
 end
 
+--- Get player textures.
+-- Returns the current textures for the player, falling back to model textures.
+-- @param player ObjectRef Player object
+-- @return table Array of texture names
 function player_api.get_textures(player)
 	local player_data = get_player_data(player)
 	local model = models[player_data.model]
 	return assert(player_data.textures or (model and model.textures))
 end
 
+--- Set player textures.
+-- Updates all textures for the player. Falls back to model textures if nil.
+-- @param player ObjectRef Player object
+-- @param textures table Array of texture names to apply
 function player_api.set_textures(player, textures)
 	local player_data = get_player_data(player)
 	local model = models[player_data.model]
@@ -110,12 +142,23 @@ function player_api.set_textures(player, textures)
 	player:set_properties({textures = new_textures})
 end
 
+--- Set a single player texture by index.
+-- Updates one texture in the player's texture array.
+-- @param player ObjectRef Player object
+-- @param index number Index of texture to replace (1-based)
+-- @param texture string Texture name to set at the specified index
 function player_api.set_texture(player, index, texture)
 	local textures = table.copy(player_api.get_textures(player))
 	textures[index] = texture
 	player_api.set_textures(player, textures)
 end
 
+--- Set player animation.
+-- Changes the player's current animation with optional speed. Updates local
+-- and global animations, and modifies collisionbox and eye_height if changed.
+-- @param player ObjectRef Player object
+-- @param anim_name string Name of animation to play (must exist in model)
+-- @param speed number Optional animation speed (uses model default if nil)
 function player_api.set_animation(player, anim_name, speed)
 	local player_data = get_player_data(player)
 	local model = models[player_data.model]
@@ -181,7 +224,10 @@ function core.calculate_knockback(player, ...)
 	return old_calculate_knockback(player, ...)
 end
 
--- Check each player and apply animations
+--- Update player animations each global step.
+-- Checks all connected players and applies appropriate animations based on
+-- their state (dead, moving, mining, standing). Reduces animation speed when
+-- sneaking. Only affects non-attached players with valid models.
 function player_api.globalstep()
 	for _, player in ipairs(core.get_connected_players()) do
 		local name = player:get_player_name()
