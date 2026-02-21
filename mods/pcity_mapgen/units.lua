@@ -167,7 +167,11 @@ local citychunk_in_nodes = vector.new(
     mapchunk_size.y * citychunk_size.y,
     mapchunk_size.z * citychunk_size.z
 )
-local citychunk_max = citychunk_in_nodes - 1
+local citychunk_max = vector.new(
+    citychunk_in_nodes.x - 1,
+    citychunk_in_nodes.y - 1,
+    citychunk_in_nodes.z - 1
+)
 sizes_table.citychunk = {
     in_nodes = citychunk_in_nodes,
     in_mapchunks = citychunk_size,  -- Now a vector!
