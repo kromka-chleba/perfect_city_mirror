@@ -251,7 +251,7 @@ are good, neutral and evil characters, but nothing is completely good
 or evil, the characters are in shades of gray. The characters try to
 help Seba find the way in their own unique ways.
 
-### 3.1 Sebastian (Seba)
+### 3.1 Sebastian, nickname: Seba
 
 Theme: "Like a dream about another person's life. Who even am I, is
 this where I belong?"
@@ -346,7 +346,7 @@ and stopped the Earth, but I cannot do so any longer"
 him. He's a broken and cynical man and will surely try to deceive
 you. Don't play his wicked games, Seba."
 
-### 3.3 Aleks (Ari) Ariadne - Imaginary Girlfriend
+### 3.3 Aleks Ariadne, nickname: Ari - Imaginary Girlfriend, Childhood Bro
 
 Theme: "Like those precious summer days - the blue sky, green trees
 and orange sun. Will you stay with me forever?".
@@ -370,31 +370,7 @@ Quotes:
 
 "You know, I'm a girl after all..."
 
-### 3.4 Aleks (Ari) Ariadne - Imaginary Childhood Bro
-
-Theme: "Like those precious summer days - the blue sky, green trees
-and orange sun. Will you stay with me forever?".
-
-Full of energy and sincere, always knows what to say when you feel
-down.  "We used to spend so much time together as kids, don't you
-remember?"  Loves hanging around with you, will do stupid shit with
-you like building a dam and poking a dead bird with a stick.
-A nostalgic and warm feeling fills your heart, the feeling in your
-guts is love. You wish this summer never ends.
-
-Quotes:
-
-"I'll always be your bro, bro."
-
-"I like you for who you are, Seba."
-
-"Give me your hand!"
-
-"I'm really happy I've met you!"
-
-"N-no, you can't, we're both boys!"
-
-### 3.5 Babcia - Seba's Grandma?
+### 3.4 Babcia - Seba's Grandma?
 
 Theme: "She forgot where she found it but she was ready to give it to
 the young boy".
