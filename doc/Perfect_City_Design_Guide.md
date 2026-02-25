@@ -92,7 +92,7 @@ your dearest friend.
 The city has multiple layers, both physical and psychological.
 Physical layers of the city are: buildings, the outside, the basement
 and the hell (the bottom part of the basement). Psychological layers
-are: the "real" world (the one Seba was before entering the city, the
+are: the "real" world (the one Seba was before entering the city), the
 city, Seba's memories, dreams and nightmares. Although the layers
 exists, their boundaries aren't clear and often get blurred. Seba's
 thoughts and nightmares soak into the city's tissue.
@@ -172,7 +172,15 @@ form of items that feel otherwise useless, unimportant.
 ## 2. Monsters
 
 Monsters of the Perfect City are personifications of Seba's fears and
-traumas.
+traumas. Monsters should be elements of the city that became alive,
+e.g. anthropomorphic road signs, pipes, electric stuff, ovens,
+etc. While designing a monster think about how it came to be and why,
+this adds depth to the story. The city gave birth to monsters through
+its concrete womb. Most monsters should be slender - this is the
+defining form in the game. Try avoiding typical fleshy horror
+aesthetics. Fear should emerge from interactions of the monster's
+form, its habits, setting, relation to Seba's memories and often
+irrational fears emerging from urban legends and childhood nightmares.
 
 ### 2.1 Tap monster
 
@@ -188,6 +196,14 @@ free out of the wall and start chasing you.  If the tap catches you it
 will vomit the poison straight into your throat.
 
 ### 2.2 Drillman
+
+Seba once heard a bizarre story from Mariusz about a neighbor in his
+apartment building. People had complained about constant drilling
+noises, which lasted for weeks until the police were called. The man,
+who was so occupied with drilling, managed to drill hundreds of holes
+in his flat. The drilling noises ceased after the man was taken to a
+psychiatric ward. After some time, the neighbors stopped talking about
+the case but were reminded of it every time someone drilled a hole.
 
 ### 2.3 TV monster
 
@@ -225,6 +241,15 @@ if the faceless man was still lurking somewhere in the city.
 ### 2.9 Mr Shadow
 
 ## 3. Characters
+
+Characters Seba meets in the city are people he knows or thinks he
+knows from his dreams and his past. Soothing but also myserious and
+irrational, the characters are a counterbalance for the city's
+soul-crushing aura. Elements of comedy are welcome here, especially if
+it makes Seba feel dizzy (that role is mostly on Copernicus). There
+are good, neutral and evil characters, but nothing is completely good
+or evil, the characters are in shades of gray. The characters try to
+help Seba find the way in their own unique ways.
 
 ### 3.1 Sebastian (Seba)
 
@@ -368,3 +393,88 @@ Quotes:
 "I'm really happy I've met you!"
 
 "N-no, you can't, we're both boys!"
+
+### 3.5 Babcia - Seba's Grandma?
+
+Theme: "She forgot where she found it but she was ready to give it to
+the young boy".
+
+Simply grandma, Seba's grandma or everyone else's grandma? Maybe this
+old lady just passes by? Is she my grandma or a nanny? Did she forget
+to pay or did she steal it? Sometimes she works in a Kiosk, sometimes
+she's already retired. She forgot about the city and can still see
+other people. Whoever she is, the grandma will always cook for Seba
+and feed him until he's full.
+
+Quotes:
+
+"You're so slim, go ahead, eat more!"
+
+"Did you pray today? Jesus can see you!"
+
+"Stop whining, Sebastian! Now, eat this."
+
+"When are you getting married?"
+
+"Ahaha, are you dumb? He's scared by a nun. Take it now, no one is
+looking."
+
+"Don't forget to visit your grandma, Sebastian."
+
+## 4. The City - macroscale areas and "biomes"
+
+The city is divided into several macroscale areas: the surface, the
+basemment, the hell (extension of the basement), suburban areas (near
+the map's edge), the end of the world (the edge), and the place where
+the heaven, surface and hell meet (end of the map). Each location
+serves a unique purpose and they're divided further into biomes
+(subtypes).
+
+### 4.1 The surface
+
+The city proper, the most accessible macroscale area in the game.
+
+#### Biomes
+
+##### "Blokowisko"
+
+Endless soviet era prefab apartment blocks distributed
+sparsely. Between them trees, playgrounds, parks, schools, medical
+clinics, concrete and asphalt. The place where you were born and where
+you will die.
+
+Blokowisko is the most common biome in the game filled with blocks
+made from prefabricates. As a mass product they share similar forms
+and shapes, yet subtle differences and their arrangement makes each
+neighborhood unique. Sparsely distributed tower blocks (up to 15
+floors) show you the way and overwhelm you with their might, between
+them regularly placed long 3-4 floor buildings. The scale of each
+district helps you lose your way, especially at night.
+
+##### "Postmodern Hell"
+
+In pursuit of more human values postmodern architecture rejected
+massive scale of modern urbanism and eventually forgot what being
+human means. A maze of five-story buildings that try to mimic
+traditional forms but forgot the meaning of tradition. The defining
+values of postmodern philosophy are fences, to separate yourself from
+"intruders" and *the parking lot* which both surround each building
+and make a foundation for it. Grass and trees are not welcome, the
+place was built for cars to thrive and for humans to get lost.
+
+The defining traits of this biome are short buildings with pitched
+roofs that go all the way along narrow one-way streets with dead
+ends. The architect wanted to make them resemble traditional forms but
+had no budget to do so therefore white roughcast was picked for the
+facade. In front of such buildings there are garages and parking lots
+narrowly fitted between the buildings. Walking through this maze makes
+you feel unwelcome and anxious, even though it's only the concrete
+speaking.
+
+##### "Park"
+
+Some plants to distract you from the concrete. Parks are surrounded by
+a myserious, nearly magical atmosphere. As you walk between trees and
+benches you can hear blackbirds singing in the distance. Don't let the
+romantic atmosphere to make you stay for too long though as you may
+lose your way home.
